@@ -291,11 +291,9 @@ SEO-база (сделана по итогам ревью вёрстки):
 - [x] Взять Project URL, publishable key (`sb_publishable_…`) и secret key (`sb_secret_…`).
       Положить их в `.env` и в Vercel (окружение Production). В чат ключи не присылай.
       Проверено: ключи приложения, пароль БД и токен Management API работают.
-- [ ] Authentication → URL Configuration: Site URL = `https://www.freud.in`. Редиректы на этот
+- [x] Authentication → URL Configuration: Site URL = `https://www.freud.in`. Редиректы на этот
       адрес Supabase разрешает без списка, поэтому в Redirect URLs достаточно добавить
-      `http://localhost:3000/**` для локальной разработки. Сейчас там значения по умолчанию
-      (Site URL = `http://localhost:3000`). **Делаешь ты в дашборде:** менять настройки Auth
-      через API мне не дают права сессии.
+      `http://localhost:3000/**` для локальной разработки.
 - [x] Выбрать, как я буду работать с БД. **Выбрано: переменные окружения + Supabase CLI.**
 - [ ] Только для облачной сессии: добавить в её настройки переменные `SUPABASE_URL`,
       `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (для приложения), а также
@@ -323,12 +321,16 @@ SEO-база (сделана по итогам ревью вёрстки):
 лежат в репозитории.
 
 #### Шаг 7. Серверный доступ к Supabase
-- [ ] Установить `@supabase/ssr` и `@supabase/supabase-js`.
-- [ ] `shared/api/supabase/server.ts`: клиент с cookies пользователя (publishable key, RLS
+- [x] Установить `@supabase/ssr` и `@supabase/supabase-js`.
+- [x] `shared/api/supabase/server.ts`: клиент с cookies пользователя (publishable key, RLS
       действует). `admin.ts`: клиент с secret key, только для удаления аккаунта и служебных
       операций. Оба `server-only`, наружу экспортируются через `@/shared/api/index.server.ts`.
-- [ ] `api/_lib/auth.ts`: `requireUser()` на основе `supabase.auth.getClaims()`, при отсутствии
-      сессии отвечает 401.
+- [x] `api/_lib/auth.ts`: `requireUser()` на основе `supabase.auth.getClaims()`, при отсутствии
+      сессии отвечает 401. Сетевой сбой до Supabase даёт 500, а не 401.
+- [x] Минимальный `GET /api/me`: гостю 401, пользователю `{ user }` с `Cache-Control: private,
+      no-store`. Профиль и подсказки добавим на шаге 8.
+- [x] Проверено на прод-сборке: гость и поддельная сессия получают 401, ключей и адреса
+      Supabase в клиентском бандле нет.
 
 **Готово, когда:** `GET /api/me` отвечает гостю 401, а ключей нет в клиентском бандле.
 
@@ -513,7 +515,7 @@ admin API.
 | Сейчас | Подтвердить решения из раздела 3 или поправить |
 | Шаг 4 | Доступ облачного окружения к `ui.shadcn.com` — ✅ сделано |
 | До шага 6 | Юрисдикция — ✅ решено: пользователи не из РФ (решение 13) |
-| Шаг 5 | Проект Supabase и ключи в Vercel — ✅ сделано; осталась URL Configuration в дашборде |
+| Шаг 5 | Проект Supabase, ключи в Vercel, URL Configuration — ✅ сделано |
 | Шаг 6 | Применить миграции: `npm run db:push` — ✅ сделано |
 | Шаг 8 | Google Cloud: OAuth-клиент и экран согласия |
 | Шаг 9 | Meta for Developers: приложение с Facebook Login |

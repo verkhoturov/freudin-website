@@ -13,5 +13,6 @@ export const routes = {
 export const apiRoutes = {
   health: "/api/health",
   signIn: "/api/auth/sign-in",
+  me: "/api/me",
   profile: (username: string) => `/api/profiles/${encodeURIComponent(username)}`,
 } as const;

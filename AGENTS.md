@@ -84,6 +84,11 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   успешный ответ отдаём через `jsonOk<T>(data)`, ожидаемую ошибку — `throw new HttpError(status,
   code, message)`, тело запроса читаем через `parseJsonBody(request, schema)` (ошибка валидации
   превращается в 400 с `fields`).
+- Роут с сессией начинается с `const { supabase, claims } = await requireUser()` из
+  `@/app/api/_lib`: без сессии это 401, а обновлённая сессия пишется в cookies. Дальше работаем
+  через этот `supabase` (RLS действует). `createSupabaseAdminClient()` обходит RLS, поэтому он
+  только для служебных операций вроде удаления аккаунта.
+- Ответ с данными пользователя отдаём с заголовком `Cache-Control: private, no-store`.
 - Формат ошибки API: `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }`
   плюс корректный HTTP-статус. Коды: `bad_request` и `validation_error` (400), `unauthorized` (401),
   `forbidden` (403), `not_found` (404), `conflict` (409), `payload_too_large` (413),
@@ -161,7 +166,7 @@ export { LoginView as default, metadata } from "@/views/login";
 
 | Слой | Слайс или модуль | Что внутри |
 |------|------------------|------------|
-| `entities` | `viewer` | провайдеры входа и их названия, тексты ошибок входа, `getSignInHref`; на сервере `authProviderSchema` |
+| `entities` | `viewer` | провайдеры входа и их названия, тексты ошибок входа, `getSignInHref`, тип `Viewer` (ответ `/api/me`); на сервере `authProviderSchema` |
 | `entities` | `profile` | правила username, zod-схемы профиля, лимиты, `PublicProfile`, `profileQueries`, `ProfileAvatar`, `DEMO_USERNAME` |
 | `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton`; для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка и подвал сайта |
@@ -170,6 +175,7 @@ export { LoginView as default, metadata } from "@/views/login";
 | `shared/ui` | свои компоненты | `Container`, `Logo`, `ThemeToggle`, `NotFoundState`, `PagePlaceholder` (временный) |
 | `shared/lib` | `utils`, `safe-redirect` | `cn`, `getSafeRedirectPath` |
 | `shared/config` | `routes`, `site`, `reserved-usernames`, `env.server` | пути, настройки сайта, зарезервированные адреса, серверный env |
+| `shared/api` | `index.ts`, `index.server.ts` | клиент: `apiClient`, `ApiError`, QueryClient; сервер: `createSupabaseServerClient`, `createSupabaseAdminClient`, типы БД (`Database`, `Tables`) |
 
 ## Роуты
 
@@ -213,7 +219,7 @@ export { LoginView as default, metadata } from "@/views/login";
 | GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | заглушка: редирект на `/login?error=auth_unavailable` |
 | GET | `/api/auth/callback?code=&next=` | обмен кода на сессию и редирект | — | план |
 | POST | `/api/auth/sign-out` | выход | ✓ | план |
-| GET | `/api/me` | текущий пользователь, его профиль (или `null`) и подсказки для онбординга | ✓ | план |
+| GET | `/api/me` | текущий пользователь, его профиль (или `null`) и подсказки для онбординга | ✓ | частично: гостю 401, пользователю `{ user }`; профиль и подсказки — шаг 8 |
 | DELETE | `/api/me` | удаление аккаунта и всех данных | ✓ | план |
 | POST | `/api/profile` | создание профиля (онбординг) | ✓ | план |
 | PATCH | `/api/profile` | обновление профиля | ✓ | план |
