@@ -25,14 +25,14 @@ export function HomeView() {
         <ul className="flex flex-col gap-2">
           {stubPages.map((page) => (
             <li key={page.href}>
-              <Link href={page.href} className="underline underline-offset-4">
+              <Link href={page.href} className="text-primary underline-offset-4 hover:underline">
                 {page.label}
               </Link>
             </li>
           ))}
         </ul>
       </nav>
-      <p className="text-foreground/70 text-sm" aria-live="polite">
+      <p className="text-muted-foreground text-sm" aria-live="polite">
         API: {apiStatus}
       </p>
     </PagePlaceholder>

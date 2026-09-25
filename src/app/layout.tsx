@@ -1,11 +1,13 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { siteConfig } from "@/shared/config";
+import { Footer } from "@/widgets/footer";
+import { Header } from "@/widgets/header";
 import { Providers } from "./_providers";
 import "./globals.css";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
+  variable: "--font-sans",
   subsets: ["latin", "cyrillic"],
 });
 
@@ -22,11 +24,33 @@ export const metadata: Metadata = {
   description: siteConfig.description,
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ru" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    // suppressHydrationWarning: next-themes ставит класс темы на <html> до гидратации
+    <html
+      lang="ru"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <Providers>{children}</Providers>
+        <Providers>
+          <a
+            href="#content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-background focus:px-4 focus:py-2 focus:shadow-md">
+            Перейти к содержимому
+          </a>
+          <Header />
+          <main id="content" className="flex flex-1 flex-col">
+            {children}
+          </main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );
