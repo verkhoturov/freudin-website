@@ -1,18 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { routes } from "@/shared/config";
-import { Button } from "@/shared/ui/button";
-import { PagePlaceholder } from "@/shared/ui/page-placeholder";
+import { Container } from "@/shared/ui/container";
+import { NotFoundState } from "@/shared/ui/not-found-state";
 
 export function NotFoundView() {
   return (
-    <PagePlaceholder title="Страница не найдена">
-      <div>
-        <Button asChild variant="outline">
-          <Link href={routes.home}>На главную</Link>
-        </Button>
-      </div>
-    </PagePlaceholder>
+    <Container className="py-10">
+      <NotFoundState />
+    </Container>
   );
 }

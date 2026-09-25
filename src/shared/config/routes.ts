@@ -12,4 +12,6 @@ export const routes = {
 /** Пути API-роутов для apiClient. */
 export const apiRoutes = {
   health: "/api/health",
+  signIn: "/api/auth/sign-in",
+  profile: (username: string) => `/api/profiles/${encodeURIComponent(username)}`,
 } as const;

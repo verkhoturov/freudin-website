@@ -1,32 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { routes, siteConfig } from "@/shared/config";
-import { PagePlaceholder } from "@/shared/ui/page-placeholder";
-
-const stubPages = [
-  { href: routes.login, label: "Вход" },
-  { href: routes.onboarding, label: "Создание страницы" },
-  { href: routes.settings, label: "Настройки" },
-  { href: routes.profile("demo"), label: "Пример личной страницы" },
-  { href: routes.privacy, label: "Политика конфиденциальности" },
-  { href: routes.terms, label: "Условия использования" },
-];
+import { DEMO_USERNAME } from "@/entities/profile";
+import { routes } from "@/shared/config";
+import { Button } from "@/shared/ui/button";
+import { Container } from "@/shared/ui/container";
 
 export function HomeView() {
   return (
-    <PagePlaceholder title={siteConfig.name}>
-      <nav aria-label="Страницы">
-        <ul className="flex flex-col gap-2">
-          {stubPages.map((page) => (
-            <li key={page.href}>
-              <Link href={page.href} className="underline underline-offset-4">
-                {page.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </PagePlaceholder>
+    <Container className="flex flex-col gap-6 py-10">
+      <h1 className="font-semibold text-2xl tracking-tight">
+        Личная страница с фото, описанием и ссылками на соцсети
+      </h1>
+      <div className="flex flex-wrap gap-3">
+        <Button asChild>
+          <Link href={routes.login}>Войти</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href={routes.profile(DEMO_USERNAME)}>Пример страницы</Link>
+        </Button>
+      </div>
+    </Container>
   );
 }
