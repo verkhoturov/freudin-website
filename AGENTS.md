@@ -48,7 +48,7 @@ Freudin — сайт, где пользователь входит через Go
 | Клиентское состояние | Zustand 5 |
 | Формы и валидация | TanStack Form + zod 4 |
 | Backend | Route Handlers в `src/app/api` |
-| БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`) |
+| БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI для миграций и типов |
 | Линтер и форматтер | Biome |
 | Хостинг | Vercel: `main` сразу выкладывается в прод, превью не используем |
 
@@ -237,6 +237,23 @@ export { LoginView as default, metadata } from "@/views/login";
 - Провайдеры подключены в `src/app/_providers`: next-themes, QueryClientProvider (devtools только
   в dev), TooltipProvider и Toaster (sonner).
 
+## База данных (Supabase)
+
+- Один облачный проект `freudin_data` (eu-central-1), он же прод. Локального Supabase нет.
+- Схема меняется только миграциями в `supabase/migrations`. Новую создаём командой
+  `npx supabase migration new <name>`, уже применённые миграции не правим.
+- Миграции применяет пользователь (`npm run db:push`): это изменение боевой базы. Перед этим SQL
+  можно проверить в транзакции с откатом (`begin; … rollback;`) через `psql`.
+- После применения генерируем типы: `npm run db:types` пишет
+  `src/shared/api/supabase/database.types.ts`. Руками этот файл не правим.
+- CHECK-ограничения повторяют zod-схемы сущностей: меняя лимит, меняй и схему, и миграцию.
+  Зарезервированные username проверяет только сервер.
+- На каждой таблице включён RLS. Права ролям выдаём явно (`revoke all`, затем нужные `grant`):
+  по умолчанию Supabase открывает `anon` и `authenticated` всё.
+- Supabase CLI читает переменные из `.env` в корне. Прямой адрес БД доступен только по IPv6,
+  поэтому CLI и `psql` подключаются через пулер `aws-0-eu-central-1.pooler.supabase.com:5432`
+  (пользователь `postgres.<ref>`).
+
 ## Формы
 
 - TanStack Form + zod + компоненты shadcn `Field`. react-hook-form не используем: он конфликтует
@@ -317,6 +334,8 @@ export { LoginView as default, metadata } from "@/views/login";
 | `npm run lint` | Biome: линт, формат, порядок импортов, границы слоёв |
 | `npm run lint:fix` | то же с автоисправлением |
 | `npm run typecheck` | генерация типов роутов (`next typegen`) и `tsc --noEmit` |
+| `npm run db:push` | применить миграции из `supabase/migrations` к базе проекта (запускает пользователь) |
+| `npm run db:types` | сгенерировать типы БД в `src/shared/api/supabase/database.types.ts` |
 
 ## Next.js 16: на что обратить внимание
 
