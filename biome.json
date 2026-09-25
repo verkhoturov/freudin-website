@@ -35,5 +35,207 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/shared/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/app/**", "@/views/**", "@/widgets/**", "@/entities/**"],
+                    "message": "FSD: импортировать можно только нижележащие слои (app → views → widgets → entities → shared)."
+                  },
+                  {
+                    "group": ["@supabase/**"],
+                    "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/shared/api/supabase/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/app/**", "@/views/**", "@/widgets/**", "@/entities/**"],
+                    "message": "FSD: импортировать можно только нижележащие слои (app → views → widgets → entities → shared)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/entities/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/app/**", "@/views/**", "@/widgets/**"],
+                    "message": "FSD: импортировать можно только нижележащие слои (app → views → widgets → entities → shared)."
+                  },
+                  {
+                    "group": ["@/entities/**", "!@/entities/*/@x/*"],
+                    "message": "FSD: сущности не импортируют друг друга напрямую, только через @x: @/entities/<slice>/@x/<consumer>."
+                  },
+                  {
+                    "group": ["@supabase/**"],
+                    "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/widgets/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/app/**", "@/views/**"],
+                    "message": "FSD: импортировать можно только нижележащие слои (app → views → widgets → entities → shared)."
+                  },
+                  {
+                    "group": ["@/widgets/**"],
+                    "message": "FSD: слайсы одного слоя не импортируют друг друга. Общий код вынеси в нижележащий слой."
+                  },
+                  {
+                    "group": ["@/entities/*/**"],
+                    "message": "FSD: импортируй слайс через его public API (@/<layer>/<slice>), без путей внутрь слайса."
+                  },
+                  {
+                    "group": ["**/index.server"],
+                    "message": "Серверный public API (index.server) нельзя импортировать в клиентский код. Данные клиент получает через /api."
+                  },
+                  {
+                    "group": ["@supabase/**"],
+                    "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/views/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/app/**"],
+                    "message": "FSD: импортировать можно только нижележащие слои (app → views → widgets → entities → shared)."
+                  },
+                  {
+                    "group": ["@/views/**"],
+                    "message": "FSD: слайсы одного слоя не импортируют друг друга. Общий код вынеси в нижележащий слой."
+                  },
+                  {
+                    "group": ["@/widgets/*/**", "@/entities/*/**"],
+                    "message": "FSD: импортируй слайс через его public API (@/<layer>/<slice>), без путей внутрь слайса."
+                  },
+                  {
+                    "group": ["**/index.server"],
+                    "message": "Серверный public API (index.server) нельзя импортировать в клиентский код. Данные клиент получает через /api."
+                  },
+                  {
+                    "group": ["@supabase/**"],
+                    "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/app/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/views/*/**", "@/widgets/*/**", "@/entities/*/**"],
+                    "message": "FSD: импортируй слайс через его public API (@/<layer>/<slice>), без путей внутрь слайса."
+                  },
+                  {
+                    "group": ["**/index.server"],
+                    "message": "Серверный public API (index.server) нельзя импортировать в клиентский код. Данные клиент получает через /api."
+                  },
+                  {
+                    "group": ["@supabase/**"],
+                    "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/app/api/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/views/**", "@/widgets/**", "@/shared/ui", "@/shared/ui/**"],
+                    "message": "API-роуты не импортируют UI (views, widgets, shared/ui)."
+                  },
+                  {
+                    "group": ["@/entities/*", "@/entities/*/**", "!@/entities/*/index.server"],
+                    "message": "В API-роутах используй серверный public API сущности: @/entities/<slice>/index.server."
+                  },
+                  {
+                    "group": ["@supabase/**"],
+                    "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
