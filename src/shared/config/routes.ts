@@ -8,3 +8,8 @@ export const routes = {
   terms: "/terms",
   profile: (username: string) => `/${encodeURIComponent(username)}`,
 } as const;
+
+/** Пути API-роутов для apiClient. */
+export const apiRoutes = {
+  health: "/api/health",
+} as const;

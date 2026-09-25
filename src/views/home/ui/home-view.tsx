@@ -1,6 +1,8 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { healthQueryOptions } from "@/shared/api";
 import { routes, siteConfig } from "@/shared/config";
 import { PagePlaceholder } from "@/shared/ui/page-placeholder";
 
@@ -14,6 +16,9 @@ const stubPages = [
 ];
 
 export function HomeView() {
+  const health = useQuery(healthQueryOptions());
+  const apiStatus = health.isPending ? "проверяем…" : health.isError ? "недоступен" : "работает";
+
   return (
     <PagePlaceholder title={siteConfig.name} description={siteConfig.description}>
       <nav aria-label="Страницы-заглушки">
@@ -27,6 +32,9 @@ export function HomeView() {
           ))}
         </ul>
       </nav>
+      <p className="text-foreground/70 text-sm" aria-live="polite">
+        API: {apiStatus}
+      </p>
     </PagePlaceholder>
   );
 }
