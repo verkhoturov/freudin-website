@@ -15,8 +15,8 @@ const stubPages = [
 
 export function HomeView() {
   return (
-    <PagePlaceholder title={siteConfig.name} description={siteConfig.description}>
-      <nav aria-label="Страницы-заглушки">
+    <PagePlaceholder title={siteConfig.name}>
+      <nav aria-label="Страницы">
         <ul className="flex flex-col gap-2">
           {stubPages.map((page) => (
             <li key={page.href}>

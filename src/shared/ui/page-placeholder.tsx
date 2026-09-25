@@ -1,18 +1,17 @@
 import type { ReactNode } from "react";
+import { Container } from "@/shared/ui/container";
 
 type PagePlaceholderProps = {
   title: string;
-  description?: string;
   children?: ReactNode;
 };
 
 /** Временная заглушка страницы. Удаляем, когда все страницы реализованы. */
-export function PagePlaceholder({ title, description, children }: PagePlaceholderProps) {
+export function PagePlaceholder({ title, children }: PagePlaceholderProps) {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 py-16">
-      <h1 className="font-semibold text-3xl tracking-tight">{title}</h1>
-      {description ? <p className="text-foreground/70">{description}</p> : null}
+    <Container className="flex flex-col gap-6 py-10">
+      <h1 className="font-semibold text-2xl tracking-tight">{title}</h1>
       {children}
-    </main>
+    </Container>
   );
 }

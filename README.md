@@ -15,19 +15,30 @@
 
 ## Текущее состояние
 
-Готов каркас: структура Feature-Sliced Design, страницы-заглушки для всех роутов, проверка
-границ между слоями в линтере. Авторизации, базы данных и API пока нет.
+Готовы:
+
+- каркас Feature-Sliced Design и страницы-заглушки для всех роутов;
+- минималистичный интерфейс на стандартных компонентах shadcn/ui: светлая и тёмная темы,
+  шапка и подвал;
+- клиент API на TanStack Query и первый API-роут `/api/health`;
+- SEO-база: домен `freud.in`, Open Graph с картинкой превью, `robots.txt`, `sitemap.xml`,
+  `noindex` для служебных страниц;
+- проверка границ между слоями FSD в линтере.
+
+Авторизации и базы данных пока нет.
 
 ## Стек
 
 | Задача | Выбор | Статус |
 |--------|-------|--------|
 | Фреймворк | Next.js 16 (App Router, React Compiler), React 19, TypeScript 5 | ✅ |
-| Стили | Tailwind CSS 4 | ✅ |
-| UI-компоненты | shadcn/ui, lucide-react | шаг 4 |
-| Запросы к API | TanStack Query | шаг 3 |
-| Клиентское состояние | Zustand | шаг 3 |
-| Формы и валидация | TanStack Form, zod | шаг 3 |
+| Стили | Tailwind CSS 4, `tw-animate-css` | ✅ |
+| UI-компоненты | shadcn/ui на Radix (`radix-ui`, `class-variance-authority`, `cn`), lucide-react | ✅ |
+| Темы и уведомления | next-themes, sonner | ✅ |
+| Запросы к API | TanStack Query (+ Devtools в dev) | ✅ |
+| Валидация | zod | ✅ |
+| Формы | TanStack Form | шаг 13 |
+| Клиентское состояние | Zustand | шаг 13 |
 | БД, авторизация, файлы | Supabase | шаги 5–7 |
 | Линтер и форматтер | Biome | ✅ |
 | Хостинг | Vercel | шаг 18 |
@@ -48,7 +59,25 @@ npm run dev
 
 ## Переменные окружения
 
-Пока не нужны. Их список и `.env.example` появятся на шаге 3.
+Сейчас приложение запускается без них. Шаблон — [`.env.example`](.env.example): скопируй его
+в `.env.local` и заполни, когда дойдём до Supabase. Все переменные серверные и в браузер
+не попадают.
+
+| Переменная | Где взять | Нужна с |
+|------------|-----------|---------|
+| `SUPABASE_URL` | Supabase → Project Settings → API Keys | шага 7 |
+| `SUPABASE_PUBLISHABLE_KEY` | там же, ключ `sb_publishable_…` | шага 7 |
+| `SUPABASE_SECRET_KEY` | там же, ключ `sb_secret_…` | шага 7 |
+
+Переменные проверяются zod-схемой при первом обращении (`getServerEnv()`), поэтому
+`npm run build` проходит без них.
+
+Для Supabase CLI (миграции и генерация типов) нужны ещё две переменные. Приложению они не нужны:
+
+| Переменная | Где взять |
+|------------|-----------|
+| `SUPABASE_ACCESS_TOKEN` | Supabase → Account → Access Tokens |
+| `SUPABASE_DB_PASSWORD` | пароль базы, задаётся при создании проекта (Project Settings → Database) |
 
 ## Скрипты
 
@@ -68,17 +97,23 @@ npm run dev
 
 ```
 src/
-├─ app/        # роутинг Next.js (App Router) и слой app: layout, стили, позже провайдеры и API
-├─ views/      # страницы: home, login, onboarding, settings, profile, privacy, terms, not-found
-├─ widgets/    # крупные блоки интерфейса (пока пусто)
-├─ entities/   # бизнес-сущности (пока пусто)
+├─ app/                # роутинг Next.js (App Router) и слой app
+│  ├─ layout.tsx       # html/body, шрифты, metadata, шапка, <main>, подвал
+│  ├─ _providers/      # темы, TanStack Query, тултипы, уведомления
+│  ├─ robots.ts, sitemap.ts, opengraph-image.jpg   # SEO-файлы
+│  └─ api/             # API-роуты; _lib — общие хелперы (ошибки, ответы, zod)
+├─ views/              # страницы: home, login, onboarding, settings, profile, privacy, terms, not-found
+├─ widgets/            # header, footer
+├─ entities/           # бизнес-сущности (пока пусто)
 └─ shared/
-   ├─ ui/      # UI-компоненты (сейчас только временная заглушка страницы)
-   ├─ lib/     # утилиты (пока пусто)
-   ├─ api/     # клиент API и доступ к Supabase (пока пусто)
-   └─ config/  # роуты и настройки сайта
+   ├─ ui/              # компоненты shadcn/ui, Container, Logo, ThemeToggle, PagePlaceholder
+   ├─ lib/             # утилиты (cn)
+   ├─ api/             # apiClient, ApiError, QueryClient
+   └─ config/          # routes, apiRoutes, site, серверный env
+components.json        # настройки shadcn/ui (алиасы под FSD)
+.env.example           # шаблон переменных окружения
 docs/
-└─ PLAN.md     # пошаговый план
+└─ PLAN.md             # пошаговый план
 ```
 
 Файлы в `src/app` только реэкспортируют страницы из `src/views`. Страницы — клиентские
@@ -97,7 +132,36 @@ docs/
 | `/privacy` | политика конфиденциальности | заглушка |
 | `/terms` | условия использования | заглушка |
 
-API-роутов пока нет. Их список и статусы ведутся в [`AGENTS.md`](AGENTS.md#api).
+API:
+
+| Метод | Путь | Назначение | Статус |
+|-------|------|------------|--------|
+| GET | `/api/health` | проверка связки клиент → API | готово |
+
+Полный список запланированных API-роутов со статусами — в [`AGENTS.md`](AGENTS.md#api).
+
+Служебные файлы: `/robots.txt`, `/sitemap.xml` и `/opengraph-image.jpg` (картинка превью ссылок).
+
+## SEO
+
+- Прод-домен — `https://freud.in` (`siteConfig.url`). От него строятся `metadataBase`, canonical,
+  `robots.txt` и `sitemap.xml`.
+- Open Graph и карточка Twitter по умолчанию: название, описание, `ru_RU` и картинка
+  `src/app/opengraph-image.jpg` (1200×630).
+- У `/`, `/privacy` и `/terms` есть canonical, и они перечислены в `sitemap.xml`.
+- `/login`, `/onboarding` и `/settings` закрыты от индексации (`noindex, follow`).
+- Личные страницы пока рендерятся на клиенте, поэтому поисковики и превью ссылок видят только
+  общие данные сайта. Серверный рендер для них запланирован на этапе G.
+
+## Дизайн
+
+- Пока минималистичный дизайн: стандартные компоненты shadcn/ui и минимум контента — только
+  навигация и поля ввода.
+- shadcn/ui на Radix, стиль по умолчанию (nova), нейтральная палитра, шрифт Geist (с кириллицей),
+  иконки lucide. Токены темы — в `src/app/globals.css`.
+- Светлая, тёмная и системная темы, переключатель в шапке.
+- Вёрстка mobile-first, есть ссылка «Перейти к содержимому» для навигации с клавиатуры.
+- Компоненты добавляются командой `npx shadcn add <component>` и попадают в `src/shared/ui`.
 
 ## Внешние сервисы
 

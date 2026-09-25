@@ -1,2 +1,2 @@
-export { routes } from "./routes";
+export { apiRoutes, routes } from "./routes";
 export { siteConfig } from "./site";
