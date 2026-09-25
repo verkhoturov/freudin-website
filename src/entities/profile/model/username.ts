@@ -5,7 +5,7 @@ import { USERNAME_MAX_LENGTH, USERNAME_MIN_LENGTH } from "../config/limits";
 // Латиница в нижнем регистре, цифры, «-» и «_»; начало и конец — буква или цифра
 const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
 
-/** Адрес личной страницы: `https://freud.in/<username>`. Регистр приводится к нижнему. */
+/** Адрес личной страницы: `https://www.freud.in/<username>`. Регистр приводится к нижнему. */
 export const usernameSchema = z
   .string()
   .trim()
