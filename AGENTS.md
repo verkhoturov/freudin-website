@@ -88,6 +88,8 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   `unexpected_response`. Поле `message` пишем для пользователя, по-русски.
 - В серверном коде из `@/shared/api` импортируем только типы (`import type`): модуль клиентский
   и тянет за собой TanStack Query.
+- Путь для редиректа из `?next=` пропускаем только через `getSafeRedirectPath` из
+  `@/shared/lib/safe-redirect` — защита от open redirect.
 - Серверные переменные окружения читаем только через `getServerEnv()` из
   `@/shared/config/index.server`. Новую переменную добавляй в его zod-схему и в `.env.example`.
 
@@ -152,6 +154,20 @@ export { LoginView as default, metadata } from "@/views/login";
   иначе Next.js его не примет);
 - `src/views/login/index.ts`: public API, реэкспортирует оба.
 
+Текущие слайсы (переиспользуй, прежде чем создавать новые):
+
+| Слой | Слайс или модуль | Что внутри |
+|------|------------------|------------|
+| `entities` | `viewer` | провайдеры входа и их названия, тексты ошибок входа, `getSignInHref`; на сервере `authProviderSchema` |
+| `entities` | `profile` | правила username, zod-схемы профиля, лимиты, `PublicProfile`, `profileQueries`, `ProfileAvatar`, `DEMO_USERNAME` |
+| `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton`; для `profile` — через `@x` |
+| `widgets` | `header`, `footer` | шапка и подвал сайта |
+| `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров |
+| `widgets` | `profile-card` | карточка личной страницы, скелетон, «Поделиться» |
+| `shared/ui` | свои компоненты | `Container`, `Logo`, `ThemeToggle`, `NotFoundState`, `PagePlaceholder` (временный) |
+| `shared/lib` | `utils`, `safe-redirect` | `cn`, `getSafeRedirectPath` |
+| `shared/config` | `routes`, `site`, `reserved-usernames`, `env.server` | пути, настройки сайта, зарезервированные адреса, серверный env |
+
 ## Роуты
 
 Пути в коде строим только через `routes` (страницы) и `apiRoutes` (API) из `@/shared/config`.
@@ -160,14 +176,14 @@ export { LoginView as default, metadata } from "@/views/login";
 
 | Путь | Файл роутинга | View | Доступ | Статус |
 |------|---------------|------|--------|--------|
-| `/` | `src/app/page.tsx` | `home` | все | заглушка |
-| `/login` | `src/app/login/page.tsx` | `login` | гости; авторизованных редиректим | заглушка |
+| `/` | `src/app/page.tsx` | `home` | все | готово (минимальная) |
+| `/login` | `src/app/login/page.tsx` | `login` | гости; авторизованных редиректим | интерфейс готов, вход — шаги 8–10 |
 | `/onboarding` | `src/app/onboarding/page.tsx` | `onboarding` | авторизованные без профиля | заглушка |
 | `/settings` | `src/app/settings/page.tsx` | `settings` | авторизованные с профилем | заглушка |
 | `/privacy` | `src/app/privacy/page.tsx` | `privacy` | все | заглушка |
 | `/terms` | `src/app/terms/page.tsx` | `terms` | все | заглушка |
-| `/<username>` | `src/app/[username]/page.tsx` | `profile` | все | заглушка |
-| 404 | `src/app/not-found.tsx` | `not-found` | все | заглушка |
+| `/<username>` | `src/app/[username]/page.tsx` | `profile` | все | интерфейс готов, данные — заглушка API |
+| 404 | `src/app/not-found.tsx` | `not-found` | все | готово |
 
 Служебные файлы:
 
@@ -177,19 +193,21 @@ export { LoginView as default, metadata } from "@/views/login";
 | `/sitemap.xml` | `src/app/sitemap.ts` | публичные страницы |
 | `/opengraph-image.jpg` | `src/app/opengraph-image.jpg` | картинка превью ссылок по умолчанию (1200×630) |
 
-`/<username>` — динамический роут верхнего уровня. Статические роуты имеют приоритет,
-поэтому сегмент каждого нового верхнеуровневого роута добавляй в список зарезервированных
-username (появится в `shared/config` на шаге 11 плана). Иначе пользователь займёт такое имя,
-а его страница окажется недоступна.
+`/<username>` — динамический роут верхнего уровня. Статические роуты имеют приоритет, поэтому
+занятые ими адреса нельзя отдавать пользователям. Список лежит в
+`src/shared/config/reserved-usernames.ts`: первые сегменты путей из `routes` попадают туда
+автоматически, поэтому **каждую новую страницу добавляй в `routes`**. Прочие служебные слова
+дописывай в `reservedWords` вручную.
 
 ### API
 
-Когда роут появляется, меняй его статус.
+Когда роут появляется, меняй его статус. Заглушки помечены комментарием в коде и заменяются
+на шагах 8 (вход) и 11 (профиль): контракт ответа при этом не меняется.
 
 | Метод | Путь | Назначение | Сессия | Статус |
 |-------|------|------------|:------:|--------|
 | GET | `/api/health` | проверка связки клиент → API | — | готово |
-| GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | план |
+| GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | заглушка: редирект на `/login?error=auth_unavailable` |
 | GET | `/api/auth/callback?code=&next=` | обмен кода на сессию и редирект | — | план |
 | POST | `/api/auth/sign-out` | выход | ✓ | план |
 | GET | `/api/me` | текущий пользователь, его профиль (или `null`) и подсказки для онбординга | ✓ | план |
@@ -198,7 +216,7 @@ username (появится в `shared/config` на шаге 11 плана). Ин
 | PATCH | `/api/profile` | обновление профиля | ✓ | план |
 | POST | `/api/profile/avatar` | загрузка фото или копирование фото провайдера | ✓ | план |
 | DELETE | `/api/profile/avatar` | удаление фото | ✓ | план |
-| GET | `/api/profiles/[username]` | публичный профиль | — | план |
+| GET | `/api/profiles/[username]` | публичный профиль | — | заглушка: только демо-профиль `demo`, остальным 404 |
 | GET | `/api/usernames/[username]` | проверка, свободен ли username | — | план |
 
 ## Состояние и данные
@@ -303,5 +321,8 @@ username (появится в `shared/config` на шаге 11 плана). Ин
 - Глобальные типы `PageProps`, `LayoutProps` и `RouteContext` генерирует `next typegen`.
 - `metadata` можно экспортировать только из серверных модулей.
 - В клиентских компонентах параметры роута читаем через `useParams()`, query — через
-  `useSearchParams()`.
+  `useSearchParams()`. Компонент с `useSearchParams()` на статической странице оборачиваем
+  в `<Suspense>`, иначе сборка упадёт.
+- `notFound()` работает только в серверном коде. В клиентских view состояние 404 рисуем сами
+  (`NotFoundState` из `@/shared/ui/not-found-state`).
 - `next lint` удалён, линтим через Biome.

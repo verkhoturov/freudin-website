@@ -332,7 +332,9 @@ Testing, войти могут только добавленные тестов�
 - [ ] `POST /api/auth/sign-out`, `GET /api/me` → `{ user, profile | null, suggestions }`.
 - [ ] `entities/viewer`: `useViewerQuery`, `useSignOutMutation`, гард приватных страниц
       (скелетон, пока идёт загрузка, затем редирект).
-- [ ] `widgets/sign-in-panel` (кнопка Google по гайдлайнам), `views/login` с показом ошибок.
+- [x] `widgets/sign-in-panel` (кнопки Google, Facebook, Telegram с логотипами), `views/login`
+      с показом ошибок из `?error=`. Пока Supabase нет, `GET /api/auth/sign-in` — заглушка:
+      проверяет `provider` и `next` и возвращает на `/login?error=auth_unavailable`.
 - [ ] `widgets/header`: гость видит «Войти», пользователь видит меню (аватар, «Моя страница»,
       «Настройки», «Выйти»).
 
@@ -348,7 +350,7 @@ Facebook.
 
 - [ ] Страницы `/privacy` и `/terms` с шаблонным текстом и разделом «Удаление данных». Они нужны
       Meta для Live-режима и Google для брендинга.
-- [ ] Кнопка Facebook в `sign-in-panel`.
+- [x] Кнопка Facebook в `sign-in-panel`.
 - [ ] Понятное сообщение на `/login`, если Facebook не вернул email.
 
 **Готово, когда:** вход через Facebook работает для тестировщиков приложения. Для всех
@@ -364,7 +366,8 @@ Facebook.
 - [ ] Провайдер в Supabase → Auth → Providers → New Provider → Auto-discovery (OIDC):
       `custom:telegram`, issuer `https://oauth.telegram.org`, scopes `openid profile`, email
       optional. Можешь сделать ты, или я сделаю через коннектор/admin API.
-- [ ] Кнопка Telegram, `custom:telegram` в белом списке провайдеров.
+- [x] Кнопка Telegram.
+- [ ] `custom:telegram` в серверном белом списке провайдеров (маппинг `telegram` → `custom:telegram`).
 - [ ] Приведение метаданных провайдеров к единому виду: имя, аватар, подсказка username
       (`preferred_username` у Telegram, часть email до `@` у Google/Facebook).
 
@@ -377,16 +380,17 @@ admin API.
 ### Этап D. Профиль
 
 #### Шаг 11. Сущности и API профиля
-- [ ] `entities/social-link`: справочник платформ (Telegram, Instagram, Facebook, VK, X, YouTube,
-      TikTok, LinkedIn, Threads, «Сайт»). Для каждой платформы: название, иконка, допустимые
-      домены, нормализация `@handle` → URL, zod-схема.
-- [ ] `entities/profile`: типы, zod-схемы (общие для формы и API), правила username,
-      зарезервированные имена (все верхнеуровневые роуты и служебные слова вроде `api`, `login`,
-      `onboarding`, `settings`, `privacy`, `terms`, `admin`), query keys и хуки
-      (`useProfileQuery`, `useCreateProfileMutation`, `useUpdateProfileMutation`,
-      `useUsernameAvailabilityQuery`), серверные функции БД в `index.server.ts`.
+- [x] `entities/social-link`: справочник платформ (Telegram, Instagram, Facebook, VK, X, YouTube,
+      TikTok, LinkedIn, Threads, «Сайт»). Для каждой платформы: название, допустимые домены,
+      нормализация `@handle` → URL, zod-схема, кнопка ссылки. Иконок нет (решение 11).
+- [x] `entities/profile`: типы, zod-схемы (общие для формы и API), правила username,
+      `profileQueries.detail`, `ProfileAvatar`. Зарезервированные имена лежат
+      в `shared/config/reserved-usernames.ts`: служебные слова и сегменты всех роутов из `routes`.
+- [ ] `entities/profile`: мутации создания и обновления, проверка доступности username,
+      серверные функции БД в `index.server.ts`.
 - [ ] Роуты `POST /api/profile`, `PATCH /api/profile`, `GET /api/profiles/[username]`,
-      `GET /api/usernames/[username]`.
+      `GET /api/usernames/[username]`. Сейчас `GET /api/profiles/[username]` — заглушка
+      с демо-профилем `demo`.
 
 **Готово, когда:** профиль создаётся, читается и обновляется через API. Невалидные данные дают 400
 с ошибками по полям, занятый username даёт 409.
@@ -415,11 +419,12 @@ admin API.
       «Скопировать ссылку».
 
 #### Шаг 14. Публичная страница `/<username>`
-- [ ] `widgets/profile-card` + `views/profile`: крупное фото, имя, описание с переносами строк,
-      кнопки соцсетей во всю ширину с иконками. Кнопка «Поделиться» (Web Share API, иначе
-      копирование ссылки). Владелец видит кнопку «Редактировать».
-- [ ] Состояния: скелетон при загрузке; 404 «Такой страницы нет» с призывом создать свою.
-- [ ] Заголовок вкладки = имя пользователя.
+- [x] `widgets/profile-card` + `views/profile`: фото (или инициалы), имя, описание с переносами
+      строк, кнопки соцсетей во всю ширину. Кнопка «Поделиться» (Web Share API, иначе
+      копирование ссылки).
+- [ ] Владелец видит кнопку «Редактировать» (нужна сессия, шаг 8).
+- [x] Состояния: скелетон при загрузке, 404, ошибка с кнопкой «Повторить».
+- [x] Заголовок вкладки = имя пользователя.
 
 #### Шаг 15. Настройки и управление аккаунтом
 - [ ] `views/settings`: `profile-form` в режиме редактирования. При смене username предупреждаем,
@@ -431,9 +436,9 @@ admin API.
 ### Этап E. Интерфейс
 
 #### Шаг 16. Главная страница
-- [ ] Минимальная главная (решение 11): заголовок и кнопка «Войти» или «Моя страница».
+- [x] Минимальная главная (решение 11): заголовок, кнопки «Войти» и «Пример страницы».
       Лендинг с примером карточки и блоком «как это работает» — позже, если решим.
-- [ ] SEO: описательные `title` и `<h1>` главной вместо просто «Freudin».
+- [x] SEO: описательные `title` и `<h1>` главной вместо просто «Freudin».
 - [ ] Авторизованный пользователь видит «Моя страница» или «Завершить регистрацию».
 
 #### Шаг 17. Полировка
