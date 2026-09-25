@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Freudin
 
-## Getting Started
+Сайт, где можно зарегистрироваться через Google, Meta (Facebook) или Telegram и получить личную
+страницу с уникальной ссылкой: фото, имя, описание и ссылки на соцсети.
 
-First, run the development server:
+> Проект в разработке. План и прогресс: [`docs/PLAN.md`](docs/PLAN.md). Правила для
+> разработчиков и AI-агентов: [`AGENTS.md`](AGENTS.md).
+
+## Возможности (MVP)
+
+- вход и регистрация через Google, Facebook и Telegram;
+- онбординг: фото, имя, описание, адрес страницы, ссылки на соцсети;
+- публичная страница `https://<домен>/<username>`;
+- редактирование профиля, выход, удаление аккаунта.
+
+## Текущее состояние
+
+Готов каркас: структура Feature-Sliced Design, страницы-заглушки для всех роутов, проверка
+границ между слоями в линтере. Авторизации, базы данных и API пока нет.
+
+## Стек
+
+| Задача | Выбор | Статус |
+|--------|-------|--------|
+| Фреймворк | Next.js 16 (App Router, React Compiler), React 19, TypeScript 5 | ✅ |
+| Стили | Tailwind CSS 4 | ✅ |
+| UI-компоненты | shadcn/ui, lucide-react | шаг 4 |
+| Запросы к API | TanStack Query | шаг 3 |
+| Клиентское состояние | Zustand | шаг 3 |
+| Формы и валидация | TanStack Form, zod | шаг 3 |
+| БД, авторизация, файлы | Supabase | шаги 5–7 |
+| Линтер и форматтер | Biome | ✅ |
+| Хостинг | Vercel | шаг 18 |
+
+Номера шагов указаны по [`docs/PLAN.md`](docs/PLAN.md).
+
+## Быстрый старт
+
+Нужны Node.js 20.9+ и npm 11+ (с npm 10 в `package-lock.json` появляются лишние изменения).
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Сайт откроется на http://localhost:3000. На главной временно выведен список всех
+страниц-заглушек.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Переменные окружения
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Пока не нужны. Их список и `.env.example` появятся на шаге 3.
 
-## Learn More
+## Скрипты
 
-To learn more about Next.js, take a look at the following resources:
+| Команда | Что делает |
+|---------|------------|
+| `npm run dev` | dev-сервер на http://localhost:3000 |
+| `npm run build` | прод-сборка |
+| `npm run start` | запуск прод-сборки |
+| `npm run lint` | Biome: линт, формат, порядок импортов, границы слоёв FSD |
+| `npm run lint:fix` | то же с автоисправлением |
+| `npm run typecheck` | генерация типов роутов (`next typegen`) и проверка типов (`tsc --noEmit`) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Структура проекта
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Код организован по [Feature-Sliced Design](https://feature-sliced.design) с двумя поправками:
+вместо слоя `pages` используется `views`, а слоя `features` нет.
 
-## Deploy on Vercel
+```
+src/
+├─ app/        # роутинг Next.js (App Router) и слой app: layout, стили, позже провайдеры и API
+├─ views/      # страницы: home, login, onboarding, settings, profile, privacy, terms, not-found
+├─ widgets/    # крупные блоки интерфейса (пока пусто)
+├─ entities/   # бизнес-сущности (пока пусто)
+└─ shared/
+   ├─ ui/      # UI-компоненты (сейчас только временная заглушка страницы)
+   ├─ lib/     # утилиты (пока пусто)
+   ├─ api/     # клиент API и доступ к Supabase (пока пусто)
+   └─ config/  # роуты и настройки сайта
+docs/
+└─ PLAN.md     # пошаговый план
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Файлы в `src/app` только реэкспортируют страницы из `src/views`. Страницы — клиентские
+компоненты, а вся серверная логика будет жить в `src/app/api`. Правила слоёв и импортов
+описаны в [`AGENTS.md`](AGENTS.md), линтер проверяет их при `npm run lint`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Роуты
+
+| Путь | Страница | Статус |
+|------|----------|--------|
+| `/` | главная | заглушка |
+| `/login` | вход | заглушка |
+| `/onboarding` | создание страницы после первого входа | заглушка |
+| `/settings` | настройки профиля и аккаунта | заглушка |
+| `/<username>` | личная страница пользователя | заглушка |
+| `/privacy` | политика конфиденциальности | заглушка |
+| `/terms` | условия использования | заглушка |
+
+API-роутов пока нет. Их список и статусы ведутся в [`AGENTS.md`](AGENTS.md#api).
+
+## Внешние сервисы
+
+Инструкции по настройке появятся здесь по мере интеграции:
+
+- Supabase (БД, авторизация, хранилище фото): шаги 5–7;
+- вход через Google: шаг 8;
+- вход через Facebook: шаг 9;
+- вход через Telegram: шаг 10;
+- Vercel: шаг 18.
+
+## Деплой
+
+Планируется на Vercel (шаг 18).

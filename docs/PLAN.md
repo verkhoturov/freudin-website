@@ -214,27 +214,27 @@ API:
 входа).
 
 #### Шаг 1. Правила проекта: AGENTS.md и README.md
-- [ ] `AGENTS.md`: управляемый блок Next.js оставляем без изменений, ниже добавляем наши правила.
+- [x] `AGENTS.md`: управляемый блок Next.js оставляем без изменений, ниже добавляем наши правила.
       Туда входят предпочтительный стек, правила клиент/сервер, FSD (`views` вместо `pages`,
       без `features`, правила импортов, public API, `index.server.ts`), роуты (страницы и API),
       правила состояния, форм и стилей, команды проверки.
-- [ ] В `AGENTS.md` явно прописать процесс: после каждой итерации сверять и обновлять `README.md`
+- [x] В `AGENTS.md` явно прописать процесс: после каждой итерации сверять и обновлять `README.md`
       и отмечать прогресс в `docs/PLAN.md`; юнит-тесты писать **только по запросу пользователя**.
-- [ ] `README.md`: описание, стек, быстрый старт, переменные окружения, скрипты, структура, роуты,
+- [x] `README.md`: описание, стек, быстрый старт, переменные окружения, скрипты, структура, роуты,
       настройка провайдеров (дополняется по ходу работы), деплой.
 
 **Готово, когда:** агент в новой сессии без контекста чата знает, куда класть код и как проверять
 изменения.
 
 #### Шаг 2. Каркас FSD и очистка шаблона
-- [ ] Удалить демо-контент create-next-app (разметку `page.tsx`, SVG в `public/`, стили-заглушки).
-- [ ] `lang="ru"`, шрифт Geist с `subsets: ["latin", "cyrillic"]`, базовая `metadata`.
-- [ ] Создать слои `views`, `widgets`, `entities`, `shared/{ui,lib,api,config}` с public API.
-- [ ] Заглушки view для всех страниц из 4.5, тонкие `page.tsx`, `not-found.tsx`.
-- [ ] `shared/config/routes.ts`: все пути в одном месте.
-- [ ] Границы слоёв в Biome через `noRestrictedImports` в `overrides`. Запрещаем импорты «вверх»
+- [x] Удалить демо-контент create-next-app (разметку `page.tsx`, SVG в `public/`, стили-заглушки).
+- [x] `lang="ru"`, шрифт Geist с `subsets: ["latin", "cyrillic"]`, базовая `metadata`.
+- [x] Создать слои `views`, `widgets`, `entities`, `shared/{ui,lib,api,config}` с public API.
+- [x] Заглушки view для всех страниц из 4.5, тонкие `page.tsx`, `not-found.tsx`.
+- [x] `shared/config/routes.ts`: все пути в одном месте.
+- [x] Границы слоёв в Biome через `noRestrictedImports` в `overrides`. Запрещаем импорты «вверх»
       по слоям, импорты в обход public API и `@supabase/*` вне серверного кода.
-- [ ] Пакет `server-only`; скрипт `typecheck` = `next typegen && tsc --noEmit`.
+- [x] Пакет `server-only`; скрипт `typecheck` = `next typegen && tsc --noEmit`.
 
 **Готово, когда:** `npm run lint`, `npm run typecheck` и `npm run build` проходят, а все роуты
 открываются заглушками.
