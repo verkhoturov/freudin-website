@@ -1,4 +1,10 @@
+export { useSignOutMutation } from "./api/use-sign-out-mutation";
+export { useViewerQuery, viewerQueries } from "./api/viewer-queries";
 export { getAuthErrorMessage } from "./config/auth-errors";
 export { type AuthProvider, authProviderLabels, authProviders } from "./config/auth-providers";
+export { getLoginHref } from "./lib/get-login-href";
 export { getSignInHref } from "./lib/get-sign-in-href";
+export { getViewerHomePath, type ViewerAccess } from "./lib/get-viewer-redirect";
+export { useViewerRedirect } from "./lib/use-viewer-redirect";
 export type { Viewer } from "./model/types";
+export { ViewerGuard } from "./ui/viewer-guard";

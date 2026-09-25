@@ -1,6 +1,9 @@
 import type { ApiErrorBody } from "@/shared/api";
 import { HttpError } from "./http-error";
 
+/** Для ответов с данными пользователя: их нельзя кешировать ни браузеру, ни CDN. */
+export const NO_STORE_HEADERS = { "Cache-Control": "private, no-store" };
+
 export function jsonOk<T>(data: T, init?: ResponseInit): Response {
   return Response.json(data, init);
 }

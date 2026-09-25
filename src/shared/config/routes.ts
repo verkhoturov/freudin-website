@@ -13,6 +13,8 @@ export const routes = {
 export const apiRoutes = {
   health: "/api/health",
   signIn: "/api/auth/sign-in",
+  authCallback: "/api/auth/callback",
+  signOut: "/api/auth/sign-out",
   me: "/api/me",
   profile: (username: string) => `/api/profiles/${encodeURIComponent(username)}`,
 } as const;

@@ -344,17 +344,25 @@ SEO-база (сделана по итогам ревью вёрстки):
 Client ID и Secret внести в Supabase → Auth → Providers → Google. Пока приложение в статусе
 Testing, войти могут только добавленные тестовые пользователи.
 
-- [ ] `GET /api/auth/sign-in`: белый список провайдеров, `signInWithOAuth` и 302 на провайдера.
-- [ ] `GET /api/auth/callback`: `exchangeCodeForSession`, проверка `next`, маршрутизация
-      (онбординг или страница), ошибки отправляем на `/login?error=…`.
-- [ ] `POST /api/auth/sign-out`, `GET /api/me` → `{ user, profile | null, suggestions }`.
-- [ ] `entities/viewer`: `useViewerQuery`, `useSignOutMutation`, гард приватных страниц
-      (скелетон, пока идёт загрузка, затем редирект).
+- [x] `GET /api/auth/sign-in`: белый список провайдеров, `signInWithOAuth` и 302 на провайдера.
+      Подключён только Google (с `prompt=select_account`), Facebook и Telegram пока ведут
+      на `/login?error=auth_unavailable`.
+- [x] `GET /api/auth/callback`: `exchangeCodeForSession`, проверка `next`, маршрутизация
+      (онбординг или страница), ошибки отправляем на `/login?error=…`: `access_denied`,
+      `auth_expired` (нет PKCE-верификатора), `oauth_failed`.
+- [x] `POST /api/auth/sign-out`, `GET /api/me` → `{ user, profile | null, suggestions }`.
+      Подсказки — имя, фото и адрес страницы из данных провайдера.
+- [x] `entities/viewer`: `useViewerQuery`, `useSignOutMutation`, гард приватных страниц
+      (скелетон, пока идёт загрузка, затем редирект). `/onboarding` и `/settings` за гардом,
+      вошедшего пользователя `/login` уводит дальше.
 - [x] `widgets/sign-in-panel` (кнопки Google, Facebook, Telegram с логотипами), `views/login`
-      с показом ошибок из `?error=`. Пока Supabase нет, `GET /api/auth/sign-in` — заглушка:
-      проверяет `provider` и `next` и возвращает на `/login?error=auth_unavailable`.
-- [ ] `widgets/header`: гость видит «Войти», пользователь видит меню (аватар, «Моя страница»,
-      «Настройки», «Выйти»).
+      с показом ошибок из `?error=`.
+- [x] `widgets/header`: гость видит «Войти», пользователь видит меню (аватар, «Моя страница»,
+      «Настройки», «Выйти»; без профиля — «Создать страницу»).
+- [x] Cookies сессии `httpOnly`. Проверено на прод-сборке: редирект к Supabase с PKCE,
+      все ветки ошибок, выход без сессии, open redirect через `next` отсекается.
+- [ ] Включить Google в Supabase (см. «Нужно от тебя») и пройти вход и выход на localhost,
+      затем на проде.
 
 **Готово, когда:** вход и выход через Google работают на localhost и на проде, сессия
 переживает перезагрузку страницы.
@@ -546,7 +554,9 @@ admin API.
 1. Ты пишешь: «делаем шаг N».
 2. Я реализую шаг и прогоняю `npm run lint`, `npm run typecheck`, `npm run build`.
 3. Обновляю `README.md` (и `AGENTS.md`, если поменялись стек, роуты или правила) и отмечаю шаг здесь.
-4. Коммит и push в рабочую ветку. Интеграции ты проверяешь на localhost, а после мержа — на проде.
+4. Git: в локальной сессии (CLI, VS Code) ветки, коммиты и push делаешь ты, я git не трогаю.
+   В облачной сессии я коммичу и пушу в рабочую ветку. Интеграции ты проверяешь на localhost,
+   а после мержа — на проде.
 
 Юнит-тесты не пишем, пока ты не попросишь.
 

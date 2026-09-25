@@ -4,7 +4,7 @@ import { CircleAlertIcon } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { getAuthErrorMessage } from "@/entities/viewer";
+import { getAuthErrorMessage, useViewerRedirect } from "@/entities/viewer";
 import { routes } from "@/shared/config";
 import { getSafeRedirectPath } from "@/shared/lib/safe-redirect";
 import { Alert, AlertTitle } from "@/shared/ui/alert";
@@ -14,7 +14,10 @@ import { SignInPanel } from "@/widgets/sign-in-panel";
 function SignInWithParams() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
-  const next = searchParams.get("next");
+  const nextParam = searchParams.get("next");
+  const next = nextParam ? getSafeRedirectPath(nextParam) : undefined;
+  // Вошедшего пользователя уводим со страницы входа
+  useViewerRedirect("guest", next);
 
   return (
     <>
@@ -24,7 +27,7 @@ function SignInWithParams() {
           <AlertTitle>{getAuthErrorMessage(error)}</AlertTitle>
         </Alert>
       ) : null}
-      <SignInPanel next={next ? getSafeRedirectPath(next) : undefined} />
+      <SignInPanel next={next} />
     </>
   );
 }

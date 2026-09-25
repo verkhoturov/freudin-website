@@ -1,3 +1,6 @@
 import "server-only";
 
-export { isAuthRetryableFetchError } from "@supabase/supabase-js";
+export {
+  isAuthPKCECodeVerifierMissingError,
+  isAuthRetryableFetchError,
+} from "@supabase/supabase-js";

@@ -14,6 +14,8 @@ export async function createSupabaseServerClient() {
   const { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } = getServerEnv();
 
   return createServerClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    // Браузер к Supabase не ходит, поэтому токены из cookies скрипту не нужны
+    cookieOptions: { httpOnly: true, secure: process.env.NODE_ENV === "production" },
     cookies: {
       getAll: () => cookieStore.getAll(),
       // Второй аргумент — заголовки против кеширования. Route handlers Next.js не кеширует,

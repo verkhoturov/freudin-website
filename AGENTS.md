@@ -37,6 +37,9 @@ Freudin — сайт, где пользователь входит через Go
 9. Каждый коммит в `main` сразу выкладывается в прод на `www.freud.in`, превью-деплоев нет.
    Если коду нужны новые переменные окружения или настройки внешних сервисов, напомни
    пользователю задать их для прода до мержа.
+10. **Git в локальной сессии (CLI, VS Code) — только пользователь.** Не создавай ветки и коммиты,
+    не пушь и не переключай ветки без его прямого указания. В облачной сессии коммит и push
+    в рабочую ветку разрешены.
 
 ## Стек
 
@@ -88,7 +91,15 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   `@/app/api/_lib`: без сессии это 401, а обновлённая сессия пишется в cookies. Дальше работаем
   через этот `supabase` (RLS действует). `createSupabaseAdminClient()` обходит RLS, поэтому он
   только для служебных операций вроде удаления аккаунта.
-- Ответ с данными пользователя отдаём с заголовком `Cache-Control: private, no-store`.
+- Ответ с данными пользователя отдаём с заголовком `Cache-Control: private, no-store`
+  (`NO_STORE_HEADERS` из `@/app/api/_lib`).
+- Роуты, куда браузер приходит переходом, а не через `apiClient` (`/api/auth/sign-in`,
+  `/api/auth/callback`), отвечают редиректом, а не JSON. Редирект строим через `redirectTo`,
+  ошибку отправляем на страницу входа через `redirectToLogin(origin, code, next)`. Коды ошибок
+  и их тексты лежат в `entities/viewer/config/auth-errors.ts`.
+- Cookies сессии Supabase — `httpOnly`: браузер их не читает, сессию видят только API-роуты.
+  Подключённые провайдеры входа перечислены в `entities/viewer/api/auth.server.ts`, остальные
+  ведут на `auth_unavailable`.
 - Формат ошибки API: `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }`
   плюс корректный HTTP-статус. Коды: `bad_request` и `validation_error` (400), `unauthorized` (401),
   `forbidden` (403), `not_found` (404), `conflict` (409), `payload_too_large` (413),
@@ -166,8 +177,8 @@ export { LoginView as default, metadata } from "@/views/login";
 
 | Слой | Слайс или модуль | Что внутри |
 |------|------------------|------------|
-| `entities` | `viewer` | провайдеры входа и их названия, тексты ошибок входа, `getSignInHref`, тип `Viewer` (ответ `/api/me`); на сервере `authProviderSchema` |
-| `entities` | `profile` | правила username, zod-схемы профиля, лимиты, `PublicProfile`, `profileQueries`, `ProfileAvatar`, `DEMO_USERNAME` |
+| `entities` | `viewer` | провайдеры входа, коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer`, `useViewerQuery`, `useSignOutMutation`, `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `getOAuthSignInUrl`, `exchangeAuthCode`, `signOut` |
+| `entities` | `profile` | правила username, zod-схемы профиля, лимиты, `PublicProfile`, `profileQueries`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileSuggestions`; для `viewer` — типы через `@x` |
 | `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton`; для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка и подвал сайта |
 | `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров |
@@ -186,9 +197,9 @@ export { LoginView as default, metadata } from "@/views/login";
 | Путь | Файл роутинга | View | Доступ | Статус |
 |------|---------------|------|--------|--------|
 | `/` | `src/app/page.tsx` | `home` | все | готово (минимальная) |
-| `/login` | `src/app/login/page.tsx` | `login` | гости; авторизованных редиректим | интерфейс готов, вход — шаги 8–10 |
-| `/onboarding` | `src/app/onboarding/page.tsx` | `onboarding` | авторизованные без профиля | заглушка |
-| `/settings` | `src/app/settings/page.tsx` | `settings` | авторизованные с профилем | заглушка |
+| `/login` | `src/app/login/page.tsx` | `login` | гости; авторизованных редиректим | готово: Google; Facebook и Telegram — шаги 9–10 |
+| `/onboarding` | `src/app/onboarding/page.tsx` | `onboarding` | авторизованные без профиля | заглушка за гардом |
+| `/settings` | `src/app/settings/page.tsx` | `settings` | авторизованные с профилем | заглушка за гардом |
 | `/privacy` | `src/app/privacy/page.tsx` | `privacy` | все | заглушка |
 | `/terms` | `src/app/terms/page.tsx` | `terms` | все | заглушка |
 | `/<username>` | `src/app/[username]/page.tsx` | `profile` | все | интерфейс готов, данные — заглушка API |
@@ -211,15 +222,15 @@ export { LoginView as default, metadata } from "@/views/login";
 ### API
 
 Когда роут появляется, меняй его статус. Заглушки помечены комментарием в коде и заменяются
-на шагах 8 (вход) и 11 (профиль): контракт ответа при этом не меняется.
+на шаге 11 (профиль): контракт ответа при этом не меняется.
 
 | Метод | Путь | Назначение | Сессия | Статус |
 |-------|------|------------|:------:|--------|
 | GET | `/api/health` | проверка связки клиент → API | — | готово |
-| GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | заглушка: редирект на `/login?error=auth_unavailable` |
-| GET | `/api/auth/callback?code=&next=` | обмен кода на сессию и редирект | — | план |
-| POST | `/api/auth/sign-out` | выход | ✓ | план |
-| GET | `/api/me` | текущий пользователь, его профиль (или `null`) и подсказки для онбординга | ✓ | частично: гостю 401, пользователю `{ user }`; профиль и подсказки — шаг 8 |
+| GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | готово: Google; Facebook и Telegram → `/login?error=auth_unavailable` до шагов 9–10 |
+| GET | `/api/auth/callback?code=&next=` | обмен кода на сессию и редирект | — | готово |
+| POST | `/api/auth/sign-out` | выход; без сессии тоже 204 | ✓ | готово |
+| GET | `/api/me` | текущий пользователь, его профиль (или `null`) и подсказки для онбординга | ✓ | готово |
 | DELETE | `/api/me` | удаление аккаунта и всех данных | ✓ | план |
 | POST | `/api/profile` | создание профиля (онбординг) | ✓ | план |
 | PATCH | `/api/profile` | обновление профиля | ✓ | план |
@@ -236,6 +247,12 @@ export { LoginView as default, metadata } from "@/views/login";
 - Zustand хранит только клиентское состояние: UI и черновики форм. Серверные данные в стор
   не копируем. Стор лежит в сегменте `model` слайса.
 - Локальное состояние компонента — `useState`.
+- Текущий пользователь — `useViewerQuery()` из `@/entities/viewer`: гость — `null`, а не ошибка.
+  Приватная страница оборачивает содержимое в `ViewerGuard` с нужным `access`: он показывает
+  скелетон, пока проверяется сессия, и перенаправляет, если страница пользователю недоступна.
+  Защита на клиенте — это UX, а доступ к данным проверяют API-роуты.
+- После выхода страница полностью перезагружается на главную: так сбрасываются кеш запросов
+  и состояние пользователя.
 - Из браузера ходим только через `apiClient` из `@/shared/api` (`get`, `post`, `patch`, `delete`),
   без прямого `fetch` в компонентах.
 - Запросы описываем фабриками `queryOptions(...)` в сегменте `api` слайса и передаём `signal`

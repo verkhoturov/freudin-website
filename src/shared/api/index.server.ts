@@ -1,7 +1,10 @@
 import "server-only";
 
 export { createSupabaseAdminClient } from "./supabase/admin";
-export { isAuthRetryableFetchError } from "./supabase/auth-errors";
+export {
+  isAuthPKCECodeVerifierMissingError,
+  isAuthRetryableFetchError,
+} from "./supabase/auth-errors";
 export type {
   Database,
   Json,
