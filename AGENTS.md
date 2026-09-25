@@ -25,17 +25,22 @@ Freudin — сайт, где пользователь входит через Go
    в `docs/PLAN.md`.
 4. **Юнит-тесты пишем ТОЛЬКО по прямому запросу пользователя.** По своей инициативе не добавляй
    тесты (unit, integration, e2e), тестовые фреймворки и их конфиги.
-5. Перед коммитом должны проходить `npm run lint`, `npm run typecheck` и `npm run build`.
+5. **Для проверки результата работы над задачей запускай `npm run lint:fix` и `npm run typecheck`.**
+   Обе команды должны завершаться без ошибок. Перед коммитом дополнительно проверь `npm run build`.
 6. Зависимости ставь через **npm 11+** (`npx npm@11 install …`, если локально npm 10):
-   `package-lock.json` создан npm 11, а npm 10 переписывает его лишними изменениями.
+   `package-lock.json` создан npm 11, а npm 10 переписывает его лишними изменениями. CLI shadcn
+   ставит пакеты системным npm, поэтому после `npx shadcn add …` пересобери lock-файл:
+   `git checkout package-lock.json && npx npm@11 install`.
 7. Документация, комментарии в коде и тексты интерфейса пишем на русском.
+8. **При вёрстке UI проверяй, насколько разметка соответствует хорошей SEO-оптимизации, и
+   предлагай пользователю правки, если SEO можно улучшить** (чек-лист — в разделе «SEO»).
 
 ## Стек
 
 | Задача | Выбор |
 |--------|-------|
 | Фреймворк | Next.js 16 (App Router, React Compiler включён), React 19, TypeScript 5 (strict) |
-| Стили и UI | Tailwind CSS 4, shadcn/ui, lucide-react |
+| Стили и UI | Tailwind CSS 4, shadcn/ui (Radix), lucide-react, next-themes, sonner |
 | Запросы к API, серверное состояние | TanStack Query 5 |
 | Клиентское состояние | Zustand 5 |
 | Формы и валидация | TanStack Form + zod 4 |
@@ -70,8 +75,19 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   `index.server.ts` слайса или сегмента.
 - Route handler занимается только HTTP: сессия, валидация zod, коды ответов. Работа с данными
   идёт в серверных функциях сущностей (`@/entities/<slice>/index.server`).
+- Хелперы route handlers лежат в `@/app/api/_lib`: обработчик оборачиваем в `withErrorHandling`,
+  успешный ответ отдаём через `jsonOk<T>(data)`, ожидаемую ошибку — `throw new HttpError(status,
+  code, message)`, тело запроса читаем через `parseJsonBody(request, schema)` (ошибка валидации
+  превращается в 400 с `fields`).
 - Формат ошибки API: `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }`
-  плюс корректный HTTP-статус.
+  плюс корректный HTTP-статус. Коды: `bad_request` и `validation_error` (400), `unauthorized` (401),
+  `forbidden` (403), `not_found` (404), `conflict` (409), `payload_too_large` (413),
+  `internal_error` (500). На клиенте у `ApiError` бывают ещё `network_error` (status 0) и
+  `unexpected_response`. Поле `message` пишем для пользователя, по-русски.
+- В серверном коде из `@/shared/api` импортируем только типы (`import type`): модуль клиентский
+  и тянет за собой TanStack Query.
+- Серверные переменные окружения читаем только через `getServerEnv()` из
+  `@/shared/config/index.server`. Новую переменную добавляй в его zod-схему и в `.env.example`.
 
 ## Архитектура: Feature-Sliced Design с поправками
 
@@ -102,7 +118,8 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   `@/entities/<slice>/@x/<consumer>`.
 - `shared/ui` и `shared/lib` импортируются по файлу (`@/shared/ui/button`,
   `@/shared/lib/utils`), как принято в shadcn. `shared/config` и `shared/api` импортируются
-  через index: `@/shared/config`, `@/shared/api`, `@/shared/api/index.server`.
+  через index: `@/shared/config`, `@/shared/config/index.server`, `@/shared/api`,
+  `@/shared/api/index.server`.
 - Клиентский код (`views`, `widgets`, `src/app` вне `api`) не импортирует `index.server`.
 - `src/app/api` не импортирует UI (`views`, `widgets`, `shared/ui`) и клиентский public API
   сущностей.
@@ -135,7 +152,7 @@ export { LoginView as default, metadata } from "@/views/login";
 
 ## Роуты
 
-Пути в коде строим только через `routes` из `@/shared/config`.
+Пути в коде строим только через `routes` (страницы) и `apiRoutes` (API) из `@/shared/config`.
 
 ### Страницы
 
@@ -157,11 +174,11 @@ username (появится в `shared/config` на шаге 11 плана). Ин
 
 ### API
 
-Все API-роуты пока в плане. Когда роут появляется, меняй его статус.
+Когда роут появляется, меняй его статус.
 
 | Метод | Путь | Назначение | Сессия | Статус |
 |-------|------|------------|:------:|--------|
-| GET | `/api/health` | проверка связки клиент → API | — | план |
+| GET | `/api/health` | проверка связки клиент → API | — | готово |
 | GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | план |
 | GET | `/api/auth/callback?code=&next=` | обмен кода на сессию и редирект | — | план |
 | POST | `/api/auth/sign-out` | выход | ✓ | план |
@@ -182,8 +199,13 @@ username (появится в `shared/config` на шаге 11 плана). Ин
 - Zustand хранит только клиентское состояние: UI и черновики форм. Серверные данные в стор
   не копируем. Стор лежит в сегменте `model` слайса.
 - Локальное состояние компонента — `useState`.
-- Из браузера ходим только через `apiClient` из `@/shared/api` (появится на шаге 3), без прямого
-  `fetch` в компонентах.
+- Из браузера ходим только через `apiClient` из `@/shared/api` (`get`, `post`, `patch`, `delete`),
+  без прямого `fetch` в компонентах.
+- Запросы описываем фабриками `queryOptions(...)` в сегменте `api` (пример — `healthQueryOptions`
+  в `@/shared/api`) и передаём `signal` из `queryFn` в `apiClient`. Настройки QueryClient:
+  `staleTime` 60 с, ошибки 4xx не ретраятся.
+- Провайдеры подключены в `src/app/_providers`: next-themes, QueryClientProvider (devtools только
+  в dev), TooltipProvider и Toaster (sonner).
 
 ## Формы
 
@@ -193,13 +215,40 @@ username (появится в `shared/config` на шаге 11 плана). Ин
 
 ## Стили и UI
 
-- Tailwind CSS 4. Токены темы — CSS-переменные в `src/app/globals.css`.
-- Компоненты shadcn/ui живут в `src/shared/ui`, добавляются командой `npx shadcn add <component>`
-  (алиасы в `components.json` появятся на шаге 4). Файлы shadcn правим только при необходимости.
+- Tailwind CSS 4. Токены темы — CSS-переменные в `src/app/globals.css`: светлая тема в `:root`,
+  тёмная в `.dark`. Меняя цвета, проверяй контраст по WCAG AA (обычный текст — не меньше 4.5:1).
+- shadcn/ui на базе **Radix** (композиция через `asChild`), стиль Maia, пресет `b5wOkSQAi`:
+  neutral + violet, Geist, lucide. Компоненты живут в `src/shared/ui` и добавляются командой
+  `npx shadcn add <component>` (алиасы в `components.json`). После добавления пересобери lock-файл
+  через npm 11 (см. «Процесс работы»). Файлы shadcn правим только при необходимости.
+- Классы объединяем через `cn` из `@/shared/lib/utils`.
+- Тему переключает next-themes (класс `.dark` на `<html>`), переключатель — `ThemeToggle`
+  из `@/shared/ui/theme-toggle`.
+- Корневой layout уже рендерит skip-link, шапку (`@/widgets/header`), единственный
+  `<main id="content">` и подвал (`@/widgets/footer`). View не создаёт свой `<main>`, а контент
+  выравнивает по `Container` из `@/shared/ui/container`.
 - Иконки интерфейса — lucide-react, логотипы брендов — отдельные SVG.
 - Вёрстка mobile-first, светлая и тёмная темы, доступность (семантика, aria, фокус).
 - `PagePlaceholder` из `@/shared/ui/page-placeholder` — временная заглушка страниц. Удаляем её,
   когда все страницы будут реализованы.
+
+## SEO
+
+При вёрстке любого UI проверяй разметку по чек-листу ниже. Если SEO можно улучшить, **предложи
+пользователю правки** отдельным пунктом в ответе. Правки, которые требуют отступить от правил этого
+файла (серверный рендер данных, `generateMetadata`), не делай сам — только предлагай.
+
+- У страницы есть осмысленные `title` и `description`: статический `metadata` view или шаблон
+  корневого layout.
+- На странице ровно один `<h1>`, уровни заголовков идут по порядку, без пропусков.
+- Используются семантические теги: `header`, `nav`, `main` (он один и уже есть в корневом layout),
+  `article`, `section`, `aside`, `footer`; перечисления оформлены списками.
+- Ссылки сделаны через `next/link` и имеют понятный текст; у кнопок без текста есть `aria-label`.
+- У изображений есть осмысленный `alt` (у декоративных — пустой) и заданы размеры (`next/image`).
+- Служебные и приватные страницы (`/login`, `/onboarding`, `/settings`) не индексируются.
+- Контент, важный для поиска и превью ссылок, должен попадать в серверный HTML. Данные сейчас
+  грузятся на клиенте, поэтому для публичных страниц это ограничение нужно учитывать и обсуждать
+  с пользователем (этап G в `docs/PLAN.md`).
 
 ## Код-стайл
 

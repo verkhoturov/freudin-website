@@ -240,33 +240,35 @@ API:
 открываются заглушками.
 
 #### Шаг 3. Клиентская инфраструктура и каркас API
-- [ ] Установить `@tanstack/react-query` (+ devtools), `zustand`, `zod`, `@tanstack/react-form`.
-- [ ] `src/app/_providers`: `QueryClientProvider` (devtools только в dev).
-- [ ] `shared/api`: `apiClient` (JSON и FormData, единый `ApiError` со статусом, кодом и ошибками
+- [x] Установить `@tanstack/react-query` (+ devtools) и `zod`. `zustand` и `@tanstack/react-form`
+      ставим на шаге 13, где они впервые нужны.
+- [x] `src/app/_providers`: `QueryClientProvider` (devtools только в dev).
+- [x] `shared/api`: `apiClient` (JSON и FormData, единый `ApiError` со статусом, кодом и ошибками
       по полям) и фабрика `QueryClient` (4xx не ретраим).
-- [ ] `src/app/api/_lib`: хелперы ответов и ошибок, разбор тела запроса через zod.
-- [ ] `GET /api/health` как первый сквозной запрос клиент → API.
-- [ ] Env: `shared/config/env.server.ts` с zod-валидацией. Валидация ленивая, чтобы `next build`
+- [x] `src/app/api/_lib`: хелперы ответов и ошибок, разбор тела запроса через zod.
+- [x] `GET /api/health` как первый сквозной запрос клиент → API.
+- [x] Env: `shared/config/env.server.ts` с zod-валидацией. Валидация ленивая, чтобы `next build`
       не требовал секретов. Добавить `.env.example` и исключение `!.env.example` в `.gitignore`.
 
 **Готово, когда:** страница-заглушка получает `/api/health` через TanStack Query.
 
 #### Шаг 4. Дизайн-система и каркас вёрстки
-- [ ] `npx shadcn init` с алиасами под FSD в `components.json`: `ui → @/shared/ui`,
+- [x] `npx shadcn init` с алиасами под FSD в `components.json`: `ui → @/shared/ui`,
       `utils → @/shared/lib/utils`, `lib → @/shared/lib`, `hooks → @/shared/lib/hooks`.
-- [ ] Тема: нейтральная палитра с одним акцентным цветом, мягкие скругления, Geist. Светлая
-      и тёмная версии (`next-themes`), переключатель в шапке.
-- [ ] Базовые компоненты: button, card, input, textarea, label, field, avatar, dropdown-menu,
+      База Radix, пресет `b5wOkSQAi` (стиль Maia, neutral + violet, Geist, lucide).
+- [x] Тема: нейтральная палитра с одним акцентным цветом, мягкие скругления, Geist. Светлая
+      и тёмная версии (`next-themes`), переключатель в шапке. Акцент тёмной темы подобран
+      под контраст WCAG AA.
+- [x] Базовые компоненты: button, card, input, textarea, label, field, avatar, dropdown-menu,
       dialog, alert-dialog, select, skeleton, separator, sonner, tooltip.
-- [ ] Иконки: `lucide-react` для интерфейса. Логотипы соцсетей и провайдеров берём отдельными
+- [x] Иконки: `lucide-react` для интерфейса. Логотипы соцсетей и провайдеров берём отдельными
       SVG (simple-icons или свои по брендбукам), потому что бренд-иконки в lucide устарели.
-- [ ] `widgets/header` (логотип и «Войти», пока без логики), `widgets/footer` (ссылки на
+- [x] `widgets/header` (логотип и «Войти», пока без логики), `widgets/footer` (ссылки на
       `/privacy`, `/terms`), общий контейнер страниц. Вёрстка mobile-first.
 
 **Готово, когда:** все заглушки выглядят единообразно в обеих темах и на мобильных.
 
-**Нужно от тебя:** облачному окружению нужен доступ к `ui.shadcn.com`, сейчас он закрыт сетевой
-политикой. Другой вариант: выполнить `npx shadcn init` локально.
+**Нужно от тебя:** облачному окружению нужен доступ к `ui.shadcn.com` — ✅ открыт.
 
 ### Этап B. Supabase
 
@@ -391,6 +393,7 @@ admin API.
       `https://<ref>.supabase.co/storage/v1/object/public/**`.
 
 #### Шаг 13. Онбординг (регистрация профиля)
+- [ ] Установить `@tanstack/react-form` и `zustand` (через npm 11).
 - [ ] `widgets/profile-form` (TanStack Form + zod + shadcn `Field`). Поля: фото, имя, ссылка
       `<домен>/<username>` с проверкой доступности (debounce), описание со счётчиком символов,
       соцсети (добавить или удалить, выбрать платформу).
@@ -458,7 +461,7 @@ admin API.
 | Когда | Что |
 |-------|-----|
 | Сейчас | Подтвердить решения из раздела 3 или поправить |
-| Шаг 4 | Доступ облачного окружения к `ui.shadcn.com` (или `shadcn init` локально) |
+| Шаг 4 | Доступ облачного окружения к `ui.shadcn.com` — ✅ сделано |
 | Шаг 5 | Проекты Supabase, ключи в env, Redirect URLs, способ работы с БД (коннектор, сеть + токен или вручную) |
 | Шаг 8 | Google Cloud: OAuth-клиент и экран согласия |
 | Шаг 9 | Meta for Developers: приложение с Facebook Login |
@@ -477,7 +480,7 @@ admin API.
 | Экран согласия Google показывает `<ref>.supabase.co` | Брендинг сразу, собственный домен Auth после MVP |
 | react-hook-form + React Compiler | Используем TanStack Form |
 | Client-only рендер не даёт превью ссылок в мессенджерах | Этап G, по согласованию |
-| Сетевая политика облачного окружения закрывает `ui.shadcn.com`, `*.supabase.co`, `api.supabase.com` | Открыть в настройках окружения, подключить коннектор Supabase или делать эти шаги локально |
+| Сетевая политика облачного окружения закрывает `ui.shadcn.com`, `*.supabase.co`, `api.supabase.com` | ✅ Снято: окружению открыт полный доступ в сеть |
 | Username совпадает с роутом сайта | Список зарезервированных имён и проверка на сервере |
 | Лимит тела запроса на Vercel 4.5 МБ | Сжимаем фото на клиенте до 512 px |
 
