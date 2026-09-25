@@ -211,9 +211,8 @@ username (появится в `shared/config` на шаге 11 плана). Ин
 - Локальное состояние компонента — `useState`.
 - Из браузера ходим только через `apiClient` из `@/shared/api` (`get`, `post`, `patch`, `delete`),
   без прямого `fetch` в компонентах.
-- Запросы описываем фабриками `queryOptions(...)` в сегменте `api` (пример — `healthQueryOptions`
-  в `@/shared/api`) и передаём `signal` из `queryFn` в `apiClient`. Настройки QueryClient:
-  `staleTime` 60 с, ошибки 4xx не ретраятся.
+- Запросы описываем фабриками `queryOptions(...)` в сегменте `api` слайса и передаём `signal`
+  из `queryFn` в `apiClient`. Настройки QueryClient: `staleTime` 60 с, ошибки 4xx не ретраятся.
 - Провайдеры подключены в `src/app/_providers`: next-themes, QueryClientProvider (devtools только
   в dev), TooltipProvider и Toaster (sonner).
 
@@ -225,12 +224,20 @@ username (появится в `shared/config` на шаге 11 плана). Ин
 
 ## Стили и UI
 
+- **Дизайн пока минималистичный (решение пользователя):** стандартные компоненты shadcn без
+  кастомизации и минимум контента — только то, что нужно для навигации и полей ввода.
+  Декоративные элементы, иллюстрации, поясняющие тексты и акцентные цвета без запроса
+  не добавляем.
 - Tailwind CSS 4. Токены темы — CSS-переменные в `src/app/globals.css`: светлая тема в `:root`,
   тёмная в `.dark`. Меняя цвета, проверяй контраст по WCAG AA (обычный текст — не меньше 4.5:1).
-- shadcn/ui на базе **Radix** (композиция через `asChild`), стиль Maia, пресет `b5wOkSQAi`:
-  neutral + violet, Geist, lucide. Компоненты живут в `src/shared/ui` и добавляются командой
-  `npx shadcn add <component>` (алиасы в `components.json`). После добавления пересобери lock-файл
-  через npm 11 (см. «Процесс работы»). Файлы shadcn правим только при необходимости.
+- shadcn/ui на базе **Radix** (композиция через `asChild`): стиль по умолчанию (nova),
+  нейтральная палитра, Geist, lucide — пресет `b2fA`. Компоненты живут в `src/shared/ui` и
+  добавляются командой `npx shadcn add <component>` (алиасы в `components.json`). Файлы shadcn
+  правим только при необходимости.
+- После `npx shadcn add` или `npx shadcn apply` проверь три вещи. Первое — пересобери lock-файл
+  через npm 11 (см. «Процесс работы»). Второе — CLI перезаписывает компоненты: если `npm run lint:fix`
+  находит в них ошибки, исправь точечно (так уже сделано в `field.tsx`). Третье — `apply` умеет
+  переписать шрифты в `src/app/layout.tsx`: у Geist должны остаться `subsets: ["latin", "cyrillic"]`.
 - Классы объединяем через `cn` из `@/shared/lib/utils`.
 - Тему переключает next-themes (класс `.dark` на `<html>`), переключатель — `ThemeToggle`
   из `@/shared/ui/theme-toggle`.
