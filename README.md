@@ -20,6 +20,8 @@
 - каркас Feature-Sliced Design и страницы-заглушки для всех роутов;
 - дизайн-система на shadcn/ui со светлой и тёмной темами, шапка и подвал;
 - клиент API на TanStack Query и первый API-роут `/api/health`;
+- SEO-база: домен `freud.in`, Open Graph с картинкой превью, `robots.txt`, `sitemap.xml`,
+  `noindex` для служебных страниц;
 - проверка границ между слоями FSD в линтере.
 
 Авторизации и базы данных пока нет.
@@ -69,6 +71,13 @@ npm run dev
 Переменные проверяются zod-схемой при первом обращении (`getServerEnv()`), поэтому
 `npm run build` проходит без них.
 
+Для Supabase CLI (миграции и генерация типов) нужны ещё две переменные. Приложению они не нужны:
+
+| Переменная | Где взять |
+|------------|-----------|
+| `SUPABASE_ACCESS_TOKEN` | Supabase → Account → Access Tokens |
+| `SUPABASE_DB_PASSWORD` | пароль базы, задаётся при создании проекта (Project Settings → Database) |
+
 ## Скрипты
 
 | Команда | Что делает |
@@ -90,6 +99,7 @@ src/
 ├─ app/                # роутинг Next.js (App Router) и слой app
 │  ├─ layout.tsx       # html/body, шрифты, metadata, шапка, <main>, подвал
 │  ├─ _providers/      # темы, TanStack Query, тултипы, уведомления
+│  ├─ robots.ts, sitemap.ts, opengraph-image.jpg   # SEO-файлы
 │  └─ api/             # API-роуты; _lib — общие хелперы (ошибки, ответы, zod)
 ├─ views/              # страницы: home, login, onboarding, settings, profile, privacy, terms, not-found
 ├─ widgets/            # header, footer
@@ -128,6 +138,19 @@ API:
 | GET | `/api/health` | проверка связки клиент → API | готово |
 
 Полный список запланированных API-роутов со статусами — в [`AGENTS.md`](AGENTS.md#api).
+
+Служебные файлы: `/robots.txt`, `/sitemap.xml` и `/opengraph-image.jpg` (картинка превью ссылок).
+
+## SEO
+
+- Прод-домен — `https://freud.in` (`siteConfig.url`). От него строятся `metadataBase`, canonical,
+  `robots.txt` и `sitemap.xml`.
+- Open Graph и карточка Twitter по умолчанию: название, описание, `ru_RU` и картинка
+  `src/app/opengraph-image.jpg` (1200×630).
+- У `/`, `/privacy` и `/terms` есть canonical, и они перечислены в `sitemap.xml`.
+- `/login`, `/onboarding` и `/settings` закрыты от индексации (`noindex, follow`).
+- Личные страницы пока рендерятся на клиенте, поэтому поисковики и превью ссылок видят только
+  общие данные сайта. Серверный рендер для них запланирован на этапе G.
 
 ## Дизайн
 
