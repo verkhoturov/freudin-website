@@ -7,9 +7,7 @@ import { PagePlaceholder } from "@/shared/ui/page-placeholder";
 
 export function NotFoundView() {
   return (
-    <PagePlaceholder
-      title="Страница не найдена"
-      description="Проверьте адрес или вернитесь на главную.">
+    <PagePlaceholder title="Страница не найдена">
       <div>
         <Button asChild variant="outline">
           <Link href={routes.home}>На главную</Link>

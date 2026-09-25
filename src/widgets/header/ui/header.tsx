@@ -9,12 +9,12 @@ import { ThemeToggle } from "@/shared/ui/theme-toggle";
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
-      <Container className="flex h-16 items-center justify-between gap-4">
+    <header className="border-b">
+      <Container className="flex h-14 items-center justify-between gap-4">
         <Logo />
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button asChild>
+          <Button asChild size="sm">
             <Link href={routes.login}>Войти</Link>
           </Button>
         </div>

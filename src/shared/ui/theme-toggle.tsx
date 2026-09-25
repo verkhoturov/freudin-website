@@ -14,7 +14,7 @@ import {
 const themeOptions = [
   { value: "light", label: "Светлая", Icon: SunIcon },
   { value: "dark", label: "Тёмная", Icon: MoonIcon },
-  { value: "system", label: "Как в системе", Icon: MonitorIcon },
+  { value: "system", label: "Системная", Icon: MonitorIcon },
 ];
 
 export function ThemeToggle() {
