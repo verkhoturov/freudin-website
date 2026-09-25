@@ -1,5 +1,6 @@
 import { HttpError, jsonOk, withErrorHandling } from "@/app/api/_lib";
 import { DEMO_USERNAME, type PublicProfile } from "@/entities/profile/index.server";
+import { siteConfig } from "@/shared/config";
 
 // Заглушка до базы данных (шаг 11 плана): отдаёт только демо-профиль.
 const demoProfile: PublicProfile = {
@@ -10,7 +11,7 @@ const demoProfile: PublicProfile = {
   socialLinks: [
     { platform: "telegram", url: "https://t.me/telegram" },
     { platform: "instagram", url: "https://www.instagram.com/instagram" },
-    { platform: "website", url: "https://freud.in/" },
+    { platform: "website", url: `${siteConfig.url}/` },
   ],
 };
 

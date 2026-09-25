@@ -21,7 +21,7 @@
 - минималистичный интерфейс на стандартных компонентах shadcn/ui: светлая и тёмная темы,
   шапка и подвал;
 - клиент API на TanStack Query и первый API-роут `/api/health`;
-- SEO-база: домен `freud.in`, Open Graph с картинкой превью, `robots.txt`, `sitemap.xml`,
+- SEO-база: домен `www.freud.in`, Open Graph с картинкой превью, `robots.txt`, `sitemap.xml`,
   `noindex` для служебных страниц;
 - проверка границ между слоями FSD в линтере;
 - модель профиля: правила адреса страницы (username) и зарезервированные адреса, проверка имени,
@@ -48,7 +48,7 @@
 | Клиентское состояние | Zustand | шаг 13 |
 | БД, авторизация, файлы | Supabase | шаги 5–7 |
 | Линтер и форматтер | Biome | ✅ |
-| Хостинг | Vercel | шаг 18 |
+| Хостинг | Vercel, прод на `www.freud.in` | ✅ |
 
 Номера шагов указаны по [`docs/PLAN.md`](docs/PLAN.md).
 
@@ -152,8 +152,8 @@ API:
 
 ## SEO
 
-- Прод-домен — `https://freud.in` (`siteConfig.url`). От него строятся `metadataBase`, canonical,
-  `robots.txt` и `sitemap.xml`.
+- Прод-адрес — `https://www.freud.in` (`siteConfig.url`), `freud.in` редиректит на него. От этого
+  адреса строятся `metadataBase`, canonical, `robots.txt` и `sitemap.xml`.
 - Open Graph и карточка Twitter по умолчанию: название, описание, `ru_RU` и картинка
   `src/app/opengraph-image.jpg` (1200×630).
 - У `/`, `/privacy` и `/terms` есть canonical, и они перечислены в `sitemap.xml`.
@@ -179,13 +179,14 @@ API:
 - вход через Google: шаг 8;
 - вход через Facebook: шаг 9;
 - вход через Telegram: шаг 10;
-- Vercel: шаг 18.
+- Vercel: подключён, см. «Деплой».
 
 ## Деплой
 
-Проект подключён к Vercel: для каждого PR собирается превью, ссылку на него публикует бот Vercel
-в PR. Превью закрыты Vercel Authentication и открываются под аккаунтом Vercel. Прод на домене
-`freud.in` настраивается на шаге 18.
+Хостинг — Vercel. Каждый коммит в `main` сразу выкладывается в прод на `https://www.freud.in`,
+`freud.in` редиректит туда. Отдельного стенда нет, превью-деплои не используем: вход и интеграции
+проверяем локально, а после мержа — на проде.
 
-Пока домен не подключён, картинка превью ссылок (`og:image`) указывает на
-`https://freud.in/opengraph-image.jpg` и в мессенджерах не загрузится.
+Переменные окружения прода задаются в Vercel → Settings → Environment Variables (окружение
+Production). Приложению они нужны с шага 7, и задать их надо до того, как код, который их читает,
+попадёт в `main`.
