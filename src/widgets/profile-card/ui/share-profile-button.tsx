@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import { routes } from "@/shared/config";
+import { copyToClipboard } from "@/shared/lib/clipboard";
 import { Button } from "@/shared/ui/button";
 
 type ShareProfileButtonProps = {
@@ -23,12 +24,8 @@ export function ShareProfileButton({ username, displayName }: ShareProfileButton
       return;
     }
 
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Ссылка скопирована");
-    } catch {
-      toast.error("Не удалось скопировать ссылку");
-    }
+    if (await copyToClipboard(url)) toast.success("Ссылка скопирована");
+    else toast.error("Не удалось скопировать ссылку");
   };
 
   return (

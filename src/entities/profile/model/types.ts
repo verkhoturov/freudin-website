@@ -14,3 +14,6 @@ export type UsernameAvailability = {
   username: string;
   available: boolean;
 };
+
+/** Новое фото профиля: файл после кропа или копия фото из аккаунта провайдера входа. */
+export type AvatarSource = { type: "file"; file: Blob } | { type: "provider" };

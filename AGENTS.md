@@ -182,14 +182,16 @@ export { LoginView as default, metadata } from "@/views/login";
 
 | Слой | Слайс или модуль | Что внутри |
 |------|------------------|------------|
-| `entities` | `viewer` | провайдеры входа, коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer`, `useViewerQuery`, `useSignOutMutation`, `useCreateProfileMutation`, `useUpdateProfileMutation` (обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `getOAuthSignInUrl`, `exchangeAuthCode`, `signOut` |
-| `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`), лимиты, `PublicProfile`, `UsernameAvailability`, `profileQueries`, `usernameQueries`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile`, `updateProfile`, `getProfileSuggestions`; для `viewer` — типы и фабрики запросов через `@x` |
+| `entities` | `viewer` | провайдеры входа, коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer`, `useViewerQuery`, `useSignOutMutation`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `getOAuthSignInUrl`, `exchangeAuthCode`, `signOut` |
+| `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`), `profileQueries`, `usernameQueries`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile`, `updateProfile`, `setProfileAvatar`, `removeProfileAvatar`, `fetchProviderAvatar`, `detectAvatarImage`, `getProfileSuggestions`; для `viewer` — типы и фабрики запросов через `@x` |
 | `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton`; для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка и подвал сайта |
 | `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров |
 | `widgets` | `profile-card` | карточка личной страницы, скелетон, «Поделиться» |
+| `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом, имя, адрес с проверкой, описание, соцсети; `AvatarValue`, `getAvatarSource` |
+| `views` | `onboarding` | онбординг; черновик формы — Zustand-стор `useOnboardingDraftStore` в `model` |
 | `shared/ui` | свои компоненты | `Container`, `Logo`, `ThemeToggle`, `NotFoundState`, `PagePlaceholder` (временный) |
-| `shared/lib` | `utils`, `safe-redirect` | `cn`, `getSafeRedirectPath` |
+| `shared/lib` | `utils`, `safe-redirect`, `crop-image`, `clipboard` | `cn`, `getSafeRedirectPath`, `cropImage` (кроп и сжатие через canvas), `copyToClipboard` |
 | `shared/config` | `routes`, `site`, `reserved-usernames`, `env.server` | пути, настройки сайта, зарезервированные адреса, серверный env |
 | `shared/api` | `index.ts`, `index.server.ts` | клиент: `apiClient`, `ApiError`, QueryClient; сервер: `createSupabaseServerClient`, `createSupabasePublicClient`, `createSupabaseAdminClient`, тип `SupabaseClient`, типы БД (`Database`, `Tables`) |
 
@@ -203,7 +205,7 @@ export { LoginView as default, metadata } from "@/views/login";
 |------|---------------|------|--------|--------|
 | `/` | `src/app/page.tsx` | `home` | все | готово (минимальная) |
 | `/login` | `src/app/login/page.tsx` | `login` | гости; авторизованных редиректим | готово: Google; Facebook и Telegram — шаги 9–10 |
-| `/onboarding` | `src/app/onboarding/page.tsx` | `onboarding` | авторизованные без профиля | заглушка за гардом |
+| `/onboarding` | `src/app/onboarding/page.tsx` | `onboarding` | авторизованные без профиля; с профилем уводим на `/<username>` | готово |
 | `/settings` | `src/app/settings/page.tsx` | `settings` | авторизованные с профилем | заглушка за гардом |
 | `/privacy` | `src/app/privacy/page.tsx` | `privacy` | все | заглушка |
 | `/terms` | `src/app/terms/page.tsx` | `terms` | все | заглушка |
@@ -238,8 +240,8 @@ export { LoginView as default, metadata } from "@/views/login";
 | DELETE | `/api/me` | удаление аккаунта и всех данных | ✓ | план |
 | POST | `/api/profile` | создание профиля (онбординг): 201; занятый username — 409 с `fields.username`, профиль уже есть — 409 | ✓ | готово |
 | PATCH | `/api/profile` | обновление переданных полей профиля; нет профиля — 404, занятый username — 409 | ✓ | готово |
-| POST | `/api/profile/avatar` | загрузка фото или копирование фото провайдера | ✓ | план |
-| DELETE | `/api/profile/avatar` | удаление фото | ✓ | план |
+| POST | `/api/profile/avatar` | новое фото: `multipart/form-data` с полем `file` (JPEG, PNG, WebP до 2 МБ, иначе 400 или 413) или JSON `{ "source": "provider" }` — копия фото провайдера входа | ✓ | готово |
+| DELETE | `/api/profile/avatar` | удаление фото | ✓ | готово |
 | GET | `/api/profiles/[username]` | публичный профиль (регистр не важен), `demo` — демо-профиль из кода | — | готово |
 | GET | `/api/usernames/[username]` | `{ username, available }`; неверный формат или зарезервированный адрес — 400. Свой текущий адрес тоже «занят» | — | готово |
 
@@ -285,6 +287,11 @@ export { LoginView as default, metadata } from "@/views/login";
 
 - TanStack Form + zod + компоненты shadcn `Field`. react-hook-form не используем: он конфликтует
   с React Compiler.
+- Схему сущности подключаем валидатором формы (`validators: { onChange: schema }`), асинхронные
+  проверки (свободен ли адрес) — валидатором поля с `onChangeAsyncDebounceMs`. Ошибку поля
+  показываем, когда `meta.isTouched && !meta.isValid`, через `FieldError` и `toFieldErrors`.
+- `ApiError.fields` с сервера кладём в `errorMap.onSubmit` полей (путь `a.0.b` → `a[0].b`):
+  TanStack Form сам снимает такую ошибку, когда поле исправят.
 - Одна zod-схема обслуживает и форму, и API-роут. Она лежит в `model` сущности.
 
 ## Стили и UI

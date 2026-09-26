@@ -24,6 +24,7 @@ export function getViewerRedirect(
     return next && next !== routes.login ? next : getViewerHomePath(viewer);
   }
   if (!viewer) return getLoginHref(pathname);
-  if (access === "without-profile") return viewer.profile ? routes.settings : null;
+  // С профилем онбординг уже пройден: ведём на личную страницу, в том числе сразу после создания
+  if (access === "without-profile") return viewer.profile ? getViewerHomePath(viewer) : null;
   return viewer.profile ? null : routes.onboarding;
 }
