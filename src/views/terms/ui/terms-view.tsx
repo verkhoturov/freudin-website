@@ -11,6 +11,8 @@ const SITE_HOST = new URL(siteConfig.url).host;
 
 const GOOGLE_SCOPES = ["openid", "userinfo.email", "userinfo.profile"] as const;
 
+const FACEBOOK_PERMISSIONS = ["public_profile", "email"] as const;
+
 function PrivacyPolicyLink() {
   return <Link href={routes.privacy}>Privacy Policy</Link>;
 }
@@ -62,10 +64,10 @@ export function TermsView() {
       </p>
       <p>By using the Service, you confirm that you meet these requirements.</p>
 
-      <h2 id="account-registration">3. Account registration and Google Sign-In</h2>
-      <p>You may create an account or sign in using your Google account.</p>
+      <h2 id="account-registration">3. Account registration and sign-in</h2>
+      <p>You may create an account or sign in using your Google or Facebook account.</p>
       <p>
-        For authentication purposes, Freudin requests access to the following Google OAuth scopes:
+        When you sign in with Google, Freudin requests access to the following Google OAuth scopes:
       </p>
       <CodeList items={GOOGLE_SCOPES} />
       <p>
@@ -73,15 +75,22 @@ export function TermsView() {
         information, including your primary email address, name, profile picture, and Google account
         identifier.
       </p>
+      <p>When you sign in with Facebook, Freudin requests the following Facebook permissions:</p>
+      <CodeList items={FACEBOOK_PERMISSIONS} />
       <p>
-        We do not receive or store your Google password. We do not request access to your Gmail
-        messages, Google Drive files, contacts, calendar, or other Google services.
+        These permissions allow us to identify your Facebook account and receive your name, profile
+        picture, email address (if available), and a Facebook identifier specific to Freudin.
+      </p>
+      <p>
+        We do not receive or store your Google or Facebook password. We do not request access to
+        your Gmail messages, Google Drive files, contacts, calendar, or other Google services, or to
+        your Facebook posts, friends list, or messages, and we never post on your behalf.
       </p>
       <p>You are responsible for:</p>
       <ul>
         <li>
-          maintaining the security of your Google account and any devices used to access the
-          Service;
+          maintaining the security of your Google or Facebook account and any devices used to access
+          the Service;
         </li>
         <li>all activities performed through your Freudin account;</li>
         <li>providing accurate and current information;</li>
@@ -94,7 +103,10 @@ export function TermsView() {
         You must not create an account using another person’s identity or attempt to gain
         unauthorized access to another user’s account.
       </p>
-      <p>Your use of Google services is also subject to Google’s own terms and policies.</p>
+      <p>
+        Your use of Google and Facebook is also subject to the terms and policies of Google and
+        Meta.
+      </p>
 
       <h2 id="acceptable-use">4. Acceptable use</h2>
       <p>You agree not to:</p>
@@ -180,6 +192,7 @@ export function TermsView() {
       <p>The Service uses or may contain links to third-party services, including:</p>
       <ul>
         <li>Google Sign-In;</li>
+        <li>Facebook Login, provided by Meta;</li>
         <li>Supabase, for authentication, database, and file storage;</li>
         <li>Vercel, for hosting and infrastructure;</li>
         <li>Gmail, for our support email;</li>

@@ -15,6 +15,8 @@ const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/userinfo.profile",
 ] as const;
 
+const FACEBOOK_PERMISSIONS = ["public_profile", "email"] as const;
+
 function SupportEmail() {
   return (
     <strong>
@@ -73,26 +75,67 @@ export function PrivacyView() {
         messages, Google Drive files, contacts, calendar, payment details, or other Google services.
       </p>
 
-      <h3>1.2. Account information</h3>
+      <h3>1.2. Information received through Facebook Login</h3>
+      <p>
+        When you register or sign in using your Facebook account, Freudin requests the following
+        Facebook permissions:
+      </p>
+      <CodeList items={FACEBOOK_PERMISSIONS} />
+      <p>These permissions may allow us to receive and store:</p>
+      <ul>
+        <li>your Facebook user identifier, which is specific to Freudin;</li>
+        <li>
+          your email address, if your Facebook account has one and you allow us to receive it;
+        </li>
+        <li>your first name, last name, and full name;</li>
+        <li>your Facebook profile picture.</li>
+      </ul>
+      <p>
+        We use this information to identify you, create and manage your Freudin account, display
+        your account profile, and allow you to sign in securely. If you choose to use your Facebook
+        profile picture as your Freudin profile photo, we copy it to our storage, and it becomes
+        part of your public profile.
+      </p>
+      <p>
+        We do not receive or store your Facebook password. We do not request access to your posts,
+        photos, friends list, messages, or pages, and we never post to Facebook on your behalf. We
+        do not use information received through Facebook Login for advertising and do not sell it.
+      </p>
+      <p>
+        If your Facebook account does not share an email address, you can still sign in. You may
+        optionally add a contact email address when you create your page or later in{" "}
+        <SettingsLink />.
+      </p>
+
+      <h3>1.3. Account information</h3>
       <p>We may store information associated with your Freudin account, including:</p>
       <ul>
         <li>your internal Freudin account identifier;</li>
-        <li>your Google account identifier;</li>
+        <li>the identifier of the Google or Facebook account you use to sign in;</li>
         <li>your name and email address;</li>
+        <li>a contact email address, if you add one because your sign-in account has no email;</li>
         <li>your profile picture;</li>
         <li>your account settings and preferences;</li>
         <li>the date your account was created;</li>
         <li>sign-in and account activity;</li>
         <li>information you submit through the Service.</li>
       </ul>
+      <p>
+        A contact email address is optional. We use it only to contact you about your account and to
+        respond to your requests. It is not verified, is not used to sign in, and is not shown on
+        your public profile. You can change or remove it in <SettingsLink />.
+      </p>
 
-      <h3 id="public-profile">1.3. Public profile</h3>
+      <h3 id="public-profile">1.4. Public profile</h3>
       <p>Freudin lets you create a public personal page. Your public profile consists of:</p>
       <ul>
         <li>your display name;</li>
         <li>your page address (username);</li>
         <li>your bio;</li>
-        <li>your profile photo, which you upload or choose to copy from your Google account;</li>
+        <li>
+          your profile photo, which you upload or choose to copy from your Google or Facebook
+          account;
+        </li>
         <li>links to your social media profiles and websites.</li>
       </ul>
       <p>
@@ -101,12 +144,12 @@ export function PrivacyView() {
         third parties. Do not add information to your profile that you do not want to make public.
       </p>
       <p>
-        Your email address and Google account identifier are not shown on your public profile. You
+        Your email address and sign-in account identifiers are not shown on your public profile. You
         can change or remove your public profile information at any time in <SettingsLink />. If you
         change your page address, your previous address stops working.
       </p>
 
-      <h3>1.4. Technical and usage information</h3>
+      <h3>1.5. Technical and usage information</h3>
       <p>
         When you use the Service, we may automatically receive technical and usage information,
         including:
@@ -125,7 +168,7 @@ export function PrivacyView() {
         <li>error reports, security logs, and diagnostic information.</li>
       </ul>
 
-      <h3>1.5. Communications</h3>
+      <h3>1.6. Communications</h3>
       <p>If you contact us, we may collect:</p>
       <ul>
         <li>your name and email address;</li>
@@ -161,6 +204,10 @@ export function PrivacyView() {
           the Service;
         </li>
         <li>
+          <code>sb-…-code-verifier</code> cookies, set by Supabase while you sign in with Facebook
+          to protect the sign-in process;
+        </li>
+        <li>
           <code>theme</code> in your browser’s local storage, which remembers whether you chose the
           light, dark, or system theme;
         </li>
@@ -184,7 +231,7 @@ export function PrivacyView() {
       <p>We may use personal data to:</p>
       <ul>
         <li>create and manage your account;</li>
-        <li>authenticate you through Google Sign-In;</li>
+        <li>authenticate you through Google Sign-In or Facebook Login;</li>
         <li>display your account profile;</li>
         <li>publish your public profile page;</li>
         <li>provide and operate the Service;</li>
@@ -200,8 +247,8 @@ export function PrivacyView() {
       </ul>
       <p>We do not sell or rent personal data.</p>
       <p>
-        We do not use Google Sign-In data to make credit, employment, insurance, housing, or other
-        similarly significant decisions.
+        We do not use data received through Google Sign-In or Facebook Login to make credit,
+        employment, insurance, housing, or other similarly significant decisions.
       </p>
 
       <h2 id="legal-bases">4. Legal bases for processing</h2>
@@ -278,12 +325,18 @@ export function PrivacyView() {
       <h3>Public profile</h3>
       <p>
         Information in your public profile is available to anyone, as described in{" "}
-        <a href="#public-profile">Section 1.3</a>.
+        <a href="#public-profile">Section 1.4</a>.
       </p>
       <h3>Google</h3>
       <p>
         We use Google Sign-In for authentication. Google receives authentication information when
         you sign in and processes it under its own privacy policy and applicable service terms.
+      </p>
+      <h3>Meta (Facebook)</h3>
+      <p>
+        We use Facebook Login, provided by Meta Platforms, for authentication. Meta receives
+        authentication information when you sign in with Facebook and processes it under its own
+        privacy policy and terms.
       </p>
       <h3>Service providers</h3>
       <p>We use the following providers to operate the Service:</p>
@@ -326,9 +379,9 @@ export function PrivacyView() {
 
       <h2 id="international-data-transfers">7. International data transfers</h2>
       <p>
-        Freudin is operated from Georgia. Google and our service providers may process or store
-        information in Georgia, the United States, countries of the European Economic Area, or other
-        countries where they or their service providers operate.
+        Freudin is operated from Georgia. Google, Meta, and our service providers may process or
+        store information in Georgia, the United States, countries of the European Economic Area, or
+        other countries where they or their service providers operate.
       </p>
       <p>These countries may have data protection rules that differ from those in your country.</p>
       <p>
@@ -366,9 +419,9 @@ export function PrivacyView() {
         emailing <SupportEmail />.
       </p>
       <p>
-        Please send the request from the email address associated with your account. We may ask for
-        additional information if reasonably necessary to verify your identity and protect your
-        account.
+        Please send the request from the email address associated with your account: the email of
+        your sign-in account or the contact email address you added. We may ask for additional
+        information if reasonably necessary to verify your identity and protect your account.
       </p>
       <p>
         After verifying the request, we will delete or anonymize the relevant personal data unless
@@ -380,13 +433,14 @@ export function PrivacyView() {
       </p>
       <p>Deleting your Freudin account does not automatically:</p>
       <ul>
-        <li>delete your Google account;</li>
-        <li>delete information independently controlled by Google;</li>
-        <li>remove data that Google must retain under its own legal obligations.</li>
+        <li>delete your Google or Facebook account;</li>
+        <li>delete information independently controlled by Google or Meta;</li>
+        <li>remove data that Google or Meta must retain under their own legal obligations.</li>
       </ul>
       <p>
-        You may separately manage or delete information associated with Google through its privacy
-        controls.
+        You may separately manage or delete information associated with Google or Facebook through
+        their privacy controls. To disconnect Freudin from your Facebook account, remove it under
+        Apps and websites in your Facebook settings.
       </p>
 
       <h2 id="data-security">10. Data security</h2>
@@ -403,8 +457,8 @@ export function PrivacyView() {
       </ul>
       <p>
         However, no online service or storage system can guarantee absolute security. You are
-        responsible for maintaining the security of the Google account and devices you use to access
-        Freudin.
+        responsible for maintaining the security of the Google or Facebook account and devices you
+        use to access Freudin.
       </p>
       <p>
         If you believe your account or personal data has been compromised, contact us promptly at{" "}
@@ -453,8 +507,9 @@ export function PrivacyView() {
 
       <h2 id="automated-decision-making">13. Automated decision-making</h2>
       <p>
-        We do not use personal data obtained through Google Sign-In to make decisions that produce
-        legal or similarly significant effects through solely automated processing.
+        We do not use personal data obtained through Google Sign-In or Facebook Login to make
+        decisions that produce legal or similarly significant effects through solely automated
+        processing.
       </p>
 
       <h2 id="third-party-websites">14. Third-party websites and services</h2>

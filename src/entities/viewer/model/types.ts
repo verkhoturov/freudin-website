@@ -5,8 +5,13 @@ import type { AuthProvider } from "../config/auth-providers";
 export type Viewer = {
   user: {
     id: string;
-    /** У Telegram email нет. */
+    /** Email от провайдера входа. У Telegram и части аккаунтов Facebook его нет. */
     email: string | null;
+    /**
+     * Контактная почта, которую пользователь указал сам, если у провайдера email нет.
+     * Не подтверждается и не используется для входа.
+     */
+    contactEmail: string | null;
     /** Способ входа; `null` — провайдер, которого приложение не знает. */
     provider: AuthProvider | null;
   };

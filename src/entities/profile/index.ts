@@ -2,6 +2,7 @@ export { profileQueries } from "./api/profile-queries";
 export { usernameQueries } from "./api/username-queries";
 export {
   BIO_MAX_LENGTH,
+  CONTACT_EMAIL_MAX_LENGTH,
   DEMO_USERNAME,
   DISPLAY_NAME_MAX_LENGTH,
   SOCIAL_LINKS_MAX,
@@ -12,6 +13,7 @@ export { AVATAR_MAX_BYTES, AVATAR_SIZE } from "./config/storage";
 export { getProfileChanges, toProfileInput } from "./lib/profile-changes";
 export {
   bioSchema,
+  contactEmailSchema,
   displayNameSchema,
   type ProfileData,
   type ProfileInput,

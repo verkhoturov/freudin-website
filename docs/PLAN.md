@@ -5,7 +5,7 @@
 
 ## 1. Что строим (MVP)
 
-- Регистрация и вход через **Google**, **Meta (Facebook Login)** и **Telegram**.
+- Регистрация и вход через **Google**, **Meta (Facebook Login)**, **Telegram** и **Apple**.
 - После первого входа идёт онбординг: пользователь указывает **фото, имя, описание**,
   выбирает **уникальную ссылку** (username) и добавляет **ссылки на соцсети**.
 - Публичная личная страница `https://<домен>/<username>`.
@@ -35,11 +35,11 @@
 | 5 | Соцсети | Фиксированный список платформ плюс «Сайт», до 10 ссылок. Храним в `jsonb`-колонке профиля |
 | 6 | Server Components | Только там, где их требует Next.js: корневой `layout.tsx` и тонкие `page.tsx`, реэкспортирующие клиентский view. `proxy.ts` (бывший middleware) не используем |
 | 7 | Язык | Без i18n. Документация (README, AGENTS, план) на русском. **Обновлено 26.09.2026:** интерфейс на английском (решение 16) |
-| 8 | Инфраструктура | Vercel для хостинга. Облачный Supabase для БД, Auth и Storage; лучше завести отдельные проекты для dev и prod |
-| 9 | Несколько способов входа | Один способ входа = один аккаунт. Google и Facebook с одинаковым email Supabase объединит автоматически. Ручную привязку (важна для Telegram, у которого нет email) делаем после MVP |
+| 8 | Инфраструктура | Vercel для хостинга. Облачный Supabase для БД, Auth и Storage; лучше завести отдельные проекты для dev и prod. **26.09.2026:** тестовая среда со своей базой запланирована — шаг 18.1 |
+| 9 | Несколько способов входа | Один способ входа = один аккаунт. Google и Facebook с одинаковым email Supabase объединит автоматически. Ручную привязку (важна для Telegram, у которого нет email) делаем после MVP. **26.09.2026:** ручная привязка в настройках запланирована в этапе C — шаг 10.2 |
 | 10 | Прод-домен | ✅ `www.freud.in`, а `freud.in` редиректит на него |
 | 11 | Дизайн | ✅ Пока минималистичный: стандартные компоненты shadcn (стиль по умолчанию, нейтральная палитра) и минимум контента — только навигация и поля ввода |
-| 12 | Деплой | ✅ Пока сразу в прод: каждый коммит в `main` выкладывается на `www.freud.in`, превью-деплои Vercel не используем |
+| 12 | Деплой | ✅ Пока сразу в прод: каждый коммит в `main` выкладывается на `www.freud.in`, превью-деплои Vercel не используем. **26.09.2026:** решено сделать тестовую среду на Vercel (шаг 18.1), после неё решение пересматриваем |
 | 13 | Юрисдикция | ✅ Пока считаем, что пользователи не из РФ: 152-ФЗ не учитываем, база во Франкфурте (eu-central-1). Юридические вопросы — отдельный этап H | **Обновлено 26.09.2026:** оператор — ИП Иван Верхотуров, Грузия (ID 302260755); `/privacy` и `/terms` подчиняются праву Грузии, обязательные нормы страны пользователя (в том числе GDPR) применяются, где это требуется |
 | 14 | Supabase CLI | ✅ В `devDependencies`, чтобы версия была зафиксирована |
 | 15 | Зарезервированные username | ✅ Проверяет только сервер (zod): список собирается из `routes`, в БД его не дублируем |
@@ -71,11 +71,11 @@ Supabase: Auth (google, facebook, custom:telegram) · Postgres + RLS · Storage 
 
 ### 4.2. Авторизация
 
-Все три провайдера проходят через один OAuth-поток Supabase (PKCE):
+Facebook, Telegram и Apple проходят через один OAuth-поток Supabase (PKCE):
 
 ```
 [Кнопка «Войти через …»]
-  → GET /api/auth/sign-in?provider=google|facebook|telegram&next=/…
+  → GET /api/auth/sign-in?provider=facebook|telegram|apple&next=/…
       signInWithOAuth({ provider, options: { redirectTo, skipBrowserRedirect: true } })
       PKCE verifier сохраняется в cookie, затем 302 на провайдера
   → провайдер → https://<ref>.supabase.co/auth/v1/callback
@@ -452,9 +452,10 @@ Testing, войти могут только добавленные тестов�
       Google через OAuth Supabase. Facebook и Telegram остаются на нём. Сделано 26.09.2026:
       `getOAuthSignInUrl` по типу не принимает Google, пункт о cookies `sb-…-code-verifier`
       убран из `/privacy` (без OAuth Supabase их сейчас никто не ставит).
-- [ ] **Делаешь ты:** Google Cloud → Clients → OAuth-клиент → Authorized redirect URIs: удалить
-      `https://<ref>.supabase.co/auth/v1/callback`, он больше не нужен (26.09.2026 ещё был
-      на месте). В Supabase провайдер Google не выключать: по нему проверяются ID-токены.
+- [x] **Делаешь ты:** Google Cloud → Clients → OAuth-клиент → Authorized redirect URIs: удалить
+      `https://<ref>.supabase.co/auth/v1/callback`, он больше не нужен. В Supabase провайдер
+      Google не выключать: по нему проверяются ID-токены. Удалён 26.09.2026: Google отвечает
+      на этот адрес `redirect_uri_mismatch`.
 
 **Готово, когда:** на экране выбора аккаунта Google написано «Freudin» (после проверки бренда),
 а до неё — `www.freud.in`.
@@ -493,25 +494,133 @@ DNS домена обслуживает Timeweb. Сейчас у `freud.in` од
    `https://www.freud.in/sitemap.xml`: это ускорит индексацию.
 
 #### Шаг 9. Meta (Facebook Login)
-**Нужно от тебя:** на developers.facebook.com создать приложение с use case «Authenticate and
-request data from users with Facebook Login» и разрешениями `public_profile` и `email`.
-В Facebook Login → Settings → Valid OAuth Redirect URIs указать
-`https://<ref>.supabase.co/auth/v1/callback`. App ID и Secret внести в Supabase → Providers →
-Facebook.
+**Нужно от тебя:** приложение в Meta for Developers и провайдер Facebook в Supabase — по
+инструкции ниже, после списка пунктов.
 
 - [x] Страницы `/privacy` и `/terms` с разделом «Удаление данных». Они нужны Meta для Live-режима
       и Google для брендинга. Тексты перенесены в этап H (юридические требования).
 - [x] Кнопка Facebook в `sign-in-panel`.
-- [ ] Обновить `/privacy` и `/terms`: вход через Facebook и какие данные он передаёт. В список
+- [x] **Делаешь ты:** приложение в Meta for Developers и провайдер Facebook в Supabase
+      (пункты 1–6 инструкции ниже). Сделано 26.09.2026. Через Management API проверено:
+      провайдер включён, Client ID задан.
+- [x] Обновить `/privacy` и `/terms`: вход через Facebook и какие данные он передаёт. В список
       cookies вернуть `sb-…-code-verifier`: его ставит OAuth Supabase на время входа. В Meta
       for Developers указать Data Deletion Instructions URL
-      `https://www.freud.in/privacy#account-and-data-deletion`.
-- [ ] Добавить `facebook` в `enabledAuthProviders`: тогда появится кнопка на `/login` и заработает
+      `https://www.freud.in/privacy#account-and-data-deletion`. Сделано 26.09.2026. В Privacy
+      новый раздел 1.2 о Facebook Login, Meta в разделах 6, 7 и 9 (там же — как отвязать
+      Freudin в настройках Facebook), cookie `sb-…-code-verifier`. В Terms — раздел 3
+      «Account registration and sign-in» и Facebook в разделе 8.
+- [x] Добавить `facebook` в `enabledAuthProviders`: тогда появится кнопка на `/login` и заработает
       `/api/auth/sign-in?provider=facebook`.
-- [ ] Понятное сообщение на `/login`, если Facebook не вернул email.
+- [x] Понятное сообщение на `/login`, если Facebook не вернул email. Сделано: без email Supabase
+      возвращает `Error getting user email from external provider`, `getOAuthErrorCode`
+      превращает это в код `email_required`.
+- [x] Фото Facebook: Supabase получает его размером 50×50. Первая попытка — менять `height`
+      и `width` в ссылке — не сработала (проверено вживую 26.09.2026): ссылка подписана, фото
+      осталось размытым. Сделано: `/api/auth/sign-in` передаёт в адресе возврата
+      `provider=facebook`. После входа колбэк по токену Facebook из сессии берёт у Graph API
+      (`/me/picture`) ссылку на фото 512×512, кладёт её в `user_metadata` (`avatar_url`,
+      `picture`) и обновляет сессию, чтобы `/api/me` сразу её увидел. Заглушку без фото убирает.
+- [x] **Делаешь ты:** проверка на localhost (пункт 7 инструкции). 26.09.2026: на экране
+      Facebook — «Freudin», при другой почте создаётся новый аккаунт, фото было размытым
+      (исправлено пунктом выше).
+- [x] **Делаешь ты:** проверить фото ещё раз: выйти, снова войти через Facebook → Settings →
+      «Use account photo» → фото должно быть чётким. Если нет — в Meta: App settings →
+      Advanced → Security → Require app secret должен быть выключен (иначе Graph API требует
+      `appsecret_proof`). Если не поможет, пришли строку «Facebook photo request failed» из лога.
+      Проверено вживую 26.09.2026: фото чёткое.
+- [x] **Решаешь ты:** пускать ли пользователей Facebook без email. **Решено 26.09.2026:**
+      пускать, а в онбординге предлагать необязательное поле почты.
+- [x] **Делаешь ты:** Supabase → Authentication → Sign In / Providers → Facebook → включить вход
+      без email (в API — `external_facebook_email_optional`). Включён 26.09.2026, проверено
+      через Management API.
+- [x] Миграция `20260926164835_create_account_contacts.sql`: таблица `account_contacts`
+      с контактной почтой. Это отдельная таблица, а не колонка `profiles`: профили читают все,
+      а контакт — только владелец (RLS на select, insert, update и delete, у `anon` прав нет).
+      Это не email аккаунта в Supabase Auth: адрес не подтверждается и не участвует
+      в автоматическом связывании аккаунтов. Иначе, вписав чужую почту Google, можно было бы
+      получить её аккаунт. Проверено в транзакции с откатом: RLS, `anon`, формат почты,
+      каскадное удаление с пользователем, `updated_at`.
+- [x] **Делаешь ты:** `npm run db:dump`, затем `npm run db:push`. Сделано 26.09.2026.
+- [x] Я: контактная почта в интерфейсе, после миграции:
+      - `npm run db:types`;
+      - zod-схема `contactEmailSchema`;
+      - сохранение вместе с профилем в онбординге и изменение в настройках;
+      - `/api/me` отдаёт контакт владельцу;
+      - поле «Email (optional)» в онбординге и настройках, только если у аккаунта нет email
+        от провайдера;
+      - `/privacy` и `/terms`, README и AGENTS.md.
+
+      Сделано 26.09.2026: `contactEmailSchema` в `profileInputSchema`. Сервер сохраняет почту
+      до профиля (`upsert`), пустая строка её удаляет. `/api/me` отдаёт `user.contactEmail`.
+      Кеш `/api/me` обновляют мутации профиля. Черновик онбординга без нового поля дополняется
+      значениями по умолчанию. В Privacy — контактная почта в разделах 1.2, 1.3 и 9.
+      Проверено:
+      - SQL `upsert` и `delete` под ролью пользователя в транзакции с откатом;
+      - в браузере на прод-сборке с подменёнными ответами API: поле есть только без email,
+        ошибка формата, в `POST` уходит почта без пробелов, в настройках `PATCH` отправляет
+        только `contactEmail`, очистка отправляет `""`, «Save» неактивна без изменений.
+- [ ] **Делаешь ты:** живая проверка контактной почты. Вход через Facebook без почты можно
+      сымитировать только аккаунтом Facebook без email. Если такого нет, достаточно проверки
+      выше. Заодно: у аккаунта Google поля почты в онбординге и настройках нет.
+- [ ] **Делаешь ты:** закоммитить, проверить на проде и перевести приложение в Live (пункт 8).
 
 **Готово, когда:** вход через Facebook работает для тестировщиков приложения. Для всех
-пользователей он заработает после перевода приложения в Live (шаг 18).
+пользователей он заработает после перевода приложения в Live (шаг 18). Перевести его можно
+сразу после проверки на проде: тексты `/privacy` и `/terms` к этому моменту уже будут
+описывать Facebook.
+
+#### Инструкция: приложение Meta для входа через Facebook
+
+Схема: кнопка → `/api/auth/sign-in?provider=facebook` → Supabase → диалог Facebook →
+`https://<ref>.supabase.co/auth/v1/callback` → `/api/auth/callback`. На экране Facebook
+показываются название и иконка приложения из его настроек, поэтому обходной путь, как
+у Google в шаге 8.1, здесь не нужен.
+
+1. **Аккаунт разработчика.** Войди на https://developers.facebook.com личным аккаунтом Facebook
+   (включи на нём 2FA) → Get Started. Meta попросит подтвердить телефон или email.
+2. **Приложение.** My Apps → Create app:
+   - App name — `Freudin`, App contact email — `freudin.support@gmail.com`;
+   - Use case — «Authenticate and request data from users with Facebook Login»;
+   - Business portfolio — «I don't want to connect a business portfolio yet» (можно позже);
+   - Create app.
+3. **Разрешения.** Use cases → Authenticate and request data… → Customize → Permissions:
+   `public_profile` уже есть, у `email` нажми Add. Для этих двух разрешений проверка
+   приложения (App Review) не нужна.
+4. **Facebook Login → Settings** (там же, в Customize → Settings):
+   - Client OAuth login, Web OAuth login, Enforce HTTPS, Use Strict Mode for redirect URIs — Yes;
+   - Valid OAuth Redirect URIs — `https://<ref>.supabase.co/auth/v1/callback`
+     (`<ref>` — `SUPABASE_URL` из `.env`);
+   - Login with the JavaScript SDK — No.
+5. **App settings → Basic:**
+   - App domains — `freud.in`;
+   - Contact email — `freudin.support@gmail.com`;
+   - Privacy Policy URL — `https://www.freud.in/privacy`;
+   - Terms of Service URL — `https://www.freud.in/terms`;
+   - User data deletion → Data deletion instructions URL —
+     `https://www.freud.in/privacy#account-and-data-deletion`;
+   - Category — например, Lifestyle;
+   - App icon 1024×1024 — понадобится для Live. Логотипа пока нет (шаг 17.3), можно
+     временную иконку;
+   - внизу Add platform → Website → Site URL `https://www.freud.in`;
+   - Save changes. App ID и App secret (Show, попросит пароль) понадобятся в пункте 6.
+     Секрет не присылай в чат и не клади в репозиторий, сразу вноси в Supabase.
+6. **Supabase** → Authentication → Sign In / Providers → Facebook: Enable, Facebook client ID —
+   App ID, Facebook secret — App secret, Save. Callback URL в этом окне должен совпадать
+   с адресом из пункта 4. URL Configuration уже настроен в шаге 5, его не трогаем.
+7. **Проверка в режиме Development.** Пока приложение не в Live, войти могут только люди
+   с ролью в нём: ты как админ. Других добавляй в App roles → Roles → Testers, они принимают
+   приглашение на developers.facebook.com. После моих правок (пункты шага выше):
+   - localhost: «Continue with Facebook» → на экране Facebook «Freudin» → онбординг или
+     профиль. Если email в Facebook совпадает с email в Google, Supabase привяжет Facebook
+     к существующему аккаунту, и откроется твой профиль. Если не совпадает, создастся новый
+     аккаунт (ручная привязка — шаг 10.2);
+   - «Use account photo» копирует фото из Facebook;
+   - то же на проде после коммита.
+8. **Live.** Когда вход работает на проде, переключи App Mode в Live (Publish). Meta проверит
+   обязательные поля из пункта 5. Если попросит подтвердить личность или бизнес, напиши мне,
+   разберёмся. Раз в год Meta просит пройти Data Use Checkup — подтвердить, как используются
+   данные. Без этого доступ приложения ограничат.
 
 #### Шаг 10. Telegram
 **Нужно от тебя:** в @BotFather выполнить `/newbot` (лучше отдельный бот для сайта), затем
@@ -539,6 +648,122 @@ Facebook.
 **Запасной план:** если связка Telegram OIDC + Supabase не заработает, используем Telegram Login
 SDK на клиенте, проверяем `id_token` по JWKS в `POST /api/auth/telegram` и создаём сессию через
 admin API.
+
+#### Шаг 10.1. Apple (Sign in with Apple)
+Вход через Apple ID (решение пользователя 26.09.2026). Идёт через OAuth Supabase, как Facebook
+и Telegram, а не по схеме Google из шага 8.1, по двум причинам:
+- Apple присылает ответ POST-запросом (`response_mode=form_post`) с `appleid.apple.com`,
+  а наша защита от CSRF отклоняет такие запросы с чужого сайта;
+- Apple не принимает адреса возврата с `http://` и `localhost`. Через Supabase адрес возврата
+  у Apple один (`https://<ref>.supabase.co/auth/v1/callback`), и вход работает и локально.
+
+**Нужно от тебя:** участие в Apple Developer Program ($99 в год). В developer.apple.com →
+Certificates, Identifiers & Profiles:
+1. **App ID** с включённой возможностью Sign in with Apple. Это основной идентификатор.
+2. **Services ID** — Client ID для веба, например `in.freud.web`. Название, которое увидит
+   пользователь, задаётся здесь. Configure: Primary App ID из пункта 1, Domains
+   `<ref>.supabase.co`, Return URLs `https://<ref>.supabase.co/auth/v1/callback`.
+3. **Key** с Sign in with Apple. Файл `.p8` скачивается только один раз, сохрани его
+   в менеджере паролей. Запиши Key ID и Team ID.
+4. **Supabase** → Authentication → Providers → Apple:
+   - Client IDs — Services ID;
+   - Secret Key — JWT, собранный из `.p8`, Key ID и Team ID (генератор есть в документации
+     Supabase про Apple).
+
+   **Секрет живёт не больше 6 месяцев:** поставь напоминание перевыпустить его, иначе вход
+   через Apple перестанет работать.
+
+Для стенда (шаг 18.1) в тот же Services ID добавляются домен и Return URL проекта
+`freudin_staging`.
+
+- [ ] **Решаешь ты:** платить ли $99 в год за Apple Developer Program и как регистрироваться:
+      как физлицо (Individual) или как организация (Organization, нужен номер D-U-N-S).
+- [ ] Провайдер `apple` в `authProviders`, маппинг в `auth.server.ts`, подпись и логотип.
+      Кнопка — по правилам Apple (Human Interface Guidelines): логотип Apple, текст
+      «Continue with Apple», чёрная в светлой теме и белая в тёмной, не меньше остальных кнопок.
+- [ ] Обновить `/privacy` и `/terms`: вход через Apple и какие данные он передаёт. Это
+      идентификатор Apple ID, имя (только при первом входе) и email или адрес-пересыльщик
+      `…@privaterelay.appleid.com`, если пользователь скрыл почту. Ещё cookie
+      `sb-…-code-verifier` и как отвязать сайт в настройках Apple ID.
+- [ ] Данные Apple в профиле:
+      - фото Apple не отдаёт, поэтому кнопки «Use account photo» у таких пользователей нет;
+      - имя приходит только при первом входе, без него пользователь вводит имя сам;
+      - подсказку адреса не строим из адреса-пересыльщика: там случайные символы.
+
+      Связано с приведением данных провайдеров в шаге 10.
+- [ ] Добавить `apple` в `enabledAuthProviders`, проверить вход на localhost и на проде.
+      Проверить экран Apple: там должно быть название Freudin из Services ID. Если виден
+      `<ref>.supabase.co`, решаем, как в шаге 8.1. В README — настройка Apple и дата выпуска
+      секрета, в AGENTS.md — Apple в описании проекта и в роутах.
+- [ ] (по желанию) Отзыв токена Apple при удалении аккаунта (`/auth/revoke`), чтобы сайт
+      пропал из списка «Вход с Apple» в настройках Apple ID. Для сайтов это не обязательно
+      (требование App Store относится к приложениям), и Supabase сам этого не делает.
+
+**Готово, когда:** вход через Apple, в том числе со скрытой почтой, создаёт пользователя и ведёт
+на онбординг, а повторный вход попадает в тот же аккаунт.
+
+#### Шаг 10.2. Несколько способов входа в одном аккаунте
+Сейчас один способ входа — один аккаунт (решение 9). Пользователь вошёл через Google, потом
+нажал «Continue with Apple» — и получил второй, пустой аккаунт. Исключение — одинаковый
+подтверждённый email: такие аккаунты Supabase объединяет сам. Но у Telegram email нет, а Apple
+часто отдаёт адрес-пересыльщик, поэтому нужна ручная привязка в настройках (решение
+пользователя 26.09.2026). Шаг имеет смысл, когда подключено хотя бы два провайдера
+(шаги 9, 10, 10.1).
+
+Привязка — это `linkIdentity` в Supabase: новый способ входа добавляется к текущему
+пользователю, и дальше войти можно любым из привязанных. Установленная версия `@supabase/auth-js`
+умеет это и через OAuth, и по ID-токену, поэтому Google со своей схемой входа (шаг 8.1) тоже
+привязывается.
+
+```
+/settings → [Connect Apple]
+  → POST /api/auth/identities { provider }        сессия и проверка same-origin
+      Facebook, Telegram, Apple: linkIdentity({ provider, skipBrowserRedirect }) → { url }
+      Google: cookie попытки входа с mode: "link" → { url } на accounts.google.com
+  → браузер уходит к провайдеру и возвращается:
+      /api/auth/callback?code=…   → exchangeCodeForSession
+      /api/auth/callback/google   → linkIdentity({ provider: "google", token, access_token, nonce })
+  → 302 на /settings?linked=apple  или  /settings?error=identity_already_exists
+```
+
+- [ ] **Делаешь ты:** Supabase → Authentication → Sign In / Providers → включить Allow manual
+      linking. На проде и на стенде (шаг 18.1).
+- [ ] API:
+      - `POST /api/auth/identities` с `{ provider }` → `{ url }`: старт привязки. Это POST,
+        а не ссылка, чтобы чужой сайт не мог запустить привязку (защита от CSRF
+        в `withErrorHandling`). Уже привязанный провайдер — 409;
+      - колбэки отличают привязку от входа. Для OAuth Supabase — по адресу возврата, для
+        Google — по `mode: "link"` в cookie попытки входа: вместо `signInWithIdToken`
+        вызывается `linkIdentity` по ID-токену;
+      - `DELETE /api/auth/identities/[provider]` — отвязка (`unlinkIdentity`). Последний способ
+        входа отвязать нельзя — 409;
+      - `GET /api/me` отдаёт список привязанных способов (`user.identities`: провайдер
+        и email) вместо одного `user.provider`.
+- [ ] Ошибки:
+      - способ входа уже привязан к другому аккаунту Freudin (`identity_already_exists`) —
+        понятное сообщение в настройках. Объединять два аккаунта с профилями не умеем: чтобы
+        перенести способ входа, пользователь входит во второй аккаунт и удаляет его;
+      - отмена у провайдера — просто возврат в настройки без ошибки.
+- [ ] UI в `/settings` → Account, блок «Sign-in methods»: все провайдеры из
+      `enabledAuthProviders`. У привязанных — email и кнопка «Disconnect» (неактивна, если
+      способ последний), у остальных — «Connect …». После возврата — тост «Apple connected».
+      Ожидание на кнопке — как у входа (шаг 17.2).
+- [ ] Фото и имя из аккаунта: «Use account photo» и подсказки онбординга берут данные
+      конкретного провайдера (`identity_data`), а не общий `user_metadata`. Если фото есть
+      у нескольких провайдеров, пользователь выбирает, чьё.
+- [ ] Удаление аккаунта удаляет все привязанные способы — проверить. Отзыв токена Apple
+      (шаг 10.1) делать для каждой привязки Apple.
+- [ ] Документы:
+      - `/privacy` и `/terms`: к аккаунту можно привязать несколько способов входа, каждый
+        передаёт данные, как описано в его разделе, отвязка — в Settings;
+      - README и AGENTS.md: роуты, тип `Viewer`, правило про провайдеры.
+- [ ] **Делаешь ты:** проверка сценариев:
+      - вход через Google → привязать Apple → выйти → войти через Apple → тот же профиль;
+      - отвязать способ; убедиться, что последний отвязать нельзя;
+      - привязать Apple ID, который уже есть у другого аккаунта, — понятная ошибка.
+
+**Готово, когда:** к одному аккаунту можно привязать и отвязать любой подключённый способ
+входа, войти любым из них и попасть в тот же профиль, а последний способ отвязать нельзя.
 
 ### Этап D. Профиль
 
@@ -654,6 +879,20 @@ admin API.
       в профиле останется ссылка на удалённое фото. Сначала обнулять `avatar_path` или удалять
       пользователя первым, а файлы — после. Сделано: `removeUserAvatarFiles` сначала обнуляет
       `avatar_path`.
+- [ ] Подтверждение удаления вводом username (решение пользователя 26.09.2026). В диалоге
+      «Delete account?» есть поле «Type `anna` to confirm», и кнопка «Delete» неактивна,
+      пока введённое значение не совпадёт с username:
+      - сравниваем без пробелов по краям и без учёта регистра;
+      - вставка из буфера разрешена;
+      - у поля есть подпись (`label`), `autoComplete="off"`, `spellCheck={false}`
+        и `autoCapitalize="none"`, при открытии диалога фокус в поле;
+      - Enter удаляет аккаунт только при совпадении;
+      - при закрытии диалога поле очищается;
+      - пока идёт удаление, поле и кнопки неактивны.
+
+      `/settings` открыт только пользователям с профилем, поэтому username есть всегда.
+      Сервер тоже проверяет подтверждение: `DELETE /api/me` принимает `{ "username": "…" }`
+      и без совпадения с текущим профилем отвечает 400. Это страхует от случайного вызова API.
 
 ### Этап E. Интерфейс
 
@@ -802,9 +1041,68 @@ AGENTS.md и сообщения коммитов.
       засыпает и хранит ежедневные бэкапы 7 дней. **Решено 26.09.2026:** пока Free.
 - [ ] (аудит) CI в GitHub Actions (lint, typecheck, build) и защита ветки `main` (**нужно от
       тебя** в настройках GitHub). Сейчас перед продом код проверяет только сборка Vercel.
-- [ ] (аудит) Отдельный проект Supabase для разработки и превью-деплои Vercel на нём: сейчас
-      `npm run dev` работает с боевой базой, а миграции идут сразу в прод. Требует пересмотреть
-      решения 8 и 12.
+- (аудит) Отдельный проект Supabase для разработки и превью-деплои Vercel на нём — вынесено
+  в шаг 18.1.
+
+#### Шаг 18.1. Тестовая среда на Vercel (staging)
+Сейчас тестовой среды нет. Каждый коммит в `main` сразу уходит в прод, `npm run dev` работает
+с боевой базой, а миграции применяются сразу к проду (решения 8 и 12). Нужен постоянный стенд
+на Vercel со своей базой: изменения сначала проверяем там и только потом мержим в `main`
+(решение пользователя 26.09.2026). Шаг можно делать в любой момент. Лучше — до шагов 9–10
+и этапа E2: Facebook, Telegram и крупные правки удобнее проверять не на проде.
+
+```
+ветка dev   ── push ──▶ Vercel Preview    ──▶ dev.freud.in  ──▶ Supabase freudin_staging
+ветка main  ── merge ─▶ Vercel Production ──▶ www.freud.in  ──▶ Supabase freudin_data
+npm run dev (локально) ─────────────────────────────────────▶ Supabase freudin_staging
+```
+
+- [ ] **Решаешь ты:**
+      - имя ветки и адрес стенда. Предлагаю ветку `dev` и домен `dev.freud.in`;
+      - кто видит стенд. Предлагаю закрыть его Vercel Authentication (Settings → Deployment
+        Protection → Standard Protection, есть на бесплатном тарифе): открыть стенд сможешь
+        только ты под своим аккаунтом Vercel;
+      - заодно проверь тариф Vercel. По условиям Vercel тариф Hobby — только для личных
+        некоммерческих проектов. С рекламой и монетизацией (этап G) понадобится Pro.
+- [ ] **Делаешь ты:** второй проект Supabase `freudin_staging` в eu-central-1. На Free можно
+      держать два активных проекта. Как и прод, он засыпает после недели без запросов, будить
+      его кнопкой Restore. Ключи стенда пойдут в Vercel (Preview) и в локальный `.env`,
+      поэтому `npm run dev` перестанет трогать прод.
+- [ ] Я: скрипты БД для двух проектов. Сейчас `db:push`, `db:types` и `db:dump` работают
+      со связанным проектом (`--linked`), и миграция легко уйдёт не туда. Нужны явные команды
+      для стенда и прода (например, `db:push:staging` и `db:push:prod`). Порядок для миграции:
+      стенд → проверка → `db:dump` прода → `db:push` в прод. Схема, bucket `avatars`
+      и политики стенда создаются теми же миграциями.
+- [ ] **Делаешь ты:** Supabase стенда → Authentication:
+      - Providers → Google: те же Client ID и Secret, что у прода, Skip nonce check выключен;
+      - провайдер Email выключен, как на проде;
+      - URL Configuration: Site URL `https://dev.freud.in`, Redirect URLs
+        `https://dev.freud.in/**` и `http://localhost:3000/**`. Понадобятся для Facebook
+        и Telegram.
+- [ ] **Делаешь ты:** Google Cloud → OAuth-клиент → Authorized redirect URIs: добавить
+      `https://dev.freud.in/api/auth/callback/google`. Клиент и подтверждённый бренд те же:
+      `freud.in` подтверждён в Search Console вместе с поддоменами.
+- [ ] **Делаешь ты:** Vercel:
+      - Settings → Environment Variables: `SUPABASE_*` стенда для окружения Preview (можно
+        только для ветки `dev`), `GOOGLE_*` — тоже для Preview;
+      - Settings → Domains → добавить `dev.freud.in` и привязать к ветке `dev` (Git Branch);
+      - DNS в Timeweb: CNAME `dev` на адрес, который покажет Vercel;
+      - Deployment Protection — по решению выше.
+- [ ] Я: стенд не попадает в поиск. Проверить, ставит ли Vercel заголовок
+      `X-Robots-Tag: noindex` на своём домене превью. Если нет — `robots.ts` и `metadata`
+      отдают `noindex` вне прода (по `VERCEL_ENV`). Canonical и так ведут на `www.freud.in`.
+- [ ] Я: другие превью-деплои (адреса `*.vercel.app` для прочих веток): вход через Google на
+      них не работает, потому что Google принимает только заранее записанные адреса возврата.
+      Задокументировать: вход проверяем только на `dev.freud.in` и localhost.
+- [ ] Я: правила и документация. AGENTS.md: правила 9 и 10 и «Хостинг» в стеке. Процесс:
+      работаем в `dev`, проверяем на стенде, мержишь в `main` ты. README: «Деплой»,
+      «Переменные окружения» и «Внешние сервисы». В плане — решения 8 и 12 и риски.
+- [ ] **Делаешь ты:** проверка стенда на `dev.freud.in`: вход через Google, онбординг, фото
+      (в Storage стенда), редактирование, удаление аккаунта. В базе прода при этом ничего
+      не меняется.
+
+**Готово, когда:** push в `dev` сам появляется на `dev.freud.in`, стенд и локальная разработка
+работают со своей базой, а в `main` попадает только проверенное на стенде.
 
 #### Шаг 19. Ручная приёмка
 - [ ] Для каждого провайдера: новый пользователь → онбординг → страница; повторный вход.
@@ -828,7 +1126,7 @@ AGENTS.md и сообщения коммитов.
   уже вставленные в био, продолжат работать. Сейчас настройки только предупреждают о смене.
 - Разметка JSON-LD `ProfilePage` с `Person` внутри: имя, фото, описание, ссылки на соцсети
   в `sameAs`. Делаем вместе с серверным рендером, иначе поисковики увидят её не везде.
-- Привязка нескольких способов входа к одному аккаунту (manual identity linking в Supabase).
+- Привязка нескольких способов входа к одному аккаунту — перенесено в шаг 10.2.
 - Собственный домен для Supabase Auth (тариф Pro и дополнение Custom Domain): для Google
   не нужен, это решено шагом 8.1. Понадобится, только если захотим домен сайта в адресах
   возврата Facebook и Telegram.
@@ -941,14 +1239,17 @@ DNS домена `freud.in` обслуживает Timeweb (`ns1.timeweb.ru` и 
 | Шаг 5 (аудит) | Выключить провайдер Email в Supabase, проверить план и бэкапы — ✅ сделано: Free, копии через `npm run db:dump` |
 | Шаг 6 (аудит) | Применить миграцию прав `anon`: `npm run db:dump`, затем `npm run db:push` — ✅ сделано |
 | Шаг 8 | Google Cloud: OAuth-клиент и экран согласия, проверка входа, Skip nonce check выключен — ✅ сделано |
-| Шаг 8.1 | Адреса возврата в OAuth-клиенте — ✅; проверить вход на localhost; `GOOGLE_*` в Vercel и проверка на проде; Search Console для `freud.in`; проверка бренда |
+| Шаг 8.1 | ✅ сделано: адреса возврата, `GOOGLE_*` в Vercel, Search Console, проверка бренда, старый адрес Supabase удалён |
 | Шаг 9 | Meta for Developers: приложение с Facebook Login |
 | Этап H | Почта поддержки — ✅ `freudin.support@gmail.com`; прописать её в Google Branding и включить 2FA |
 | Этап H | Для `/privacy` и `/terms`: оператор данных и юрисдикция — ✅ сделано; вычитка текстов юристом — рекомендуется |
 | Шаг 10 | Бот в @BotFather с OpenID Connect Login |
+| Шаг 10.1 | Apple Developer Program ($99 в год): App ID, Services ID, ключ `.p8`; секрет в Supabase и его перевыпуск раз в 6 месяцев |
+| Шаг 10.2 | Включить Allow manual linking в Supabase (прод и стенд); проверить сценарии привязки и отвязки |
 | Шаг 18 | Перевод Google (✅ сделано) и Facebook в прод, прод-домен в Telegram |
 | Этап E2 | Шаг 17.3: утвердить иконку и логотип или дать свои; шаг 17.5: вычитать тексты |
 | Шаг 18 (аудит) | Регион функций Vercel `fra1` — ✅ сделано; тариф Supabase — ✅ пока Free; защита ветки `main` в GitHub |
+| Шаг 18.1 | Решить имя ветки, домен стенда и доступ к нему, проверить тариф Vercel; проект Supabase `freudin_staging` и его Auth; адрес возврата стенда в Google; переменные Preview, домен и DNS в Vercel и Timeweb; проверка стенда |
 
 Реальный вход через провайдеров проверяешь ты, на localhost или на проде. Из облачной сессии
 я проверяю сборку, типы, линт и API, но пройти OAuth не могу.
@@ -959,6 +1260,8 @@ DNS домена `freud.in` обслуживает Timeweb (`ns1.timeweb.ru` и 
 |------|------------|
 | Связка Telegram OIDC + кастомный провайдер Supabase появилась недавно | Проверяем на шаге 10 в первую очередь, есть запасной план |
 | Facebook: без Live-режима входят только тестировщики, у части аккаунтов нет email | Live на шаге 18, понятная ошибка на `/login` |
+| Секрет Apple для Supabase истекает не позже чем через 6 месяцев, и вход через Apple молча ломается | Напоминание о перевыпуске, дата выпуска — в README (шаг 10.1) |
+| Способ входа, который хотят привязать, уже есть у другого аккаунта: объединять аккаунты с профилями не умеем | Понятная ошибка и инструкция: войти во второй аккаунт и удалить его, потом привязать (шаг 10.2) |
 | Экран согласия Google показывает `<ref>.supabase.co` | Свой адрес возврата на `www.freud.in` и проверка бренда (шаг 8.1) |
 | Свой обмен кода Google: ошибка в проверке `state` или `nonce` ослабит вход | `state` в httpOnly-cookie на 10 минут, одноразовой; PKCE; `nonce` и подпись токена проверяет Supabase |
 | react-hook-form + React Compiler | Используем TanStack Form |
@@ -967,7 +1270,7 @@ DNS домена `freud.in` обслуживает Timeweb (`ns1.timeweb.ru` и 
 | Сетевая политика облачного окружения закрывает `ui.shadcn.com`, `*.supabase.co`, `api.supabase.com` | ✅ Снято: окружению открыт полный доступ в сеть |
 | Username совпадает с роутом сайта | Список зарезервированных имён и проверка на сервере |
 | Лимит тела запроса на Vercel 4.5 МБ | Сжимаем фото на клиенте до 512 px |
-| Каждый коммит в `main` сразу уходит в прод, превью нет, база одна для разработки и прода | Перед мержем прогоняем lint, typecheck и build; переменные окружения прода задаём до мержа кода, который их читает. CI и отдельная среда для разработки — шаг 18 (аудит) |
+| Каждый коммит в `main` сразу уходит в прод, превью нет, база одна для разработки и прода | Перед мержем прогоняем lint, typecheck и build; переменные окружения прода задаём до мержа кода, который их читает. CI — шаг 18, тестовая среда со своей базой — шаг 18.1 |
 
 ## 8. Как работаем над шагом
 

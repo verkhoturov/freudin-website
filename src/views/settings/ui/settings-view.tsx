@@ -57,10 +57,12 @@ function ProfileSettingsForm({ viewer, profile }: ProfileSettingsFormProps) {
   const deleteAvatar = useDeleteAvatarMutation();
   // После сохранения форма монтируется заново: начальные значения берутся из нового профиля
   const [formVersion, setFormVersion] = useState(0);
+  const { email, contactEmail } = viewer.user;
+  const savedValues = toProfileInput(profile, contactEmail);
 
   const submit = async (values: ProfileInput, avatar: AvatarValue) => {
     // Правки могли совпасть с сохранённым после нормализации: `@anna` и `t.me/anna`
-    const changes = getProfileChanges(profile, values);
+    const changes = getProfileChanges(savedValues, values);
     const avatarSource = getAvatarSource(avatar);
     const shouldDeleteAvatar = avatar.type === "none" && Boolean(profile.avatarUrl);
 
@@ -79,11 +81,12 @@ function ProfileSettingsForm({ viewer, profile }: ProfileSettingsFormProps) {
     <ProfileForm
       key={formVersion}
       mode="edit"
-      defaultValues={toProfileInput(profile)}
+      defaultValues={savedValues}
       defaultAvatar={{ type: "current" }}
       currentAvatarUrl={profile.avatarUrl}
       providerAvatarUrl={viewer.suggestions.avatarUrl}
       currentUsername={profile.username}
+      showContactEmail={!email || contactEmail !== null}
       submitLabel="Save"
       onSubmit={submit}
     />

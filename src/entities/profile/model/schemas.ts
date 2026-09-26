@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { socialLinkSchema } from "@/entities/social-link/@x/profile";
-import { BIO_MAX_LENGTH, DISPLAY_NAME_MAX_LENGTH, SOCIAL_LINKS_MAX } from "../config/limits";
+import {
+  BIO_MAX_LENGTH,
+  CONTACT_EMAIL_MAX_LENGTH,
+  DISPLAY_NAME_MAX_LENGTH,
+  SOCIAL_LINKS_MAX,
+} from "../config/limits";
 import { usernameSchema } from "./username";
 
 export const displayNameSchema = z
@@ -22,12 +27,26 @@ export const socialLinksSchema = z
     "Links must not repeat",
   );
 
+/**
+ * Контактная почта для аккаунта без email у провайдера входа. Необязательна: пустая строка —
+ * почты нет. Хранится в `account_contacts` и видна только владельцу.
+ */
+export const contactEmailSchema = z
+  .string()
+  .trim()
+  .max(CONTACT_EMAIL_MAX_LENGTH, `Must be ${CONTACT_EMAIL_MAX_LENGTH} characters or fewer`)
+  .refine(
+    (value) => value === "" || z.email().safeParse(value).success,
+    "Enter a valid email address",
+  );
+
 /** Данные профиля от пользователя: общая схема формы онбординга/настроек и API. */
 export const profileInputSchema = z.object({
   username: usernameSchema,
   displayName: displayNameSchema,
   bio: bioSchema,
   socialLinks: socialLinksSchema,
+  contactEmail: contactEmailSchema,
 });
 
 export type ProfileInput = z.input<typeof profileInputSchema>;

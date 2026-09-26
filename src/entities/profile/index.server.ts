@@ -10,6 +10,7 @@ export {
   removeUserAvatarFiles,
   setProfileAvatar,
 } from "./api/avatar.server";
+export { getContactEmail } from "./api/contact-email.server";
 export {
   type CreateProfileResult,
   createProfile,

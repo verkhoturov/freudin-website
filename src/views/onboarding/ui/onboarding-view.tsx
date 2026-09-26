@@ -51,16 +51,18 @@ function OnboardingProfileForm({ viewer }: { viewer: Viewer }) {
   const clearDraft = useOnboardingDraftStore((state) => state.clearDraft);
   const createProfile = useCreateProfileMutation();
 
-  // Начальные значения считаем один раз: черновик этого пользователя или данные провайдера
+  // Начальные значения считаем один раз: черновик этого пользователя или данные провайдера.
+  // Черновик кладём поверх: в сохранённом раньше может не быть новых полей
   const [defaultValues] = useState<ProfileInput>(() => {
-    const { draft } = useOnboardingDraftStore.getState();
-    if (draft?.userId === user.id) return draft.values;
-    return {
+    const suggested: ProfileInput = {
       displayName: suggestions.displayName ?? "",
       username: suggestions.username ?? "",
       bio: "",
       socialLinks: [],
+      contactEmail: "",
     };
+    const { draft } = useOnboardingDraftStore.getState();
+    return draft?.userId === user.id ? { ...suggested, ...draft.values } : suggested;
   });
   const [defaultAvatar] = useState<AvatarValue>(() =>
     suggestions.avatarUrl ? { type: "provider" } : { type: "none" },
@@ -84,6 +86,7 @@ function OnboardingProfileForm({ viewer }: { viewer: Viewer }) {
       defaultValues={defaultValues}
       defaultAvatar={defaultAvatar}
       providerAvatarUrl={suggestions.avatarUrl}
+      showContactEmail={!user.email}
       submitLabel="Create page"
       onSubmit={submit}
       onValuesChange={(values) => saveDraft({ userId: user.id, values })}

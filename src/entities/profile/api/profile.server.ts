@@ -6,6 +6,7 @@ import { DEMO_USERNAME, USERNAME_MAX_LENGTH } from "../config/limits";
 import { AVATARS_BUCKET } from "../config/storage";
 import type { ProfileData, ProfileUpdateData } from "../model/schemas";
 import type { PublicProfile } from "../model/types";
+import { setContactEmail } from "./contact-email.server";
 
 export const PUBLIC_PROFILE_COLUMNS = "username, display_name, bio, avatar_path, social_links";
 
@@ -109,12 +110,17 @@ export type CreateProfileResult =
   | { ok: true; profile: PublicProfile }
   | { ok: false; reason: "username_taken" | "profile_exists" };
 
-/** Создаёт профиль пользователя (онбординг). */
+/**
+ * Создаёт профиль пользователя (онбординг). Контактную почту сохраняем первой: повторная
+ * запись безопасна, поэтому сбой на любом шаге лечится повторной отправкой формы.
+ */
 export async function createProfile(
   supabase: SupabaseClient,
   userId: string,
   data: ProfileData,
 ): Promise<CreateProfileResult> {
+  if (data.contactEmail) await setContactEmail(supabase, userId, data.contactEmail);
+
   const { data: row, error } = await supabase
     .from("profiles")
     .insert({
@@ -142,12 +148,14 @@ export type UpdateProfileResult =
   | { ok: true; profile: PublicProfile }
   | { ok: false; reason: "username_taken" | "profile_missing" };
 
-/** Обновляет переданные поля профиля пользователя. */
+/** Обновляет переданные поля профиля пользователя и контактную почту, если она передана. */
 export async function updateProfile(
   supabase: SupabaseClient,
   userId: string,
   data: ProfileUpdateData,
 ): Promise<UpdateProfileResult> {
+  if (data.contactEmail !== undefined) await setContactEmail(supabase, userId, data.contactEmail);
+
   const changes = toProfileRow(data);
   const hasChanges = Object.values(changes).some((value) => value !== undefined);
 

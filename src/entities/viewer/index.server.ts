@@ -4,6 +4,7 @@ export {
   deleteUser,
   exchangeAuthCode,
   getAuthProvider,
+  getOAuthErrorCode,
   getOAuthSignInUrl,
   signOut,
 } from "./api/auth.server";

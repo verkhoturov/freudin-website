@@ -26,8 +26,9 @@
 - проверка границ между слоями FSD в линтере;
 - модель профиля: правила адреса страницы (username) и зарезервированные адреса, проверка имени,
   описания и ссылок на соцсети, приведение `@handle` к ссылке;
-- экран входа с кнопками подключённых провайдеров (сейчас только Google) и показом ошибок;
-- вход и выход через Google (OAuth через Supabase), меню пользователя в шапке, защита
+- экран входа с кнопками подключённых провайдеров (сейчас Google и Facebook) и показом ошибок;
+- вход и выход через Google (своя схема OAuth) и Facebook (OAuth через Supabase), меню
+  пользователя в шапке, защита
   приватных страниц: гостя `/onboarding` и `/settings` отправляют на вход;
 - личная страница: карточка, состояния загрузки, 404 и ошибки, кнопка Share;
 - API профиля: создание и обновление профиля, публичный профиль из БД, проверка, свободен ли
@@ -39,9 +40,12 @@
 - настройки: редактирование профиля и фото, способ входа, выход и удаление аккаунта;
   владелец видит на своей странице кнопку Edit;
 - минимальная главная;
-- схема БД в Supabase: таблица `profiles` с RLS и bucket `avatars` для фото.
+- схема БД в Supabase: таблица `profiles` с RLS, `account_contacts` (контактная почта, видна
+  только владельцу) и bucket `avatars` для фото;
+- необязательная контактная почта в онбординге и настройках для аккаунтов без email
+  у провайдера (например, Facebook по номеру телефона).
 
-Кнопок Facebook и Telegram на `/login` пока нет (шаги 9–10). Прямая ссылка на вход через них
+Кнопки Telegram на `/login` пока нет (шаг 10). Прямая ссылка на вход через него
 возвращает на `/login` с ошибкой «This sign-in method isn’t available yet». Провайдер появляется
 на странице входа, когда его добавляют в `enabledAuthProviders`
 (`src/entities/viewer/config/auth-providers.ts`). Интерфейс сайта, ошибки API и юридические
@@ -61,7 +65,7 @@
 | Формы | TanStack Form | ✅ |
 | Клиентское состояние | Zustand (черновик онбординга) | ✅ |
 | Кроп фото | react-easy-crop | ✅ |
-| БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI (миграции и типы) | ✅ БД и вход через Google; Facebook и Telegram — шаги 9–10 |
+| БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI (миграции и типы) | ✅ БД, вход через Google и Facebook; Telegram — шаг 10 |
 | Линтер и форматтер | Biome | ✅ |
 | Хостинг | Vercel, прод на `www.freud.in` | ✅ |
 
@@ -174,10 +178,10 @@ API:
 | GET | `/api/auth/sign-in?provider=&next=` | старт входа, редирект к провайдеру | готово: Google |
 | GET | `/api/auth/callback?code=&next=` | обмен кода на сессию, редирект дальше | готово |
 | POST | `/api/auth/sign-out` | выход | готово |
-| GET | `/api/me` | текущий пользователь, способ входа, его профиль и подсказки для онбординга | готово |
+| GET | `/api/me` | текущий пользователь, способ входа, контактная почта, его профиль и подсказки для онбординга | готово |
 | DELETE | `/api/me` | удаление аккаунта со всеми данными | готово |
-| POST | `/api/profile` | создание профиля (онбординг) | готово |
-| PATCH | `/api/profile` | обновление профиля (только переданные поля) | готово |
+| POST | `/api/profile` | создание профиля (онбординг) и контактной почты | готово |
+| PATCH | `/api/profile` | обновление профиля и контактной почты (только переданные поля) | готово |
 | POST | `/api/profile/avatar` | новое фото: файл (JPEG, PNG, WebP до 2 МБ и 1024×1024) или копия фото из аккаунта провайдера | готово |
 | DELETE | `/api/profile/avatar` | удаление фото | готово |
 | GET | `/api/profiles/[username]` | публичный профиль | готово |
@@ -215,7 +219,7 @@ API:
 
 - Supabase (БД, авторизация, хранилище фото): см. ниже;
 - вход через Google: см. ниже;
-- вход через Facebook: шаг 9;
+- вход через Facebook: см. ниже;
 - вход через Telegram: шаг 10;
 - Vercel: подключён, см. «Деплой»;
 - почта поддержки `freudin.support@gmail.com` (Gmail): где прописать адрес и как позже перейти
@@ -301,8 +305,34 @@ psql --single-transaction --variable ON_ERROR_STOP=1 \
 Google и создаёт сессию Supabase по ID-токену (`signInWithIdToken`). Supabase узнаёт
 пользователя по Google ID, поэтому аккаунты, созданные раньше через OAuth Supabase, остались
 теми же. Дальше онбординг, если профиля ещё нет, иначе своя страница или `?next=`. Cookies
-сессии `httpOnly`: браузер их не читает, сессию видят только API-роуты. Facebook и Telegram
-(шаги 9–10) пойдут через OAuth Supabase и `/api/auth/callback`.
+сессии `httpOnly`: браузер их не читает, сессию видят только API-роуты.
+
+### Вход через Facebook
+
+Подробная инструкция — в [`docs/PLAN.md`](docs/PLAN.md), шаг 9. Кратко:
+
+1. Meta for Developers → приложение `Freudin` с use case «Authenticate and request data from
+   users with Facebook Login», разрешения `public_profile` и `email` (App Review для них
+   не нужен).
+2. Facebook Login → Settings → Valid OAuth Redirect URIs:
+   `https://<ref>.supabase.co/auth/v1/callback`.
+3. App settings → Basic: App domains `freud.in`, ссылки на `/privacy` и `/terms`, Data deletion
+   instructions URL `https://www.freud.in/privacy#account-and-data-deletion`, контакт
+   `freudin.support@gmail.com`.
+4. App ID и App secret внести в Supabase → Authentication → Sign In / Providers → Facebook.
+5. Пока приложение в режиме Development, войти могут только люди с ролью в нём. Для всех —
+   App Mode Live.
+
+Как устроен вход: `/api/auth/sign-in?provider=facebook` → Supabase → Facebook →
+`https://<ref>.supabase.co/auth/v1/callback` → `/api/auth/callback` (обмен кода на сессию,
+PKCE-верификатор в cookie `sb-…-code-verifier`). Email от Facebook Supabase считает
+подтверждённым: если он совпадает с email аккаунта Google, вход попадает в тот же аккаунт.
+Если у аккаунта Facebook нет email, а вход без email в Supabase выключен, `/login` показывает
+ошибку `email_required`. Supabase сохраняет фото Facebook размером 50×50, а подписанную ссылку
+увеличить нельзя. Поэтому `/api/auth/sign-in` передаёт в адресе возврата `provider=facebook`,
+и после входа колбэк по токену Facebook берёт у Graph API ссылку на фото 512×512 и кладёт её
+в `user_metadata`. Для этого в приложении Meta должен быть выключен Require app secret
+(App settings → Advanced → Security).
 
 ## Деплой
 

@@ -199,13 +199,13 @@ export { LoginView as default, metadata } from "@/views/login";
 
 | Слой | Слайс или модуль | Что внутри |
 |------|------------------|------------|
-| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (со способом входа `user.provider`), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `getOAuthSignInUrl`, `exchangeAuthCode`, `signOut`, `getAuthProvider`, `deleteUser`, вход Google без OAuth Supabase: `startGoogleSignIn`, `takeGoogleSignInState`, `completeGoogleSignIn` |
-| `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`, `AVATAR_MAX_DIMENSION`), `profileQueries`, `usernameQueries`, `toProfileInput`, `getProfileChanges`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile`, `updateProfile`, `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles` (сначала обнуляет `avatar_path`), `fetchProviderAvatar`, `detectAvatarImage` (формат и размеры по заголовку файла), `isAvatarSizeAllowed` (не больше `AVATAR_MAX_DIMENSION`), `getProfileSuggestions`; для `viewer` — типы и фабрики запросов через `@x` |
+| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (со способом входа `user.provider`), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `getOAuthSignInUrl`, `getOAuthErrorCode`, `exchangeAuthCode`, `signOut`, `getAuthProvider`, `deleteUser`, вход Google без OAuth Supabase: `startGoogleSignIn`, `takeGoogleSignInState`, `completeGoogleSignIn` |
+| `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`, `contactEmailSchema` — необязательная контактная почта, пустая строка — нет почты), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`, `AVATAR_MAX_DIMENSION`), `profileQueries`, `usernameQueries`, `toProfileInput(profile, contactEmail)`, `getProfileChanges(saved, input)`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile` и `updateProfile` (контактную почту сохраняют первой), `getContactEmail`, `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles` (сначала обнуляет `avatar_path`), `fetchProviderAvatar`, `detectAvatarImage` (формат и размеры по заголовку файла), `isAvatarSizeAllowed` (не больше `AVATAR_MAX_DIMENSION`), `getProfileSuggestions`; для `viewer` — типы и фабрики запросов через `@x` |
 | `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton` (подпись с ником или доменом: `Telegram · @anna`, `example.com`); для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка и подвал сайта |
 | `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров |
 | `widgets` | `profile-card` | карточка личной страницы, скелетон, Share, Edit для владельца (`isOwner`) |
-| `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом, имя, адрес с проверкой (`— available` по ответу сервера), описание, соцсети; `mode="edit"` — кнопка активна только при изменениях и предупреждение об уходе с несохранёнными изменениями; `AvatarValue`, `getAvatarSource` |
+| `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом, имя, адрес с проверкой (`— available` по ответу сервера), описание, соцсети, необязательная почта (`showContactEmail`: у аккаунта нет email от провайдера или контакт уже сохранён); `mode="edit"` — кнопка активна только при изменениях и предупреждение об уходе с несохранёнными изменениями; `AvatarValue`, `getAvatarSource` |
 | `widgets` | `account-settings` | способ входа, Sign out, Delete account с подтверждением |
 | `widgets` | `legal-document` | обёртка юридической страницы `LegalDocument` (заголовок, дата редакции, типографика), `OperatorDetails` (реквизиты из `legalConfig`), `CodeList` |
 | `views` | `onboarding` | онбординг; черновик формы — Zustand-стор `useOnboardingDraftStore` в `model` |
@@ -224,7 +224,7 @@ export { LoginView as default, metadata } from "@/views/login";
 | Путь | Файл роутинга | View | Доступ | Статус |
 |------|---------------|------|--------|--------|
 | `/` | `src/app/page.tsx` | `home` | все | готово (минимальная) |
-| `/login` | `src/app/login/page.tsx` | `login` | гости; авторизованных редиректим | готово: Google; Facebook и Telegram — шаги 9–10 |
+| `/login` | `src/app/login/page.tsx` | `login` | гости; авторизованных редиректим | готово: Google и Facebook; Telegram — шаг 10 |
 | `/onboarding` | `src/app/onboarding/page.tsx` | `onboarding` | авторизованные без профиля; с профилем уводим на `/<username>` | готово |
 | `/settings` | `src/app/settings/page.tsx` | `settings` | авторизованные с профилем | готово: профиль и аккаунт |
 | `/privacy` | `src/app/privacy/page.tsx` | `privacy` | все | готово: Privacy Policy на английском, у разделов якоря (`#account-and-data-deletion`) |
@@ -253,14 +253,14 @@ export { LoginView as default, metadata } from "@/views/login";
 | Метод | Путь | Назначение | Сессия | Статус |
 |-------|------|------------|:------:|--------|
 | GET | `/api/health` | проверка связки клиент → API | — | готово |
-| GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | готово: Google; Facebook и Telegram → `/login?error=auth_unavailable` до шагов 9–10 |
-| GET | `/api/auth/callback?code=&next=` | обмен кода на сессию и редирект (вход через OAuth Supabase: Facebook, Telegram) | — | готово, пока не используется |
+| GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | готово: Google и Facebook; Telegram → `/login?error=auth_unavailable` до шага 10 |
+| GET | `/api/auth/callback?code=&provider=&next=` | обмен кода на сессию и редирект (вход через OAuth Supabase: Facebook, Telegram); ошибку провайдера переводит в код через `getOAuthErrorCode`; после Facebook берёт фото 512×512 из Graph API | — | готово: Facebook |
 | GET | `/api/auth/callback/google?code=&state=` | возврат от Google без OAuth Supabase: проверка `state`, код → ID-токен → сессия Supabase, редирект | — | готово |
 | POST | `/api/auth/sign-out` | выход; без сессии тоже 204 | ✓ | готово |
-| GET | `/api/me` | текущий пользователь, его профиль (или `null`) и подсказки для онбординга | ✓ | готово |
+| GET | `/api/me` | текущий пользователь (`email` от провайдера и `contactEmail` — своя почта, если провайдер её не дал), его профиль (или `null`) и подсказки для онбординга | ✓ | готово |
 | DELETE | `/api/me` | удаление аккаунта: фото (из профиля, затем из Storage), пользователь через admin API (профиль — каскадом), cookies сессии; 204 | ✓ | готово |
-| POST | `/api/profile` | создание профиля (онбординг): 201; занятый username — 409 с `fields.username`, профиль уже есть — 409 | ✓ | готово |
-| PATCH | `/api/profile` | обновление переданных полей профиля; нет профиля — 404, занятый username — 409 | ✓ | готово |
+| POST | `/api/profile` | создание профиля (онбординг) и контактной почты, если она указана: 201; занятый username — 409 с `fields.username`, профиль уже есть — 409 | ✓ | готово |
+| PATCH | `/api/profile` | обновление переданных полей профиля; `contactEmail: ""` удаляет контактную почту; нет профиля — 404, занятый username — 409 | ✓ | готово |
 | POST | `/api/profile/avatar` | новое фото: `multipart/form-data` с полем `file` (JPEG, PNG, WebP до 2 МБ и не больше 1024×1024, иначе 400 или 413) или JSON `{ "source": "provider" }` — копия фото провайдера входа | ✓ | готово |
 | DELETE | `/api/profile/avatar` | удаление фото | ✓ | готово |
 | GET | `/api/profiles/[username]` | публичный профиль (регистр не важен), `demo` — демо-профиль из кода | — | готово |
@@ -306,6 +306,10 @@ export { LoginView as default, metadata } from "@/views/login";
 - `anon` читает из `profiles` только колонки публичной страницы (`PUBLIC_PROFILE_COLUMNS`):
   `select *` и `select("id")` от гостя дают `permission denied`. Новую публичную колонку
   добавляй и в `PUBLIC_PROFILE_COLUMNS`, и миграцией в `grant select (…) … to anon`.
+- Приватные данные пользователя не кладём в `profiles`: её читают все. Контактная почта лежит
+  в `account_contacts`, где RLS пускает только владельца, а у `anon` прав нет. Это не email
+  аккаунта в Supabase Auth: неподтверждённый адрес там связал бы аккаунты по email, и чужая
+  почта дала бы доступ к чужому аккаунту.
 - Supabase CLI читает переменные из `.env` в корне. Прямой адрес БД доступен только по IPv6,
   поэтому CLI и `psql` подключаются через пулер `aws-0-eu-central-1.pooler.supabase.com:5432`
   (пользователь `postgres.<ref>`).

@@ -26,6 +26,15 @@ function syncProfileCache(queryClient: QueryClient, profile: PublicProfile) {
   void queryClient.invalidateQueries({ queryKey: usernameQueries.all() });
 }
 
+// Контактную почту сервер хранит отдельно от профиля и сохраняет как есть после trim
+function syncContactEmailCache(queryClient: QueryClient, contactEmail: string | undefined) {
+  if (contactEmail === undefined) return;
+  const value = contactEmail.trim() || null;
+  queryClient.setQueryData(viewerQueries.me().queryKey, (viewer) =>
+    viewer ? { ...viewer, user: { ...viewer.user, contactEmail: value } } : viewer,
+  );
+}
+
 function uploadAvatar(source: AvatarSource): Promise<PublicProfile> {
   if (source.type === "provider") {
     const body: ProviderAvatarRequest = { source: "provider" };
@@ -65,7 +74,10 @@ export function useCreateProfileMutation() {
         return { profile: created, avatarError } satisfies CreateProfileResult;
       }
     },
-    onSuccess: ({ profile }) => syncProfileCache(queryClient, profile),
+    onSuccess: ({ profile }, variables) => {
+      syncContactEmailCache(queryClient, variables.profile.contactEmail || undefined);
+      syncProfileCache(queryClient, profile);
+    },
     onError: (error) => {
       // Профиль уже создан (например, ответ на прошлую отправку не дошёл): кеш `/api/me`
       // устарел. Свежие данные покажут профиль, и гард онбординга уведёт на страницу
@@ -84,7 +96,10 @@ export function useUpdateProfileMutation() {
   return useMutation({
     mutationFn: (input: ProfileUpdateInput) =>
       apiClient.patch<PublicProfile>(apiRoutes.profile, input),
-    onSuccess: (profile) => syncProfileCache(queryClient, profile),
+    onSuccess: (profile, input) => {
+      syncContactEmailCache(queryClient, input.contactEmail);
+      syncProfileCache(queryClient, profile);
+    },
   });
 }
 

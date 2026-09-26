@@ -1,5 +1,6 @@
 import { jsonOk, NO_STORE_HEADERS, requireUser, withErrorHandling } from "@/app/api/_lib";
 import {
+  getContactEmail,
   getProfileByUserId,
   getProfileSuggestions,
   removeUserAvatarFiles,
@@ -10,11 +11,19 @@ import { createSupabaseAdminClient } from "@/shared/api/index.server";
 export const GET = withErrorHandling(async () => {
   const { supabase, claims } = await requireUser();
   const email = claims.email || null;
-  const profile = await getProfileByUserId(supabase, claims.sub);
+  const [profile, contactEmail] = await Promise.all([
+    getProfileByUserId(supabase, claims.sub),
+    getContactEmail(supabase, claims.sub),
+  ]);
 
   return jsonOk<Viewer>(
     {
-      user: { id: claims.sub, email, provider: getAuthProvider(claims.app_metadata) },
+      user: {
+        id: claims.sub,
+        email,
+        contactEmail,
+        provider: getAuthProvider(claims.app_metadata),
+      },
       profile,
       suggestions: getProfileSuggestions(claims.user_metadata, email),
     },

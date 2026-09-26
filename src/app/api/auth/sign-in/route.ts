@@ -22,6 +22,7 @@ export const GET = withErrorHandling(async (request) => {
       url = await startGoogleSignIn(new URL(apiRoutes.googleAuthCallback, origin).toString(), next);
     } else {
       const callbackUrl = new URL(apiRoutes.authCallback, origin);
+      callbackUrl.searchParams.set("provider", provider.data);
       if (next !== routes.home) callbackUrl.searchParams.set("next", next);
       const supabase = await createSupabaseServerClient();
       url = await getOAuthSignInUrl(supabase, provider.data, callbackUrl.toString());

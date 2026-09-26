@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   BIO_MAX_LENGTH,
+  CONTACT_EMAIL_MAX_LENGTH,
   DISPLAY_NAME_MAX_LENGTH,
   type ProfileInput,
   profileInputSchema,
@@ -54,6 +55,11 @@ type ProfileFormProps = {
   providerAvatarUrl: string | null;
   /** Текущий адрес владельца: его не проверяем на занятость (настройки). */
   currentUsername?: string;
+  /**
+   * Показывать необязательное поле контактной почты: у аккаунта нет email от провайдера
+   * или контакт уже сохранён.
+   */
+  showContactEmail?: boolean;
   submitLabel: string;
   /** Сохранение. `ApiError` с `fields` показывается у полей формы, остальные ошибки — тостом. */
   onSubmit: (values: ProfileInput, avatar: AvatarValue) => Promise<void>;
@@ -94,6 +100,7 @@ export function ProfileForm({
   currentAvatarUrl = null,
   providerAvatarUrl,
   currentUsername,
+  showContactEmail = false,
   submitLabel,
   onSubmit,
   onValuesChange,
@@ -371,6 +378,42 @@ export function ProfileForm({
             </FieldSet>
           )}
         </form.Field>
+
+        {showContactEmail ? (
+          <form.Field name="contactEmail">
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Email (optional)</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="email"
+                    inputMode="email"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    aria-invalid={isInvalid}
+                    aria-describedby={`${field.name}-description`}
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    maxLength={CONTACT_EMAIL_MAX_LENGTH}
+                  />
+                  <FieldDescription id={`${field.name}-description`}>
+                    Your sign-in account didn’t share an email address. Add one if you’d like us to
+                    be able to contact you about your account. It isn’t shown on your page.
+                  </FieldDescription>
+                  {isInvalid ? (
+                    <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                  ) : null}
+                </Field>
+              );
+            }}
+          </form.Field>
+        ) : null}
 
         <form.Subscribe selector={(state) => state.isSubmitting}>
           {(isSubmitting) => (
