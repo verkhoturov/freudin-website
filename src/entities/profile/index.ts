@@ -9,6 +9,7 @@ export {
   USERNAME_MIN_LENGTH,
 } from "./config/limits";
 export { AVATAR_MAX_BYTES, AVATAR_SIZE } from "./config/storage";
+export { getProfileChanges, toProfileInput } from "./lib/profile-changes";
 export {
   bioSchema,
   displayNameSchema,

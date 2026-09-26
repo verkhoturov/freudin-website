@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
 import { profileQueries } from "@/entities/profile";
+import { useViewerQuery } from "@/entities/viewer";
 import { ApiError } from "@/shared/api";
 import { siteConfig } from "@/shared/config";
 import { Button } from "@/shared/ui/button";
@@ -14,6 +15,7 @@ import { ProfileCard, ProfileCardSkeleton } from "@/widgets/profile-card";
 export function ProfileView() {
   const { username } = useParams<{ username: string }>();
   const profile = useQuery(profileQueries.detail(username));
+  const viewer = useViewerQuery();
   const displayName = profile.data?.displayName;
 
   // Страница рендерится на клиенте, поэтому заголовок вкладки выставляем после загрузки
@@ -53,7 +55,10 @@ export function ProfileView() {
 
   return (
     <Container className="py-10">
-      <ProfileCard profile={profile.data} />
+      <ProfileCard
+        profile={profile.data}
+        isOwner={viewer.data?.profile?.username === profile.data.username}
+      />
     </Container>
   );
 }

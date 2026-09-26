@@ -1,10 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { ProfileAvatar, type PublicProfile } from "@/entities/profile";
 import { SocialLinkButton } from "@/entities/social-link";
+import { routes } from "@/shared/config";
+import { Button } from "@/shared/ui/button";
 import { ShareProfileButton } from "./share-profile-button";
 
-export function ProfileCard({ profile }: { profile: PublicProfile }) {
+type ProfileCardProps = {
+  profile: PublicProfile;
+  /** Страницу смотрит её владелец: показываем «Редактировать». */
+  isOwner?: boolean;
+};
+
+export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
   return (
     <article className="mx-auto flex w-full max-w-md flex-col items-center gap-6 text-center">
       <ProfileAvatar displayName={profile.displayName} avatarUrl={profile.avatarUrl} />
@@ -22,7 +31,14 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
           ))}
         </ul>
       ) : null}
-      <ShareProfileButton username={profile.username} displayName={profile.displayName} />
+      <div className="flex flex-wrap justify-center gap-2">
+        <ShareProfileButton username={profile.username} displayName={profile.displayName} />
+        {isOwner ? (
+          <Button asChild variant="ghost">
+            <Link href={routes.settings}>Редактировать</Link>
+          </Button>
+        ) : null}
+      </div>
     </article>
   );
 }

@@ -6,6 +6,7 @@ export {
   detectAvatarImage,
   fetchProviderAvatar,
   removeProfileAvatar,
+  removeUserAvatarFiles,
   setProfileAvatar,
 } from "./api/avatar.server";
 export {

@@ -181,6 +181,20 @@ export async function setProfileAvatar(
   return { ok: true, profile: toPublicProfile(supabase, row) };
 }
 
+/** Удаляет все файлы пользователя из bucket фото: перед удалением аккаунта. */
+export async function removeUserAvatarFiles(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  const bucket = supabase.storage.from(AVATARS_BUCKET);
+  const { data: files, error } = await bucket.list(userId, { limit: 1000 });
+  if (error) throw error;
+  if (files.length === 0) return;
+
+  const { error: removeError } = await bucket.remove(files.map((file) => `${userId}/${file.name}`));
+  if (removeError) throw removeError;
+}
+
 /** Убирает фото из профиля и удаляет файл из Storage. */
 export async function removeProfileAvatar(
   supabase: SupabaseClient,

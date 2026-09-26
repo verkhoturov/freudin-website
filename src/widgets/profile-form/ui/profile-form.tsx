@@ -177,6 +177,10 @@ export function ProfileForm({
           {(field) => {
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
             const username = field.state.value.trim().toLowerCase();
+            const isUsernameChanged = Boolean(currentUsername && username !== currentUsername);
+            const describedBy = isUsernameChanged
+              ? `${field.name}-description ${field.name}-warning`
+              : `${field.name}-description`;
             return (
               <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Адрес страницы</FieldLabel>
@@ -187,7 +191,7 @@ export function ProfileForm({
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
                   aria-invalid={isInvalid}
-                  aria-describedby={`${field.name}-description`}
+                  aria-describedby={describedBy}
                   autoComplete="off"
                   autoCapitalize="none"
                   autoCorrect="off"
@@ -199,6 +203,11 @@ export function ProfileForm({
                     ? "Проверяем, свободен ли адрес…"
                     : `${SITE_HOST}/${username || "адрес"}`}
                 </FieldDescription>
+                {isUsernameChanged ? (
+                  <FieldDescription id={`${field.name}-warning`}>
+                    Старая ссылка {SITE_HOST}/{currentUsername} перестанет работать.
+                  </FieldDescription>
+                ) : null}
                 {isInvalid ? <FieldError errors={toFieldErrors(field.state.meta.errors)} /> : null}
               </Field>
             );
