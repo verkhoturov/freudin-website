@@ -14,7 +14,7 @@ import {
   updateProfile,
 } from "@/entities/profile/index.server";
 
-const USERNAME_TAKEN_MESSAGE = "Этот адрес уже занят.";
+const USERNAME_TAKEN_MESSAGE = "This username is already taken.";
 
 function usernameTakenError(): HttpError {
   return new HttpError(409, "conflict", USERNAME_TAKEN_MESSAGE, {
@@ -30,7 +30,7 @@ export const POST = withErrorHandling(async (request) => {
 
   if (!result.ok) {
     if (result.reason === "username_taken") throw usernameTakenError();
-    throw new HttpError(409, "conflict", "Страница уже создана.");
+    throw new HttpError(409, "conflict", "Your page has already been created.");
   }
   return jsonOk<PublicProfile>(result.profile, { status: 201, headers: NO_STORE_HEADERS });
 });
@@ -43,7 +43,7 @@ export const PATCH = withErrorHandling(async (request) => {
 
   if (!result.ok) {
     if (result.reason === "username_taken") throw usernameTakenError();
-    throw new HttpError(404, "not_found", "Сначала создайте страницу.");
+    throw new HttpError(404, "not_found", "Create your page first.");
   }
   return jsonOk<PublicProfile>(result.profile, { headers: NO_STORE_HEADERS });
 });

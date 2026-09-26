@@ -5,8 +5,8 @@ import { DEMO_USERNAME } from "./limits";
 /** Демо-профиль для ссылки «Пример страницы»: отдаётся без базы данных. */
 export const demoProfile: PublicProfile = {
   username: DEMO_USERNAME,
-  displayName: "Демо-профиль",
-  bio: "Так выглядит личная страница: фото, имя, описание и ссылки на соцсети.",
+  displayName: "Demo profile",
+  bio: "This is what a personal page looks like: a photo, name, bio, and social links.",
   avatarUrl: null,
   socialLinks: [
     { platform: "telegram", url: "https://t.me/telegram" },

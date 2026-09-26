@@ -16,7 +16,7 @@ export const GET = withErrorHandling(async (request) => {
   const providerError = searchParams.get("error");
   if (providerError) {
     console.warn(
-      "Провайдер вернул ошибку входа:",
+      "The sign-in provider returned an error:",
       providerError,
       searchParams.get("error_description"),
     );

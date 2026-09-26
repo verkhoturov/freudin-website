@@ -64,11 +64,11 @@ export function AvatarField({
     event.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Выберите фото в формате JPEG, PNG или WebP.");
+      toast.error("Choose a JPEG, PNG, or WebP photo.");
       return;
     }
     if (file.size > SOURCE_MAX_BYTES) {
-      toast.error("Файл слишком большой. Выберите фото поменьше.");
+      toast.error("The file is too large. Choose a smaller photo.");
       return;
     }
     setCropSrc(URL.createObjectURL(file));
@@ -81,7 +81,7 @@ export function AvatarField({
 
   return (
     <FieldSet>
-      <FieldLegend variant="label">Фото</FieldLegend>
+      <FieldLegend variant="label">Photo</FieldLegend>
       <div className="flex items-center gap-4">
         <ProfileAvatar displayName={displayName} avatarUrl={previewUrl} />
         <div className="flex flex-col items-start gap-1">
@@ -90,7 +90,7 @@ export function AvatarField({
             variant="outline"
             disabled={disabled}
             onClick={() => inputRef.current?.click()}>
-            Загрузить фото
+            Upload photo
           </Button>
           {providerAvatarUrl && value.type !== "provider" ? (
             <Button
@@ -98,7 +98,7 @@ export function AvatarField({
               variant="ghost"
               disabled={disabled}
               onClick={() => onChange({ type: "provider" })}>
-              Взять фото из аккаунта
+              Use account photo
             </Button>
           ) : null}
           {previewUrl ? (
@@ -107,7 +107,7 @@ export function AvatarField({
               variant="ghost"
               disabled={disabled}
               onClick={() => onChange({ type: "none" })}>
-              Убрать фото
+              Remove photo
             </Button>
           ) : null}
         </div>

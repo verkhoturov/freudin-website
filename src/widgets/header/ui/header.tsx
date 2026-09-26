@@ -27,7 +27,7 @@ export function Header() {
           ) : (
             <Button asChild size="sm">
               {/* После входа вернём на текущую страницу */}
-              <Link href={getLoginHref(pathname)}>Войти</Link>
+              <Link href={getLoginHref(pathname)}>Sign in</Link>
             </Button>
           )}
         </div>

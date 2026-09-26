@@ -138,7 +138,7 @@ export async function fetchProviderAvatar(avatarUrl: string): Promise<AvatarImag
       return image && isAvatarSizeAllowed(image) ? image : null;
     }
   } catch (error) {
-    console.warn("Не удалось скачать фото провайдера:", error);
+    console.warn("Couldn't download the provider photo:", error);
   }
   return null;
 }
@@ -160,7 +160,7 @@ async function getAvatarPath(
 // Лишний файл в Storage не ломает профиль, поэтому ошибку удаления только логируем
 async function removeAvatarFile(supabase: SupabaseClient, path: string): Promise<void> {
   const { error } = await supabase.storage.from(AVATARS_BUCKET).remove([path]);
-  if (error) console.warn(`Не удалось удалить фото ${path}:`, error.message);
+  if (error) console.warn(`Couldn't delete photo ${path}:`, error.message);
 }
 
 /** Сохраняет фото профиля в Storage, прописывает его в профиль и удаляет прежнее. */

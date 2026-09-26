@@ -10,14 +10,14 @@ export function HomeView() {
   return (
     <Container className="flex flex-col gap-6 py-10">
       <h1 className="font-semibold text-2xl tracking-tight">
-        Личная страница с фото, описанием и ссылками на соцсети
+        A personal page with your photo, bio, and social links
       </h1>
       <div className="flex flex-wrap gap-3">
         <Button asChild>
-          <Link href={routes.login}>Войти</Link>
+          <Link href={routes.login}>Sign in</Link>
         </Button>
         <Button asChild variant="outline">
-          <Link href={routes.profile(DEMO_USERNAME)}>Пример страницы</Link>
+          <Link href={routes.profile(DEMO_USERNAME)}>See an example</Link>
         </Button>
       </div>
     </Container>

@@ -17,7 +17,7 @@
 
 Готовы:
 
-- каркас Feature-Sliced Design и страницы-заглушки для всех роутов;
+- каркас Feature-Sliced Design;
 - минималистичный интерфейс на стандартных компонентах shadcn/ui: светлая и тёмная темы,
   шапка и подвал;
 - клиент API на TanStack Query и первый API-роут `/api/health`;
@@ -29,7 +29,7 @@
 - экран входа с кнопками подключённых провайдеров (сейчас только Google) и показом ошибок;
 - вход и выход через Google (OAuth через Supabase), меню пользователя в шапке, защита
   приватных страниц: гостя `/onboarding` и `/settings` отправляют на вход;
-- личная страница: карточка, состояния загрузки, 404 и ошибки, кнопка «Поделиться»;
+- личная страница: карточка, состояния загрузки, 404 и ошибки, кнопка Share;
 - API профиля: создание и обновление профиля, публичный профиль из БД, проверка, свободен ли
   адрес страницы;
 - фото профиля: загрузка с кропом и сжатием на клиенте, копирование фото из аккаунта
@@ -37,15 +37,16 @@
 - онбординг: форма с предзаполнением из данных провайдера, проверкой адреса и черновиком,
   который переживает перезагрузку страницы;
 - настройки: редактирование профиля и фото, способ входа, выход и удаление аккаунта;
-  владелец видит на своей странице кнопку «Редактировать»;
+  владелец видит на своей странице кнопку Edit;
 - минимальная главная;
 - схема БД в Supabase: таблица `profiles` с RLS и bucket `avatars` для фото.
 
 Кнопок Facebook и Telegram на `/login` пока нет (шаги 9–10). Прямая ссылка на вход через них
-возвращает на `/login` с ошибкой «Этот способ входа пока недоступен». Провайдер появляется
+возвращает на `/login` с ошибкой «This sign-in method isn’t available yet». Провайдер появляется
 на странице входа, когда его добавляют в `enabledAuthProviders`
-(`src/entities/viewer/config/auth-providers.ts`). Страницы `/privacy` и `/terms` — заглушки (этап H). Пример личной
-страницы — демо-профиль по адресу `/demo`.
+(`src/entities/viewer/config/auth-providers.ts`). Интерфейс сайта, ошибки API и юридические
+тексты `/privacy` и `/terms` — на английском. Пример личной страницы — демо-профиль по адресу
+`/demo`.
 
 ## Стек
 
@@ -127,10 +128,10 @@ src/
 │  ├─ robots.ts, sitemap.ts, opengraph-image.jpg   # SEO-файлы
 │  └─ api/             # API-роуты; _lib — общие хелперы (ошибки, ответы, zod, защита от CSRF)
 ├─ views/              # страницы: home, login, onboarding, settings, profile, privacy, terms, not-found
-├─ widgets/            # header, footer, sign-in-panel, profile-card, profile-form, account-settings
+├─ widgets/            # header, footer, sign-in-panel, profile-card, profile-form, account-settings, legal-document
 ├─ entities/           # viewer (вход), profile (профиль и username), social-link (ссылки на соцсети)
 └─ shared/
-   ├─ ui/              # компоненты shadcn/ui, Container, Logo, ThemeToggle, NotFoundState, PagePlaceholder
+   ├─ ui/              # компоненты shadcn/ui, Container, Logo, ThemeToggle, NotFoundState, SupportEmailLink
    ├─ lib/             # утилиты: cn, безопасный редирект по ?next=, кроп фото, буфер обмена
    ├─ api/             # apiClient, ApiError, QueryClient; на сервере — клиенты Supabase и типы БД
    └─ config/          # routes, apiRoutes, site, зарезервированные адреса, серверный env
@@ -143,7 +144,8 @@ backups/               # резервные копии; не в git: в них �
 components.json        # настройки shadcn/ui (алиасы под FSD)
 .env.example           # шаблон переменных окружения
 docs/
-└─ PLAN.md             # пошаговый план
+├─ PLAN.md             # пошаговый план
+└─ legal/              # исходные тексты /privacy и /terms с разделами про аналитику (заготовка)
 ```
 
 Файлы в `src/app` только реэкспортируют страницы из `src/views`. Страницы — клиентские
@@ -159,8 +161,8 @@ docs/
 | `/onboarding` | создание страницы после первого входа | готово; вошедшего с профилем уводит на его страницу |
 | `/settings` | настройки профиля и аккаунта | готово, доступна только вошедшим с профилем |
 | `/<username>` | личная страница пользователя | готово; `/demo` — демо-профиль, регистр адреса не важен (`/Anna` → `/anna`) |
-| `/privacy` | политика конфиденциальности | заглушка |
-| `/terms` | условия использования | заглушка |
+| `/privacy` | политика конфиденциальности (Privacy Policy) | готово |
+| `/terms` | условия использования (Terms of Service) | готово |
 
 API:
 
@@ -187,7 +189,7 @@ API:
 
 - Прод-адрес — `https://www.freud.in` (`siteConfig.url`), `freud.in` редиректит на него. От этого
   адреса строятся `metadataBase`, canonical, `robots.txt` и `sitemap.xml`.
-- Open Graph и карточка Twitter по умолчанию: название, описание, `ru_RU` и картинка
+- Open Graph и карточка Twitter по умолчанию: название, описание, `en_US` и картинка
   `src/app/opengraph-image.jpg` (1200×630).
 - У `/`, `/privacy` и `/terms` есть canonical, и они перечислены в `sitemap.xml`.
 - `/login`, `/onboarding` и `/settings` закрыты от индексации (`noindex, follow`).
@@ -198,10 +200,11 @@ API:
 
 - Пока минималистичный дизайн: стандартные компоненты shadcn/ui и минимум контента — только
   навигация и поля ввода.
-- shadcn/ui на Radix, стиль по умолчанию (nova), нейтральная палитра, шрифт Geist (с кириллицей),
+- shadcn/ui на Radix, стиль по умолчанию (nova), нейтральная палитра, шрифт Geist (с кириллицей для
+  пользовательских имён и описаний),
   иконки lucide. Токены темы — в `src/app/globals.css`.
 - Светлая, тёмная и системная темы, переключатель в шапке.
-- Вёрстка mobile-first, есть ссылка «Перейти к содержимому» для навигации с клавиатуры.
+- Вёрстка mobile-first, есть ссылка Skip to content для навигации с клавиатуры.
 - Компоненты добавляются командой `npx shadcn add <component>` и попадают в `src/shared/ui`.
 
 ## Внешние сервисы
@@ -212,7 +215,10 @@ API:
 - вход через Google: см. ниже;
 - вход через Facebook: шаг 9;
 - вход через Telegram: шаг 10;
-- Vercel: подключён, см. «Деплой».
+- Vercel: подключён, см. «Деплой»;
+- почта поддержки `freudin.support@gmail.com` (Gmail): где прописать адрес и как позже перейти
+  на `support@freud.in` — в [`docs/PLAN.md`](docs/PLAN.md), этап H. Адрес задан
+  в `siteConfig.supportEmail` и показан в подвале и юридических текстах.
 
 ### Supabase
 

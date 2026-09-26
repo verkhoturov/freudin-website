@@ -11,7 +11,7 @@ export async function requireUser() {
 
   // Сбой сети до Supabase — это 500, а не «не авторизован»: клиент не должен разлогиниваться
   if (isAuthRetryableFetchError(error)) throw error;
-  if (!data) throw new HttpError(401, "unauthorized", "Войдите, чтобы продолжить.");
+  if (!data) throw new HttpError(401, "unauthorized", "Sign in to continue.");
 
   return { supabase, claims: data.claims };
 }

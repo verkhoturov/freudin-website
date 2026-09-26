@@ -19,7 +19,7 @@ export function OnboardingView() {
   return (
     <ViewerGuard access="without-profile">
       <Container className="flex max-w-lg flex-col gap-6 py-10">
-        <h1 className="font-semibold text-2xl tracking-tight">Создание страницы</h1>
+        <h1 className="font-semibold text-2xl tracking-tight">Create your page</h1>
         <OnboardingForm />
       </Container>
     </ViewerGuard>
@@ -34,12 +34,12 @@ function OnboardingForm() {
 
 function showPageReadyToast(username: string) {
   const url = new URL(routes.profile(username), window.location.origin).toString();
-  toast.success("Страница готова", {
+  toast.success("Your page is ready", {
     action: {
-      label: "Скопировать ссылку",
+      label: "Copy link",
       onClick: async () => {
-        if (await copyToClipboard(url)) toast.success("Ссылка скопирована");
-        else toast.error("Не удалось скопировать ссылку");
+        if (await copyToClipboard(url)) toast.success("Link copied");
+        else toast.error("Couldn’t copy the link");
       },
     },
   });
@@ -75,7 +75,7 @@ function OnboardingProfileForm({ viewer }: { viewer: Viewer }) {
     clearDraft();
     showPageReadyToast(result.profile.username);
     if (result.avatarError) {
-      toast.error("Фото загрузить не удалось. Добавьте его позже в настройках.");
+      toast.error("Couldn’t upload the photo. You can add it later in Settings.");
     }
   };
 
@@ -84,7 +84,7 @@ function OnboardingProfileForm({ viewer }: { viewer: Viewer }) {
       defaultValues={defaultValues}
       defaultAvatar={defaultAvatar}
       providerAvatarUrl={suggestions.avatarUrl}
-      submitLabel="Создать страницу"
+      submitLabel="Create page"
       onSubmit={submit}
       onValuesChange={(values) => saveDraft({ userId: user.id, values })}
     />

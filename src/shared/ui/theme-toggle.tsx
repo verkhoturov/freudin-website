@@ -12,9 +12,9 @@ import {
 } from "@/shared/ui/dropdown-menu";
 
 const themeOptions = [
-  { value: "light", label: "Светлая", Icon: SunIcon },
-  { value: "dark", label: "Тёмная", Icon: MoonIcon },
-  { value: "system", label: "Системная", Icon: MonitorIcon },
+  { value: "light", label: "Light", Icon: SunIcon },
+  { value: "dark", label: "Dark", Icon: MoonIcon },
+  { value: "system", label: "System", Icon: MonitorIcon },
 ];
 
 export function ThemeToggle() {
@@ -23,7 +23,7 @@ export function ThemeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative" aria-label="Сменить тему">
+        <Button variant="ghost" size="icon" className="relative" aria-label="Change theme">
           {/* Иконку выбираем через CSS-класс .dark, чтобы разметка сервера и клиента совпадала */}
           <SunIcon className="rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
           <MoonIcon className="absolute rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />

@@ -10,10 +10,10 @@ export const usernameSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .min(USERNAME_MIN_LENGTH, `Минимум ${USERNAME_MIN_LENGTH} символа`)
-  .max(USERNAME_MAX_LENGTH, `Максимум ${USERNAME_MAX_LENGTH} символов`)
+  .min(USERNAME_MIN_LENGTH, `Must be at least ${USERNAME_MIN_LENGTH} characters`)
+  .max(USERNAME_MAX_LENGTH, `Must be ${USERNAME_MAX_LENGTH} characters or fewer`)
   .regex(
     USERNAME_PATTERN,
-    "Латинские буквы, цифры, «-» и «_»; первый и последний символ — буква или цифра",
+    "Use letters a–z, digits, “-” and “_”; start and end with a letter or digit",
   )
-  .refine((username) => !reservedUsernames.has(username), "Этот адрес занят системой");
+  .refine((username) => !reservedUsernames.has(username), "This username is reserved");

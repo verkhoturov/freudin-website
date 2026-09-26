@@ -7,7 +7,7 @@ export const GET = withErrorHandling(
     const { username } = await params;
     const profile = await getProfileByUsername(createSupabasePublicClient(), username);
 
-    if (!profile) throw new HttpError(404, "not_found", "Страница не найдена.");
+    if (!profile) throw new HttpError(404, "not_found", "Page not found.");
     return jsonOk<PublicProfile>(profile);
   },
 );

@@ -11,7 +11,7 @@ export const GET = withErrorHandling(
   async (_request, { params }: RouteContext<"/api/usernames/[username]">) => {
     const result = usernameSchema.safeParse((await params).username);
     if (!result.success) {
-      const message = result.error.issues[0]?.message ?? "Недопустимый адрес.";
+      const message = result.error.issues[0]?.message ?? "Invalid username.";
       throw new HttpError(400, "validation_error", message, { username: message });
     }
 

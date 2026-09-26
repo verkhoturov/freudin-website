@@ -31,7 +31,10 @@ Freudin — сайт, где пользователь входит через Go
    `package-lock.json` создан npm 11, а npm 10 переписывает его лишними изменениями. CLI shadcn
    ставит пакеты системным npm, поэтому после `npx shadcn add …` пересобери lock-файл:
    `git checkout package-lock.json && npx npm@11 install`.
-7. Документация, комментарии в коде и тексты интерфейса пишем на русском.
+7. **Тексты интерфейса пишем на английском** (решение 16 в `docs/PLAN.md`): подписи, тосты,
+   `aria-label`, `alt`, `metadata`, сообщения zod-схем, `message` ошибок API, юридические тексты.
+   Апостроф в них типографский: `Couldn’t`, `can’t`. Логи сервера тоже на английском.
+   Документацию и комментарии в коде по-прежнему пишем на русском. Кириллицу в шрифте Geist не убираем: имена и описания пользователей бывают на любом языке.
 8. **При вёрстке UI проверяй, насколько разметка соответствует хорошей SEO-оптимизации, и
    предлагай пользователю правки, если SEO можно улучшить** (чек-лист — в разделе «SEO»).
 9. Каждый коммит в `main` сразу выкладывается в прод на `www.freud.in`, превью-деплоев нет.
@@ -40,6 +43,9 @@ Freudin — сайт, где пользователь входит через Go
 10. **Git в локальной сессии (CLI, VS Code) — только пользователь.** Не создавай ветки и коммиты,
     не пушь и не переключай ветки без его прямого указания. В облачной сессии коммит и push
     в рабочую ветку разрешены.
+11. **Если меняется обработка персональных данных** (новый провайдер входа или сервис, cookies,
+    хранилище браузера, аналитика), обнови тексты `/privacy` и `/terms` и дату «Last updated».
+    Исходные тексты с разделами про аналитику лежат в `docs/legal/*.draft.md`.
 
 ## Стек
 
@@ -114,7 +120,7 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   плюс корректный HTTP-статус. Коды: `bad_request` и `validation_error` (400), `unauthorized` (401),
   `forbidden` (403), `not_found` (404), `conflict` (409), `payload_too_large` (413),
   `internal_error` (500). На клиенте у `ApiError` бывают ещё `network_error` (status 0) и
-  `unexpected_response`. Поле `message` пишем для пользователя, по-русски.
+  `unexpected_response`. Поле `message` пишем для пользователя, на английском.
 - В серверном коде из `@/shared/api` импортируем только типы (`import type`): модуль клиентский
   и тянет за собой TanStack Query.
 - Путь для редиректа из `?next=` пропускаем только через `getSafeRedirectPath` из
@@ -192,14 +198,15 @@ export { LoginView as default, metadata } from "@/views/login";
 | `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton` (подпись с ником или доменом: `Telegram · @anna`, `example.com`); для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка и подвал сайта |
 | `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров |
-| `widgets` | `profile-card` | карточка личной страницы, скелетон, «Поделиться», «Редактировать» для владельца (`isOwner`) |
-| `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом, имя, адрес с проверкой («адрес свободен» по ответу сервера), описание, соцсети; `mode="edit"` — кнопка активна только при изменениях и предупреждение об уходе с несохранёнными изменениями; `AvatarValue`, `getAvatarSource` |
-| `widgets` | `account-settings` | способ входа, «Выйти», «Удалить аккаунт» с подтверждением |
+| `widgets` | `profile-card` | карточка личной страницы, скелетон, Share, Edit для владельца (`isOwner`) |
+| `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом, имя, адрес с проверкой (`— available` по ответу сервера), описание, соцсети; `mode="edit"` — кнопка активна только при изменениях и предупреждение об уходе с несохранёнными изменениями; `AvatarValue`, `getAvatarSource` |
+| `widgets` | `account-settings` | способ входа, Sign out, Delete account с подтверждением |
+| `widgets` | `legal-document` | обёртка юридической страницы `LegalDocument` (заголовок, дата редакции, типографика), `OperatorDetails` (реквизиты из `legalConfig`), `CodeList` |
 | `views` | `onboarding` | онбординг; черновик формы — Zustand-стор `useOnboardingDraftStore` в `model` |
 | `views` | `settings` | настройки: `profile-form` в режиме редактирования и `account-settings` |
-| `shared/ui` | свои компоненты | `Container`, `Logo`, `ThemeToggle`, `NotFoundState`, `PagePlaceholder` (временный) |
+| `shared/ui` | свои компоненты | `Container`, `Logo`, `ThemeToggle`, `NotFoundState`, `SupportEmailLink` (`mailto:` на почту поддержки) |
 | `shared/lib` | `utils`, `safe-redirect`, `crop-image`, `clipboard`, `use-unsaved-changes-warning` | `cn`, `getSafeRedirectPath`, `cropImage` (кроп и сжатие через canvas), `copyToClipboard`, `useUnsavedChangesWarning` |
-| `shared/config` | `routes`, `site`, `reserved-usernames`, `env.server` | пути, настройки сайта, зарезервированные адреса, серверный env |
+| `shared/config` | `routes`, `site`, `legal`, `reserved-usernames`, `env.server` | пути, настройки сайта (в том числе `supportEmail`), реквизиты оператора `legalConfig`, зарезервированные адреса, серверный env |
 | `shared/api` | `index.ts`, `index.server.ts` | клиент: `apiClient`, `ApiError`, QueryClient; сервер: `createSupabaseServerClient`, `createSupabasePublicClient`, `createSupabaseAdminClient`, тип `SupabaseClient`, типы БД (`Database`, `Tables`) |
 
 ## Роуты
@@ -214,8 +221,8 @@ export { LoginView as default, metadata } from "@/views/login";
 | `/login` | `src/app/login/page.tsx` | `login` | гости; авторизованных редиректим | готово: Google; Facebook и Telegram — шаги 9–10 |
 | `/onboarding` | `src/app/onboarding/page.tsx` | `onboarding` | авторизованные без профиля; с профилем уводим на `/<username>` | готово |
 | `/settings` | `src/app/settings/page.tsx` | `settings` | авторизованные с профилем | готово: профиль и аккаунт |
-| `/privacy` | `src/app/privacy/page.tsx` | `privacy` | все | заглушка |
-| `/terms` | `src/app/terms/page.tsx` | `terms` | все | заглушка |
+| `/privacy` | `src/app/privacy/page.tsx` | `privacy` | все | готово: Privacy Policy на английском, у разделов якоря (`#account-and-data-deletion`) |
+| `/terms` | `src/app/terms/page.tsx` | `terms` | все | готово: Terms of Service на английском |
 | `/<username>` | `src/app/[username]/page.tsx` | `profile` | все | готово: данные из БД, `/demo` — демо-профиль; регистр не важен, адрес приводится к нижнему |
 | 404 | `src/app/not-found.tsx` | `not-found` | все | готово |
 
@@ -331,8 +338,6 @@ export { LoginView as default, metadata } from "@/views/login";
   выравнивает по `Container` из `@/shared/ui/container`.
 - Иконки интерфейса — lucide-react, логотипы брендов — отдельные SVG.
 - Вёрстка mobile-first, светлая и тёмная темы, доступность (семантика, aria, фокус).
-- `PagePlaceholder` из `@/shared/ui/page-placeholder` — временная заглушка страниц. Удаляем её,
-  когда все страницы будут реализованы.
 
 ## SEO
 

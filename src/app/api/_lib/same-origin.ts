@@ -18,6 +18,6 @@ export function assertSameOrigin(request: Request): void {
     : origin === null || origin === new URL(request.url).origin;
 
   if (!isSameOrigin) {
-    throw new HttpError(403, "forbidden", "Запрос отклонён: он отправлен с другого сайта.");
+    throw new HttpError(403, "forbidden", "Request rejected: it was sent from another site.");
   }
 }

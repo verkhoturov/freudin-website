@@ -28,7 +28,7 @@ async function readJson(response: Response): Promise<unknown> {
     throw new ApiError(
       response.status,
       "unexpected_response",
-      "Сервер вернул ответ в неожиданном формате.",
+      "The server returned an unexpected response.",
     );
   }
 }
@@ -43,7 +43,7 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError(
     response.status,
     "unexpected_response",
-    `Сервер вернул ошибку ${response.status}.`,
+    `The server returned error ${response.status}.`,
   );
 }
 
@@ -72,7 +72,7 @@ async function request<T>(method: string, path: string, options: ApiRequestOptio
   } catch (error) {
     // Отмену запроса (например, TanStack Query через signal) пробрасываем как есть.
     if (init.signal?.aborted) throw error;
-    throw new ApiError(0, "network_error", "Нет связи с сервером. Проверьте подключение.");
+    throw new ApiError(0, "network_error", "Can’t reach the server. Check your connection.");
   }
 
   if (!response.ok) throw await toApiError(response);

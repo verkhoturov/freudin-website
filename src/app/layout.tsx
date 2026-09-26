@@ -48,7 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // suppressHydrationWarning: next-themes ставит класс темы на <html> до гидратации
     <html
-      lang="ru"
+      lang="en"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
@@ -56,7 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <a
             href="#content"
             className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-background focus:px-4 focus:py-2 focus:shadow-md">
-            Перейти к содержимому
+            Skip to content
           </a>
           <Header />
           <main id="content" className="flex flex-1 flex-col">

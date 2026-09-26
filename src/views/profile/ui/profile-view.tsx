@@ -61,9 +61,9 @@ export function ProfileView() {
           <NotFoundState />
         ) : (
           <div className="flex flex-col items-start gap-6">
-            <h1 className="font-semibold text-2xl tracking-tight">Не удалось загрузить страницу</h1>
+            <h1 className="font-semibold text-2xl tracking-tight">Couldn’t load the page</h1>
             <Button variant="outline" onClick={() => profile.refetch()}>
-              Повторить
+              Try again
             </Button>
           </div>
         )}

@@ -22,9 +22,9 @@ export function ViewerGuard({ access, children }: ViewerGuardProps) {
   if (viewer.isError) {
     return (
       <Container className="flex flex-col items-start gap-6 py-10">
-        <h1 className="font-semibold text-2xl tracking-tight">Не удалось загрузить страницу</h1>
+        <h1 className="font-semibold text-2xl tracking-tight">Couldn’t load the page</h1>
         <Button variant="outline" onClick={() => viewer.refetch()}>
-          Повторить
+          Try again
         </Button>
       </Container>
     );
@@ -33,7 +33,7 @@ export function ViewerGuard({ access, children }: ViewerGuardProps) {
   if (viewer.isPending || isRedirecting) {
     return (
       <Container aria-busy="true" className="flex flex-col gap-6 py-10">
-        <span className="sr-only">Загрузка…</span>
+        <span className="sr-only">Loading…</span>
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-full max-w-md" />
         <Skeleton className="h-4 w-2/3 max-w-sm" />

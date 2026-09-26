@@ -23,7 +23,7 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
       </header>
       {profile.bio ? <p className="whitespace-pre-line">{profile.bio}</p> : null}
       {profile.socialLinks.length > 0 ? (
-        <ul aria-label="Ссылки" className="flex w-full flex-col gap-3">
+        <ul aria-label="Links" className="flex w-full flex-col gap-3">
           {profile.socialLinks.map((link) => (
             <li key={link.url}>
               <SocialLinkButton link={link} />
@@ -35,7 +35,7 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
         <ShareProfileButton username={profile.username} displayName={profile.displayName} />
         {isOwner ? (
           <Button asChild variant="ghost">
-            <Link href={routes.settings}>Редактировать</Link>
+            <Link href={routes.settings}>Edit</Link>
           </Button>
         ) : null}
       </div>

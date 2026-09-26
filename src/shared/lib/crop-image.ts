@@ -5,7 +5,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Не удалось открыть картинку"));
+    image.onerror = () => reject(new Error("Couldn't open the image"));
     image.src = src;
   });
 }
@@ -25,7 +25,7 @@ export async function cropImage(src: string, area: CropArea, size: number): Prom
   canvas.height = size;
 
   const context = canvas.getContext("2d");
-  if (!context) throw new Error("Браузер не умеет обрабатывать картинки");
+  if (!context) throw new Error("This browser can't process images");
   // Прозрачный фон PNG в JPEG стал бы чёрным
   context.fillStyle = "#fff";
   context.fillRect(0, 0, size, size);
@@ -36,6 +36,6 @@ export async function cropImage(src: string, area: CropArea, size: number): Prom
   if (webp?.type === "image/webp") return webp;
 
   const jpeg = await canvasToBlob(canvas, "image/jpeg", 0.9);
-  if (!jpeg) throw new Error("Не удалось сохранить картинку");
+  if (!jpeg) throw new Error("Couldn't save the image");
   return jpeg;
 }

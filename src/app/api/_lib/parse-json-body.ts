@@ -19,7 +19,7 @@ export async function parseJsonBody<Schema extends z.ZodType>(
   try {
     body = await request.json();
   } catch {
-    throw new HttpError(400, "bad_request", "Тело запроса должно быть корректным JSON.");
+    throw new HttpError(400, "bad_request", "The request body must be valid JSON.");
   }
 
   const result = schema.safeParse(body);
@@ -27,7 +27,7 @@ export async function parseJsonBody<Schema extends z.ZodType>(
     throw new HttpError(
       400,
       "validation_error",
-      "Проверьте правильность заполнения полей.",
+      "Some fields are invalid. Please check them.",
       issuesToFields(result.error.issues),
     );
   }

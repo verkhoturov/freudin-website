@@ -24,7 +24,7 @@ export function SettingsView() {
   return (
     <ViewerGuard access="with-profile">
       <Container className="flex max-w-lg flex-col gap-10 py-10">
-        <h1 className="font-semibold text-2xl tracking-tight">Настройки</h1>
+        <h1 className="font-semibold text-2xl tracking-tight">Settings</h1>
         <SettingsContent />
       </Container>
     </ViewerGuard>
@@ -40,7 +40,7 @@ function SettingsContent() {
     <>
       <section aria-labelledby="profile-settings-title" className="flex flex-col gap-6">
         <h2 id="profile-settings-title" className="font-semibold text-lg tracking-tight">
-          Профиль
+          Profile
         </h2>
         <ProfileSettingsForm viewer={viewer.data} profile={viewer.data.profile} />
       </section>
@@ -68,9 +68,9 @@ function ProfileSettingsForm({ viewer, profile }: ProfileSettingsFormProps) {
       if (changes) await updateProfile.mutateAsync(changes);
       if (avatarSource) await setAvatar.mutateAsync(avatarSource);
       else if (shouldDeleteAvatar) await deleteAvatar.mutateAsync();
-      toast.success("Изменения сохранены");
+      toast.success("Changes saved");
     } else {
-      toast.info("Изменений нет");
+      toast.info("No changes to save");
     }
     setFormVersion((version) => version + 1);
   };
@@ -84,7 +84,7 @@ function ProfileSettingsForm({ viewer, profile }: ProfileSettingsFormProps) {
       currentAvatarUrl={profile.avatarUrl}
       providerAvatarUrl={viewer.suggestions.avatarUrl}
       currentUsername={profile.username}
-      submitLabel="Сохранить"
+      submitLabel="Save"
       onSubmit={submit}
     />
   );

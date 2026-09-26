@@ -14,7 +14,7 @@ export function SignInPanel({ next }: { next?: string }) {
             {/* Обычная ссылка, а не next/link: переход на API-роут с редиректом к провайдеру */}
             <a href={getSignInHref(provider, next)}>
               <ProviderIcon provider={provider} />
-              Войти через {authProviderLabels[provider]}
+              Continue with {authProviderLabels[provider]}
             </a>
           </Button>
         </li>

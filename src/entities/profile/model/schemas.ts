@@ -6,20 +6,20 @@ import { usernameSchema } from "./username";
 export const displayNameSchema = z
   .string()
   .trim()
-  .min(1, "Укажите имя")
-  .max(DISPLAY_NAME_MAX_LENGTH, `Максимум ${DISPLAY_NAME_MAX_LENGTH} символов`);
+  .min(1, "Enter your name")
+  .max(DISPLAY_NAME_MAX_LENGTH, `Must be ${DISPLAY_NAME_MAX_LENGTH} characters or fewer`);
 
 export const bioSchema = z
   .string()
   .trim()
-  .max(BIO_MAX_LENGTH, `Максимум ${BIO_MAX_LENGTH} символов`);
+  .max(BIO_MAX_LENGTH, `Must be ${BIO_MAX_LENGTH} characters or fewer`);
 
 export const socialLinksSchema = z
   .array(socialLinkSchema)
-  .max(SOCIAL_LINKS_MAX, `Не больше ${SOCIAL_LINKS_MAX} ссылок`)
+  .max(SOCIAL_LINKS_MAX, `Up to ${SOCIAL_LINKS_MAX} links`)
   .refine(
     (links) => new Set(links.map((link) => link.url)).size === links.length,
-    "Ссылки не должны повторяться",
+    "Links must not repeat",
   );
 
 /** Данные профиля от пользователя: общая схема формы онбординга/настроек и API. */

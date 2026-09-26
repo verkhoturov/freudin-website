@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const LEAVE_MESSAGE = "Изменения не сохранены. Уйти со страницы?";
+const LEAVE_MESSAGE = "You have unsaved changes. Leave this page?";
 
 function isModifiedClick(event: MouseEvent): boolean {
   return event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;

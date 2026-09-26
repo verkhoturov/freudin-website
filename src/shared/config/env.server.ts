@@ -19,7 +19,7 @@ export function getServerEnv(): ServerEnv {
   if (!serverEnv) {
     const result = serverEnvSchema.safeParse(process.env);
     if (!result.success) {
-      throw new Error(`Некорректные переменные окружения:\n${z.prettifyError(result.error)}`);
+      throw new Error(`Invalid environment variables:\n${z.prettifyError(result.error)}`);
     }
     serverEnv = result.data;
   }

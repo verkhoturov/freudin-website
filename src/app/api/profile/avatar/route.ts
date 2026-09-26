@@ -25,7 +25,7 @@ import {
 const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
 
 function tooLargeError(): HttpError {
-  return new HttpError(413, "payload_too_large", "Фото должно быть не больше 2 МБ.");
+  return new HttpError(413, "payload_too_large", "The photo must be 2 MB or smaller.");
 }
 
 async function readUploadedAvatar(request: Request): Promise<AvatarImage> {
@@ -37,23 +37,23 @@ async function readUploadedAvatar(request: Request): Promise<AvatarImage> {
   try {
     formData = await request.formData();
   } catch {
-    throw new HttpError(400, "bad_request", "Не удалось прочитать файл.");
+    throw new HttpError(400, "bad_request", "Couldn’t read the file.");
   }
 
   const file = formData.get("file");
   if (!(file instanceof File)) {
-    throw new HttpError(400, "validation_error", "Выберите фото.", { file: "Выберите фото" });
+    throw new HttpError(400, "validation_error", "Choose a photo.", { file: "Choose a photo" });
   }
   if (file.size > AVATAR_MAX_BYTES) throw tooLargeError();
 
   const image = detectAvatarImage(new Uint8Array(await file.arrayBuffer()));
   if (!image) {
-    const message = "Загрузите фото в формате JPEG, PNG или WebP.";
+    const message = "Upload a JPEG, PNG, or WebP photo.";
     throw new HttpError(400, "validation_error", message, { file: message });
   }
   if (!isAvatarSizeAllowed(image)) {
     const side = AVATAR_MAX_DIMENSION;
-    const message = `Фото должно быть не больше ${side}×${side} пикселей.`;
+    const message = `The photo must be at most ${side}×${side} pixels.`;
     throw new HttpError(400, "validation_error", message, { file: message });
   }
   return image;
@@ -67,21 +67,21 @@ async function readProviderAvatar(
 
   // Адрес фото берём только из данных провайдера в сессии, а не из запроса
   const { avatarUrl } = getProfileSuggestions(metadata, null);
-  if (!avatarUrl) throw new HttpError(400, "bad_request", "В аккаунте нет фото.");
+  if (!avatarUrl) throw new HttpError(400, "bad_request", "Your account has no photo.");
 
   const image = await fetchProviderAvatar(avatarUrl);
   if (!image) {
     throw new HttpError(
       400,
       "bad_request",
-      "Не удалось взять фото из аккаунта. Загрузите его с устройства.",
+      "Couldn’t get your account photo. Upload one from your device.",
     );
   }
   return image;
 }
 
 function toResponse(result: AvatarUpdateResult): Response {
-  if (!result.ok) throw new HttpError(404, "not_found", "Сначала создайте страницу.");
+  if (!result.ok) throw new HttpError(404, "not_found", "Create your page first.");
   return jsonOk<PublicProfile>(result.profile, { headers: NO_STORE_HEADERS });
 }
 

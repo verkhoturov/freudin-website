@@ -55,7 +55,7 @@ export async function exchangeAuthCode(
 ): Promise<CodeExchangeResult> {
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    console.warn("Не удалось обменять код на сессию:", error.message);
+    console.warn("Couldn't exchange the code for a session:", error.message);
     return { ok: false, reason: isAuthPKCECodeVerifierMissingError(error) ? "expired" : "failed" };
   }
   return { ok: true, userId: data.user.id };
@@ -85,7 +85,7 @@ export async function deleteUser(
   try {
     await signOut(supabase);
   } catch (signOutError) {
-    console.warn("Не удалось удалить cookies сессии удалённого пользователя:", signOutError);
+    console.warn("Couldn't clear session cookies of the deleted user:", signOutError);
   }
 }
 

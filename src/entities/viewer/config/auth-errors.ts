@@ -1,10 +1,10 @@
 /** Тексты для `?error=` на странице входа. Коды выставляют `/api/auth/*`. */
 const authErrorMessages = {
-  auth_unavailable: "Этот способ входа пока недоступен.",
-  invalid_provider: "Неизвестный способ входа.",
-  access_denied: "Вход отменён.",
-  auth_expired: "Попытка входа устарела. Попробуйте ещё раз.",
-  oauth_failed: "Не удалось войти. Попробуйте ещё раз.",
+  auth_unavailable: "This sign-in method isn’t available yet.",
+  invalid_provider: "Unknown sign-in method.",
+  access_denied: "Sign-in was canceled.",
+  auth_expired: "The sign-in attempt has expired. Please try again.",
+  oauth_failed: "Couldn’t sign in. Please try again.",
 };
 
 export type AuthErrorCode = keyof typeof authErrorMessages;

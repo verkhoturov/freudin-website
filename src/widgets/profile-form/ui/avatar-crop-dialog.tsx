@@ -31,8 +31,8 @@ export function AvatarCropDialog({ src, onCancel, onConfirm }: AvatarCropDialogP
     <Dialog open={src !== null} onOpenChange={(open) => (open ? undefined : onCancel())}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Фото профиля</DialogTitle>
-          <DialogDescription>Выберите область фото.</DialogDescription>
+          <DialogTitle>Profile photo</DialogTitle>
+          <DialogDescription>Choose the part of the photo to show.</DialogDescription>
         </DialogHeader>
         {/* key сбрасывает масштаб и положение для новой картинки */}
         {src ? <CropArea key={src} src={src} onCancel={onCancel} onConfirm={onConfirm} /> : null}
@@ -55,7 +55,7 @@ function CropArea({ src, onCancel, onConfirm }: CropAreaProps) {
     try {
       onConfirm(await cropImage(src, area, AVATAR_SIZE));
     } catch {
-      toast.error("Не удалось обработать фото. Попробуйте другое.");
+      toast.error("Couldn’t process the photo. Try another one.");
     } finally {
       setIsSaving(false);
     }
@@ -79,7 +79,7 @@ function CropArea({ src, onCancel, onConfirm }: CropAreaProps) {
         />
       </div>
       <Slider
-        aria-label="Масштаб"
+        aria-label="Zoom"
         min={MIN_ZOOM}
         max={MAX_ZOOM}
         step={0.01}
@@ -88,10 +88,10 @@ function CropArea({ src, onCancel, onConfirm }: CropAreaProps) {
       />
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Отмена
+          Cancel
         </Button>
         <Button type="button" onClick={save} disabled={!area || isSaving}>
-          Готово
+          Done
         </Button>
       </DialogFooter>
     </>

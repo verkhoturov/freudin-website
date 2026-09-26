@@ -21,6 +21,6 @@ export function errorResponse(error: unknown): Response {
   console.error(error);
   return jsonError(500, {
     code: "internal_error",
-    message: "Внутренняя ошибка сервера. Попробуйте позже.",
+    message: "Something went wrong on our side. Please try again later.",
   });
 }

@@ -35,19 +35,19 @@ function SignInWithParams() {
 export function LoginView() {
   return (
     <Container className="flex max-w-sm flex-col gap-6 py-10">
-      <h1 className="font-semibold text-2xl tracking-tight">Вход</h1>
+      <h1 className="font-semibold text-2xl tracking-tight">Sign in</h1>
       {/* useSearchParams на статической странице работает только внутри Suspense */}
       <Suspense fallback={<SignInPanel />}>
         <SignInWithParams />
       </Suspense>
       <p className="text-muted-foreground text-sm">
-        Продолжая, вы принимаете{" "}
+        By continuing, you agree to our{" "}
         <Link href={routes.terms} className="underline underline-offset-4">
-          условия использования
+          Terms of Service
         </Link>{" "}
-        и{" "}
+        and acknowledge our{" "}
         <Link href={routes.privacy} className="underline underline-offset-4">
-          политику конфиденциальности
+          Privacy Policy
         </Link>
         .
       </p>

@@ -39,46 +39,48 @@ export function AccountSettings({ viewer }: { viewer: Viewer }) {
   const handleSignOut = () => {
     signOut.mutate(undefined, {
       onSuccess: reloadToHome,
-      onError: () => toast.error("Не удалось выйти. Попробуйте ещё раз."),
+      onError: () => toast.error("Couldn’t sign out. Please try again."),
     });
   };
 
   const handleDelete = () => {
     deleteAccount.mutate(undefined, {
       onSuccess: reloadToHome,
-      onError: () => toast.error("Не удалось удалить аккаунт. Попробуйте ещё раз."),
+      onError: () => toast.error("Couldn’t delete your account. Please try again."),
     });
   };
 
   return (
     <section aria-labelledby="account-settings-title" className="flex flex-col gap-4">
       <h2 id="account-settings-title" className="font-semibold text-lg tracking-tight">
-        Аккаунт
+        Account
       </h2>
       {signInMethod ? (
         <p className="text-sm">
-          <span className="text-muted-foreground">Способ входа: </span>
+          <span className="text-muted-foreground">Signed in with: </span>
           {signInMethod}
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" disabled={signOut.isPending} onClick={handleSignOut}>
-          Выйти
+          Sign out
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive">Удалить аккаунт</Button>
+            <Button variant="destructive">Delete account</Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Удалить аккаунт?</AlertDialogTitle>
+              <AlertDialogTitle>Delete account?</AlertDialogTitle>
               <AlertDialogDescription>
-                {profile ? `Страница ${SITE_HOST}/${profile.username}, фото и ссылки` : "Данные"}{" "}
-                удалятся навсегда. Отменить это нельзя.
+                {profile
+                  ? `Your page ${SITE_HOST}/${profile.username}, photo, and links`
+                  : "Your data"}{" "}
+                will be deleted permanently. This can’t be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleteAccount.isPending}>Отмена</AlertDialogCancel>
+              <AlertDialogCancel disabled={deleteAccount.isPending}>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 variant="destructive"
                 disabled={deleteAccount.isPending}
@@ -87,7 +89,7 @@ export function AccountSettings({ viewer }: { viewer: Viewer }) {
                   event.preventDefault();
                   handleDelete();
                 }}>
-                {deleteAccount.isPending ? "Удаляем…" : "Удалить"}
+                {deleteAccount.isPending ? "Deleting…" : "Delete"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

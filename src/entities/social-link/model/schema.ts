@@ -6,7 +6,7 @@ import { normalizeSocialLinkUrl } from "./normalize";
 export const socialLinkSchema = z
   .object({
     platform: z.enum(socialPlatformIds),
-    url: z.string().trim().min(1, "Укажите ссылку"),
+    url: z.string().trim().min(1, "Enter a link"),
   })
   .transform((link, ctx) => {
     const url = normalizeSocialLinkUrl(link.platform, link.url);
@@ -14,7 +14,7 @@ export const socialLinkSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["url"],
-        message: `Не похоже на ссылку ${socialPlatforms[link.platform].label}`,
+        message: `This doesn’t look like a ${socialPlatforms[link.platform].label} link`,
       });
       return z.NEVER;
     }

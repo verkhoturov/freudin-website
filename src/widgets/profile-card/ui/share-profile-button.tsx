@@ -24,13 +24,13 @@ export function ShareProfileButton({ username, displayName }: ShareProfileButton
       return;
     }
 
-    if (await copyToClipboard(url)) toast.success("Ссылка скопирована");
-    else toast.error("Не удалось скопировать ссылку");
+    if (await copyToClipboard(url)) toast.success("Link copied");
+    else toast.error("Couldn’t copy the link");
   };
 
   return (
     <Button variant="ghost" onClick={share}>
-      Поделиться
+      Share
     </Button>
   );
 }

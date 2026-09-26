@@ -25,14 +25,14 @@ export function UserMenu({ viewer }: { viewer: Viewer }) {
     signOut.mutate(undefined, {
       // Полная перезагрузка сбрасывает кеш запросов и всё состояние пользователя
       onSuccess: () => window.location.assign(routes.home),
-      onError: () => toast.error("Не удалось выйти. Попробуйте ещё раз."),
+      onError: () => toast.error("Couldn’t sign out. Please try again."),
     });
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full" aria-label="Меню аккаунта">
+        <Button variant="ghost" size="icon" className="rounded-full" aria-label="Account menu">
           <ProfileAvatar displayName={name} avatarUrl={avatarUrl} size="sm" />
         </Button>
       </DropdownMenuTrigger>
@@ -41,20 +41,20 @@ export function UserMenu({ viewer }: { viewer: Viewer }) {
         {profile ? (
           <>
             <DropdownMenuItem asChild>
-              <Link href={routes.profile(profile.username)}>Моя страница</Link>
+              <Link href={routes.profile(profile.username)}>My page</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={routes.settings}>Настройки</Link>
+              <Link href={routes.settings}>Settings</Link>
             </DropdownMenuItem>
           </>
         ) : (
           <DropdownMenuItem asChild>
-            <Link href={routes.onboarding}>Создать страницу</Link>
+            <Link href={routes.onboarding}>Create page</Link>
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={signOut.isPending} onSelect={handleSignOut}>
-          Выйти
+          Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -81,10 +81,10 @@ function UsernameHint({ username, isChecking, checkedUsername }: UsernameHintPro
     ...usernameQueries.availability(checkedUsername ?? ""),
     enabled: false,
   });
-  if (isChecking) return "Проверяем, свободен ли адрес…";
+  if (isChecking) return "Checking availability…";
 
-  const url = `${SITE_HOST}/${username || "адрес"}`;
-  return checkedUsername && availability.data?.available ? `${url} — адрес свободен` : url;
+  const url = `${SITE_HOST}/${username || "username"}`;
+  return checkedUsername && availability.data?.available ? `${url} — available` : url;
 }
 
 export function ProfileForm({
@@ -122,7 +122,7 @@ export function ProfileForm({
         await onSubmit(value, avatar);
       } catch (error) {
         if (!(error instanceof ApiError)) {
-          toast.error("Не удалось сохранить. Попробуйте ещё раз.");
+          toast.error("Couldn’t save. Please try again.");
           return;
         }
 
@@ -173,7 +173,7 @@ export function ProfileForm({
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Имя</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Name</FieldLabel>
                 <Input
                   id={field.name}
                   name={field.name}
@@ -202,7 +202,7 @@ export function ProfileForm({
                 const { available } = await queryClient.fetchQuery(
                   usernameQueries.availability(username.data),
                 );
-                return available ? undefined : "Этот адрес уже занят";
+                return available ? undefined : "This username is already taken";
               } catch {
                 // Без связи не блокируем форму: занятый адрес всё равно отклонит сервер
                 return undefined;
@@ -225,7 +225,7 @@ export function ProfileForm({
               : `${field.name}-description`;
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Адрес страницы</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Username</FieldLabel>
                 <Input
                   id={field.name}
                   name={field.name}
@@ -249,7 +249,7 @@ export function ProfileForm({
                 </FieldDescription>
                 {isUsernameChanged ? (
                   <FieldDescription id={`${field.name}-warning`}>
-                    Старая ссылка {SITE_HOST}/{currentUsername} перестанет работать.
+                    The old link {SITE_HOST}/{currentUsername} will stop working.
                   </FieldDescription>
                 ) : null}
                 {isInvalid ? <FieldError errors={toFieldErrors(field.state.meta.errors)} /> : null}
@@ -263,7 +263,7 @@ export function ProfileForm({
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Описание</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Bio</FieldLabel>
                 <Textarea
                   id={field.name}
                   name={field.name}
@@ -287,7 +287,7 @@ export function ProfileForm({
         <form.Field name="socialLinks" mode="array">
           {(linksField) => (
             <FieldSet>
-              <FieldLegend variant="label">Ссылки на соцсети</FieldLegend>
+              <FieldLegend variant="label">Social links</FieldLegend>
               {linksField.state.value.length > 0 ? (
                 <ul className="flex flex-col gap-3">
                   {linksField.state.value.map((link, index) => (
@@ -300,7 +300,7 @@ export function ProfileForm({
                             value={field.state.value}
                             onValueChange={(value) => field.handleChange(value as SocialPlatform)}>
                             <SelectTrigger
-                              aria-label={`Соцсеть, ссылка ${index + 1}`}
+                              aria-label={`Platform for link ${index + 1}`}
                               className="w-32 shrink-0">
                               <SelectValue />
                             </SelectTrigger>
@@ -325,7 +325,7 @@ export function ProfileForm({
                                 onBlur={field.handleBlur}
                                 onChange={(event) => field.handleChange(event.target.value)}
                                 aria-invalid={isInvalid}
-                                aria-label={`Ссылка ${index + 1}`}
+                                aria-label={`Link ${index + 1}`}
                                 placeholder={socialPlatforms[link.platform].placeholder}
                                 autoCapitalize="none"
                                 autoCorrect="off"
@@ -342,7 +342,7 @@ export function ProfileForm({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        aria-label={`Удалить ссылку ${index + 1}`}
+                        aria-label={`Remove link ${index + 1}`}
                         onClick={() => linksField.removeValue(index)}>
                         <XIcon aria-hidden="true" />
                       </Button>
@@ -365,7 +365,7 @@ export function ProfileForm({
                     })
                   }>
                   <PlusIcon aria-hidden="true" />
-                  Добавить ссылку
+                  Add link
                 </Button>
               ) : null}
             </FieldSet>
@@ -379,7 +379,7 @@ export function ProfileForm({
               size="lg"
               className="self-start"
               disabled={isSubmitting || (isEditMode && !hasChanges)}>
-              {isSubmitting ? "Сохраняем…" : submitLabel}
+              {isSubmitting ? "Saving…" : submitLabel}
             </Button>
           )}
         </form.Subscribe>
