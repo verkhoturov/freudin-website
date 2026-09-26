@@ -1,7 +1,7 @@
 "use client";
 
-import { type DeepKeys, useForm } from "@tanstack/react-form";
-import { useQueryClient } from "@tanstack/react-query";
+import { type DeepKeys, useForm, useStore } from "@tanstack/react-form";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ import {
 import { type SocialPlatform, socialPlatformIds, socialPlatforms } from "@/entities/social-link";
 import { ApiError } from "@/shared/api";
 import { siteConfig } from "@/shared/config";
+import { useUnsavedChangesWarning } from "@/shared/lib/use-unsaved-changes-warning";
 import { Button } from "@/shared/ui/button";
 import {
   Field,
@@ -40,6 +41,11 @@ const VALUES_CHANGE_DEBOUNCE_MS = 300;
 const SITE_HOST = new URL(siteConfig.url).host;
 
 type ProfileFormProps = {
+  /**
+   * `edit` — редактирование готового профиля: кнопка сохранения активна только при изменениях,
+   * а уход со страницы с несохранёнными изменениями нужно подтвердить.
+   */
+  mode?: "create" | "edit";
   defaultValues: ProfileInput;
   defaultAvatar: AvatarValue;
   /** Фото, которое уже есть в профиле (настройки). */
@@ -61,7 +67,28 @@ function getNextPlatform(links: ProfileInput["socialLinks"]): SocialPlatform {
   return socialPlatformIds.find((platform) => !used.has(platform)) ?? "website";
 }
 
+type UsernameHintProps = {
+  username: string;
+  isChecking: boolean;
+  /** Адрес, который проверял валидатор поля; `null` — проверять нечего. */
+  checkedUsername: string | null;
+};
+
+// «Свободен» показываем только по ответу сервера для этого адреса. Запрос делает валидатор
+// поля, здесь только читаем кеш: при сбое сети ответа нет, и подсказка молчит
+function UsernameHint({ username, isChecking, checkedUsername }: UsernameHintProps) {
+  const availability = useQuery({
+    ...usernameQueries.availability(checkedUsername ?? ""),
+    enabled: false,
+  });
+  if (isChecking) return "Проверяем, свободен ли адрес…";
+
+  const url = `${SITE_HOST}/${username || "адрес"}`;
+  return checkedUsername && availability.data?.available ? `${url} — адрес свободен` : url;
+}
+
 export function ProfileForm({
+  mode = "create",
   defaultValues,
   defaultAvatar,
   currentAvatarUrl = null,
@@ -72,7 +99,9 @@ export function ProfileForm({
   onValuesChange,
 }: ProfileFormProps) {
   const queryClient = useQueryClient();
-  const [avatar, setAvatar] = useState<AvatarValue>(defaultAvatar);
+  // Первое значение храним: проп может приходить новым объектом на каждом рендере
+  const [initialAvatar] = useState(defaultAvatar);
+  const [avatar, setAvatar] = useState<AvatarValue>(initialAvatar);
 
   // Превью нового фото — object URL: освобождаем, когда фото сменилось
   useEffect(() => {
@@ -112,6 +141,12 @@ export function ProfileForm({
       }
     },
   });
+
+  // Любой выбор фото создаёт новый объект, поэтому изменение фото — это смена ссылки
+  const isFormDefault = useStore(form.store, (state) => state.isDefaultValue);
+  const hasChanges = !isFormDefault || avatar !== initialAvatar;
+  const isEditMode = mode === "edit";
+  useUnsavedChangesWarning(isEditMode && hasChanges);
 
   return (
     <form
@@ -178,6 +213,13 @@ export function ProfileForm({
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
             const username = field.state.value.trim().toLowerCase();
             const isUsernameChanged = Boolean(currentUsername && username !== currentUsername);
+            const parsedUsername = usernameSchema.safeParse(field.state.value);
+            const checkedUsername =
+              field.state.meta.isValid &&
+              parsedUsername.success &&
+              parsedUsername.data !== currentUsername
+                ? parsedUsername.data
+                : null;
             const describedBy = isUsernameChanged
               ? `${field.name}-description ${field.name}-warning`
               : `${field.name}-description`;
@@ -199,9 +241,11 @@ export function ProfileForm({
                   maxLength={USERNAME_MAX_LENGTH}
                 />
                 <FieldDescription id={`${field.name}-description`} aria-live="polite">
-                  {field.state.meta.isValidating
-                    ? "Проверяем, свободен ли адрес…"
-                    : `${SITE_HOST}/${username || "адрес"}`}
+                  <UsernameHint
+                    username={username}
+                    isChecking={field.state.meta.isValidating}
+                    checkedUsername={checkedUsername}
+                  />
                 </FieldDescription>
                 {isUsernameChanged ? (
                   <FieldDescription id={`${field.name}-warning`}>
@@ -330,7 +374,11 @@ export function ProfileForm({
 
         <form.Subscribe selector={(state) => state.isSubmitting}>
           {(isSubmitting) => (
-            <Button type="submit" size="lg" className="self-start" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              size="lg"
+              className="self-start"
+              disabled={isSubmitting || (isEditMode && !hasChanges)}>
               {isSubmitting ? "Сохраняем…" : submitLabel}
             </Button>
           )}

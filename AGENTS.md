@@ -188,17 +188,17 @@ export { LoginView as default, metadata } from "@/views/login";
 | Слой | Слайс или модуль | Что внутри |
 |------|------------------|------------|
 | `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (со способом входа `user.provider`), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `getOAuthSignInUrl`, `exchangeAuthCode`, `signOut`, `getAuthProvider`, `deleteUser` |
-| `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`), `profileQueries`, `usernameQueries`, `toProfileInput`, `getProfileChanges`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile`, `updateProfile`, `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles`, `fetchProviderAvatar`, `detectAvatarImage`, `getProfileSuggestions`; для `viewer` — типы и фабрики запросов через `@x` |
-| `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton`; для `profile` — через `@x` |
+| `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`, `AVATAR_MAX_DIMENSION`), `profileQueries`, `usernameQueries`, `toProfileInput`, `getProfileChanges`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile`, `updateProfile`, `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles` (сначала обнуляет `avatar_path`), `fetchProviderAvatar`, `detectAvatarImage` (формат и размеры по заголовку файла), `isAvatarSizeAllowed` (не больше `AVATAR_MAX_DIMENSION`), `getProfileSuggestions`; для `viewer` — типы и фабрики запросов через `@x` |
+| `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton` (подпись с ником или доменом: `Telegram · @anna`, `example.com`); для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка и подвал сайта |
 | `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров |
 | `widgets` | `profile-card` | карточка личной страницы, скелетон, «Поделиться», «Редактировать» для владельца (`isOwner`) |
-| `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом, имя, адрес с проверкой, описание, соцсети; `AvatarValue`, `getAvatarSource` |
+| `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом, имя, адрес с проверкой («адрес свободен» по ответу сервера), описание, соцсети; `mode="edit"` — кнопка активна только при изменениях и предупреждение об уходе с несохранёнными изменениями; `AvatarValue`, `getAvatarSource` |
 | `widgets` | `account-settings` | способ входа, «Выйти», «Удалить аккаунт» с подтверждением |
 | `views` | `onboarding` | онбординг; черновик формы — Zustand-стор `useOnboardingDraftStore` в `model` |
 | `views` | `settings` | настройки: `profile-form` в режиме редактирования и `account-settings` |
 | `shared/ui` | свои компоненты | `Container`, `Logo`, `ThemeToggle`, `NotFoundState`, `PagePlaceholder` (временный) |
-| `shared/lib` | `utils`, `safe-redirect`, `crop-image`, `clipboard` | `cn`, `getSafeRedirectPath`, `cropImage` (кроп и сжатие через canvas), `copyToClipboard` |
+| `shared/lib` | `utils`, `safe-redirect`, `crop-image`, `clipboard`, `use-unsaved-changes-warning` | `cn`, `getSafeRedirectPath`, `cropImage` (кроп и сжатие через canvas), `copyToClipboard`, `useUnsavedChangesWarning` |
 | `shared/config` | `routes`, `site`, `reserved-usernames`, `env.server` | пути, настройки сайта, зарезервированные адреса, серверный env |
 | `shared/api` | `index.ts`, `index.server.ts` | клиент: `apiClient`, `ApiError`, QueryClient; сервер: `createSupabaseServerClient`, `createSupabasePublicClient`, `createSupabaseAdminClient`, тип `SupabaseClient`, типы БД (`Database`, `Tables`) |
 
@@ -216,7 +216,7 @@ export { LoginView as default, metadata } from "@/views/login";
 | `/settings` | `src/app/settings/page.tsx` | `settings` | авторизованные с профилем | готово: профиль и аккаунт |
 | `/privacy` | `src/app/privacy/page.tsx` | `privacy` | все | заглушка |
 | `/terms` | `src/app/terms/page.tsx` | `terms` | все | заглушка |
-| `/<username>` | `src/app/[username]/page.tsx` | `profile` | все | готово: данные из БД, `/demo` — демо-профиль |
+| `/<username>` | `src/app/[username]/page.tsx` | `profile` | все | готово: данные из БД, `/demo` — демо-профиль; регистр не важен, адрес приводится к нижнему |
 | 404 | `src/app/not-found.tsx` | `not-found` | все | готово |
 
 Служебные файлы:
@@ -244,10 +244,10 @@ export { LoginView as default, metadata } from "@/views/login";
 | GET | `/api/auth/callback?code=&next=` | обмен кода на сессию и редирект | — | готово |
 | POST | `/api/auth/sign-out` | выход; без сессии тоже 204 | ✓ | готово |
 | GET | `/api/me` | текущий пользователь, его профиль (или `null`) и подсказки для онбординга | ✓ | готово |
-| DELETE | `/api/me` | удаление аккаунта: фото из Storage, пользователь через admin API (профиль — каскадом), cookies сессии; 204 | ✓ | готово |
+| DELETE | `/api/me` | удаление аккаунта: фото (из профиля, затем из Storage), пользователь через admin API (профиль — каскадом), cookies сессии; 204 | ✓ | готово |
 | POST | `/api/profile` | создание профиля (онбординг): 201; занятый username — 409 с `fields.username`, профиль уже есть — 409 | ✓ | готово |
 | PATCH | `/api/profile` | обновление переданных полей профиля; нет профиля — 404, занятый username — 409 | ✓ | готово |
-| POST | `/api/profile/avatar` | новое фото: `multipart/form-data` с полем `file` (JPEG, PNG, WebP до 2 МБ, иначе 400 или 413) или JSON `{ "source": "provider" }` — копия фото провайдера входа | ✓ | готово |
+| POST | `/api/profile/avatar` | новое фото: `multipart/form-data` с полем `file` (JPEG, PNG, WebP до 2 МБ и не больше 1024×1024, иначе 400 или 413) или JSON `{ "source": "provider" }` — копия фото провайдера входа | ✓ | готово |
 | DELETE | `/api/profile/avatar` | удаление фото | ✓ | готово |
 | GET | `/api/profiles/[username]` | публичный профиль (регистр не важен), `demo` — демо-профиль из кода | — | готово |
 | GET | `/api/usernames/[username]` | `{ username, available }`; неверный формат или зарезервированный адрес — 400. Свой текущий адрес тоже «занят» | — | готово |
@@ -394,6 +394,9 @@ export { LoginView as default, metadata } from "@/views/login";
 - В клиентских компонентах параметры роута читаем через `useParams()`, query — через
   `useSearchParams()`. Компонент с `useSearchParams()` на статической странице оборачиваем
   в `<Suspense>`, иначе сборка упадёт.
+- Строку адреса без навигации меняем через `window.history.replaceState(window.history.state, "", url)`.
+  С `null` вместо состояния Next теряет своё дерево роутов, и «Назад» показывает не ту страницу.
+  `router.replace` для этого не подходит: он заново выставляет заголовок вкладки из `metadata`.
 - `notFound()` работает только в серверном коде. В клиентских view состояние 404 рисуем сами
   (`NotFoundState` из `@/shared/ui/not-found-state`).
 - `next lint` удалён, линтим через Biome.

@@ -8,7 +8,7 @@ import {
   profileQueries,
   usernameQueries,
 } from "@/entities/profile/@x/viewer";
-import { apiClient } from "@/shared/api";
+import { ApiError, apiClient } from "@/shared/api";
 import { apiRoutes } from "@/shared/config";
 import { viewerQueries } from "./viewer-queries";
 
@@ -51,7 +51,7 @@ export type CreateProfileResult = {
 /**
  * Создание профиля на онбординге вместе с фото. Кеш обновляется, когда готово всё:
  * иначе гард онбординга увёл бы со страницы до загрузки фото. Занятый адрес — `ApiError` 409
- * с `fields.username`, ошибки валидации — 400 с `fields`.
+ * с `fields.username`, ошибки валидации — 400 с `fields`. 409 без полей — профиль уже есть.
  */
 export function useCreateProfileMutation() {
   const queryClient = useQueryClient();
@@ -66,6 +66,15 @@ export function useCreateProfileMutation() {
       }
     },
     onSuccess: ({ profile }) => syncProfileCache(queryClient, profile),
+    onError: (error) => {
+      // Профиль уже создан (например, ответ на прошлую отправку не дошёл): кеш `/api/me`
+      // устарел. Свежие данные покажут профиль, и гард онбординга уведёт на страницу
+      const isProfileExists =
+        error instanceof ApiError && error.status === 409 && !error.fields?.username;
+      if (isProfileExists) {
+        void queryClient.invalidateQueries({ queryKey: viewerQueries.me().queryKey });
+      }
+    },
   });
 }
 

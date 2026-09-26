@@ -22,7 +22,10 @@ export const GET = withErrorHandling(async () => {
   );
 });
 
-/** Удаление аккаунта: сначала фото из Storage, затем пользователь, профиль — каскадом. */
+/**
+ * Удаление аккаунта: сначала фото (из профиля, затем из Storage), потом пользователь, профиль —
+ * каскадом. Если что-то упадёт, данные останутся согласованными, и удаление можно повторить.
+ */
 export const DELETE = withErrorHandling(async () => {
   const { supabase, claims } = await requireUser();
   const admin = createSupabaseAdminClient();

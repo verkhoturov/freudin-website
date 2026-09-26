@@ -19,6 +19,8 @@ type SocialPlatformConfig = {
   hosts: string[];
   /** Ссылка на профиль по имени пользователя: `@anna` → `https://t.me/anna`. */
   profileUrl?: (handle: string) => string;
+  /** Префикс имени в подписи ссылки, если в адресе его нет: `t.me/anna` → `@anna`. */
+  handlePrefix?: string;
   placeholder: string;
 };
 
@@ -27,12 +29,14 @@ export const socialPlatforms: Record<SocialPlatform, SocialPlatformConfig> = {
     label: "Telegram",
     hosts: ["t.me", "telegram.me"],
     profileUrl: (handle) => `https://t.me/${handle}`,
+    handlePrefix: "@",
     placeholder: "@username или ссылка t.me",
   },
   instagram: {
     label: "Instagram",
     hosts: ["instagram.com"],
     profileUrl: (handle) => `https://www.instagram.com/${handle}`,
+    handlePrefix: "@",
     placeholder: "@username или ссылка на профиль",
   },
   vk: {
@@ -51,6 +55,7 @@ export const socialPlatforms: Record<SocialPlatform, SocialPlatformConfig> = {
     label: "X",
     hosts: ["x.com", "twitter.com"],
     profileUrl: (handle) => `https://x.com/${handle}`,
+    handlePrefix: "@",
     placeholder: "@username или ссылка x.com",
   },
   youtube: {

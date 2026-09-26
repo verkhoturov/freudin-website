@@ -8,11 +8,13 @@ import {
 } from "@/app/api/_lib";
 import {
   AVATAR_MAX_BYTES,
+  AVATAR_MAX_DIMENSION,
   type AvatarImage,
   type AvatarUpdateResult,
   detectAvatarImage,
   fetchProviderAvatar,
   getProfileSuggestions,
+  isAvatarSizeAllowed,
   type PublicProfile,
   providerAvatarRequestSchema,
   removeProfileAvatar,
@@ -47,6 +49,11 @@ async function readUploadedAvatar(request: Request): Promise<AvatarImage> {
   const image = detectAvatarImage(new Uint8Array(await file.arrayBuffer()));
   if (!image) {
     const message = "Загрузите фото в формате JPEG, PNG или WebP.";
+    throw new HttpError(400, "validation_error", message, { file: message });
+  }
+  if (!isAvatarSizeAllowed(image)) {
+    const side = AVATAR_MAX_DIMENSION;
+    const message = `Фото должно быть не больше ${side}×${side} пикселей.`;
     throw new HttpError(400, "validation_error", message, { file: message });
   }
   return image;

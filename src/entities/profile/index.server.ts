@@ -5,6 +5,7 @@ export {
   type AvatarUpdateResult,
   detectAvatarImage,
   fetchProviderAvatar,
+  isAvatarSizeAllowed,
   removeProfileAvatar,
   removeUserAvatarFiles,
   setProfileAvatar,
@@ -18,7 +19,7 @@ export {
   type UpdateProfileResult,
   updateProfile,
 } from "./api/profile.server";
-export { AVATAR_MAX_BYTES } from "./config/storage";
+export { AVATAR_MAX_BYTES, AVATAR_MAX_DIMENSION } from "./config/storage";
 export { getProfileSuggestions, type ProfileSuggestions } from "./lib/get-profile-suggestions";
 export {
   type ProfileData,

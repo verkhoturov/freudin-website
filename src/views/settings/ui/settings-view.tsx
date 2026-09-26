@@ -59,20 +59,26 @@ function ProfileSettingsForm({ viewer, profile }: ProfileSettingsFormProps) {
   const [formVersion, setFormVersion] = useState(0);
 
   const submit = async (values: ProfileInput, avatar: AvatarValue) => {
+    // Правки могли совпасть с сохранённым после нормализации: `@anna` и `t.me/anna`
     const changes = getProfileChanges(profile, values);
-    if (changes) await updateProfile.mutateAsync(changes);
-
     const avatarSource = getAvatarSource(avatar);
-    if (avatarSource) await setAvatar.mutateAsync(avatarSource);
-    else if (avatar.type === "none" && profile.avatarUrl) await deleteAvatar.mutateAsync();
+    const shouldDeleteAvatar = avatar.type === "none" && Boolean(profile.avatarUrl);
 
-    toast.success("Изменения сохранены");
+    if (changes || avatarSource || shouldDeleteAvatar) {
+      if (changes) await updateProfile.mutateAsync(changes);
+      if (avatarSource) await setAvatar.mutateAsync(avatarSource);
+      else if (shouldDeleteAvatar) await deleteAvatar.mutateAsync();
+      toast.success("Изменения сохранены");
+    } else {
+      toast.info("Изменений нет");
+    }
     setFormVersion((version) => version + 1);
   };
 
   return (
     <ProfileForm
       key={formVersion}
+      mode="edit"
       defaultValues={toProfileInput(profile)}
       defaultAvatar={{ type: "current" }}
       currentAvatarUrl={profile.avatarUrl}

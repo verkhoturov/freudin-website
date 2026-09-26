@@ -3,16 +3,18 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@/shared/api/index.server";
 import {
   AVATAR_MAX_BYTES,
+  AVATAR_MAX_DIMENSION,
   AVATAR_SIZE,
   AVATARS_BUCKET,
   type AvatarMimeType,
   avatarFileExtensions,
 } from "../config/storage";
+import { type ImageSize, readImageSize } from "../lib/read-image-size";
 import type { PublicProfile } from "../model/types";
 import { getProfileByUserId, PUBLIC_PROFILE_COLUMNS, toPublicProfile } from "./profile.server";
 
-/** Картинка, формат которой проверен по сигнатуре файла. */
-export type AvatarImage = { bytes: Uint8Array; contentType: AvatarMimeType };
+/** Картинка, формат и размеры которой прочитаны из заголовка файла. */
+export type AvatarImage = ImageSize & { bytes: Uint8Array; contentType: AvatarMimeType };
 
 export type AvatarUpdateResult =
   | { ok: true; profile: PublicProfile }
@@ -37,7 +39,10 @@ function startsWith(bytes: Uint8Array, signature: number[], offset = 0): boolean
   return signature.every((byte, index) => bytes[offset + index] === byte);
 }
 
-/** Формат картинки по первым байтам файла: заголовку `Content-Type` не доверяем. */
+/**
+ * Формат картинки по первым байтам файла (заголовку `Content-Type` не доверяем) и её размеры.
+ * `null` — это не JPEG, PNG или WebP либо заголовок файла повреждён.
+ */
 export function detectAvatarImage(bytes: Uint8Array): AvatarImage | null {
   let contentType: AvatarMimeType | null = null;
   if (startsWith(bytes, [0xff, 0xd8, 0xff])) contentType = "image/jpeg";
@@ -49,7 +54,15 @@ export function detectAvatarImage(bytes: Uint8Array): AvatarImage | null {
   ) {
     contentType = "image/webp";
   }
-  return contentType ? { bytes, contentType } : null;
+  if (!contentType) return null;
+
+  const size = readImageSize(bytes, contentType);
+  return size ? { ...size, bytes, contentType } : null;
+}
+
+/** Фото не больше `AVATAR_MAX_DIMENSION` по каждой стороне. */
+export function isAvatarSizeAllowed(image: AvatarImage): boolean {
+  return image.width <= AVATAR_MAX_DIMENSION && image.height <= AVATAR_MAX_DIMENSION;
 }
 
 function hasHost(url: URL, host: string): boolean {
@@ -96,7 +109,8 @@ async function readBodyWithLimit(response: Response, limit: number): Promise<Uin
 /**
  * Скачивает фото из аккаунта провайдера. Ссылки провайдеров со временем перестают работать,
  * поэтому фото копируем в Storage. Ходим только на хосты провайдеров, в том числе
- * при редиректах. `null` — фото недоступно или это не JPEG, PNG или WebP до 2 МБ.
+ * при редиректах. `null` — фото недоступно, это не JPEG, PNG или WebP до 2 МБ или оно
+ * больше `AVATAR_MAX_DIMENSION`.
  */
 export async function fetchProviderAvatar(avatarUrl: string): Promise<AvatarImage | null> {
   let url: URL;
@@ -120,7 +134,8 @@ export async function fetchProviderAvatar(avatarUrl: string): Promise<AvatarImag
       if (!response.ok) return null;
 
       const bytes = await readBodyWithLimit(response, AVATAR_MAX_BYTES);
-      return bytes ? detectAvatarImage(bytes) : null;
+      const image = bytes ? detectAvatarImage(bytes) : null;
+      return image && isAvatarSizeAllowed(image) ? image : null;
     }
   } catch (error) {
     console.warn("Не удалось скачать фото провайдера:", error);
@@ -181,11 +196,20 @@ export async function setProfileAvatar(
   return { ok: true, profile: toPublicProfile(supabase, row) };
 }
 
-/** Удаляет все файлы пользователя из bucket фото: перед удалением аккаунта. */
+/**
+ * Удаляет все файлы пользователя из bucket фото: перед удалением аккаунта. Сначала убирает фото
+ * из профиля, чтобы при сбое дальше профиль не ссылался на удалённый файл.
+ */
 export async function removeUserAvatarFiles(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<void> {
+  const { error: unlinkError } = await supabase
+    .from("profiles")
+    .update({ avatar_path: null })
+    .eq("id", userId);
+  if (unlinkError) throw unlinkError;
+
   const bucket = supabase.storage.from(AVATARS_BUCKET);
   const { data: files, error } = await bucket.list(userId, { limit: 1000 });
   if (error) throw error;
