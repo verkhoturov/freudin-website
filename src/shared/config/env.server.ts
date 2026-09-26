@@ -1,11 +1,20 @@
 import "server-only";
 import { z } from "zod";
 
-const serverEnvSchema = z.object({
-  SUPABASE_URL: z.url(),
-  SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
-  SUPABASE_SECRET_KEY: z.string().min(1),
-});
+const serverEnvSchema = z
+  .object({
+    SUPABASE_URL: z.url(),
+    SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
+    SUPABASE_SECRET_KEY: z.string().min(1),
+    // OAuth-клиент Google для входа со своим адресом возврата (шаг 8.1 в docs/PLAN.md).
+    // Без них (или с пустыми значениями) вход через Google идёт через OAuth Supabase
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
+  })
+  .refine((env) => !env.GOOGLE_CLIENT_ID === !env.GOOGLE_CLIENT_SECRET, {
+    message: "Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET together",
+    path: ["GOOGLE_CLIENT_SECRET"],
+  });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 

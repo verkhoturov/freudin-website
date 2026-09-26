@@ -1,13 +1,12 @@
-import { redirectTo, redirectToLogin, withErrorHandling } from "@/app/api/_lib";
-import { getProfileByUserId } from "@/entities/profile/index.server";
+import { redirectAfterSignIn, redirectToLogin, withErrorHandling } from "@/app/api/_lib";
 import { exchangeAuthCode } from "@/entities/viewer/index.server";
 import { createSupabaseServerClient } from "@/shared/api/index.server";
-import { routes } from "@/shared/config";
 import { getSafeRedirectPath } from "@/shared/lib/safe-redirect";
 
 /**
- * Возврат от провайдера через Supabase: обмен кода на сессию и переход дальше — на онбординг,
- * если профиля нет, иначе на `next` или на личную страницу. Ошибки — на `/login`.
+ * Возврат от провайдера через OAuth Supabase: обмен кода на сессию и переход дальше — на
+ * онбординг, если профиля нет, иначе на `next` или на личную страницу. Ошибки — на `/login`.
+ * Google со своим адресом возврата приходит на `/api/auth/callback/google`.
  */
 export const GET = withErrorHandling(async (request) => {
   const { searchParams, origin } = new URL(request.url);
@@ -40,14 +39,5 @@ export const GET = withErrorHandling(async (request) => {
     );
   }
 
-  try {
-    const profile = await getProfileByUserId(supabase, result.userId);
-    if (!profile) return redirectTo(new URL(routes.onboarding, origin));
-    const target = next === routes.home ? routes.profile(profile.username) : next;
-    return redirectTo(new URL(target, origin));
-  } catch (error) {
-    // Сессия уже есть: дальше страницу выберет клиент по GET /api/me
-    console.error(error);
-    return redirectTo(new URL(next, origin));
-  }
+  return redirectAfterSignIn(supabase, result.userId, origin, next);
 });

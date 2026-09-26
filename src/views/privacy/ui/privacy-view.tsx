@@ -156,8 +156,13 @@ export function PrivacyView() {
           days, and are deleted when you sign out;
         </li>
         <li>
-          the <code>sb-…-auth-token-code-verifier</code> cookie, used for a short time while you
-          sign in with Google to protect the sign-in process;
+          the <code>freudin-google-sign-in</code> cookie, used while you sign in with Google to
+          protect the sign-in process. It expires after 10 minutes and is deleted when you return to
+          the Service;
+        </li>
+        <li>
+          <code>sb-…-code-verifier</code> cookies, set by Supabase for the same purpose when sign-in
+          goes through Supabase;
         </li>
         <li>
           <code>theme</code> in your browser’s local storage, which remembers whether you chose the

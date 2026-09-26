@@ -1,5 +1,10 @@
 import { redirectTo, redirectToLogin, withErrorHandling } from "@/app/api/_lib";
-import { authProviderSchema, getOAuthSignInUrl } from "@/entities/viewer/index.server";
+import {
+  authProviderSchema,
+  getOAuthSignInUrl,
+  isGoogleOAuthConfigured,
+  startGoogleSignIn,
+} from "@/entities/viewer/index.server";
 import { createSupabaseServerClient } from "@/shared/api/index.server";
 import { apiRoutes, routes } from "@/shared/config";
 import { getSafeRedirectPath } from "@/shared/lib/safe-redirect";
@@ -11,12 +16,17 @@ export const GET = withErrorHandling(async (request) => {
   const next = getSafeRedirectPath(searchParams.get("next"));
   if (!provider.success) return redirectToLogin(origin, "invalid_provider", next);
 
-  const callbackUrl = new URL(apiRoutes.authCallback, origin);
-  if (next !== routes.home) callbackUrl.searchParams.set("next", next);
-
   try {
-    const supabase = await createSupabaseServerClient();
-    const url = await getOAuthSignInUrl(supabase, provider.data, callbackUrl.toString());
+    let url: string | null;
+    if (provider.data === "google" && isGoogleOAuthConfigured()) {
+      // Google возвращает на наш домен, `next` хранится в cookie попытки входа
+      url = await startGoogleSignIn(new URL(apiRoutes.googleAuthCallback, origin).toString(), next);
+    } else {
+      const callbackUrl = new URL(apiRoutes.authCallback, origin);
+      if (next !== routes.home) callbackUrl.searchParams.set("next", next);
+      const supabase = await createSupabaseServerClient();
+      url = await getOAuthSignInUrl(supabase, provider.data, callbackUrl.toString());
+    }
     return url ? redirectTo(url) : redirectToLogin(origin, "auth_unavailable", next);
   } catch (error) {
     console.error(error);
