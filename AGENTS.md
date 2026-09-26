@@ -117,10 +117,11 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   (`entities/viewer/config/auth-providers.ts`): только их кнопки видны на `/login`, остальные
   `/api/auth/sign-in` отправляет на `auth_unavailable`. Подключая провайдер в Supabase,
   добавь его туда.
-- Google при заданных `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET` входит без OAuth Supabase:
+- Google входит без OAuth Supabase (`GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET` обязательны):
   Google возвращает на наш `/api/auth/callback/google`, сессия создаётся по ID-токену
-  (`signInWithIdToken`). Так на экране Google виден сайт, а не `<ref>.supabase.co`. Без этих
-  переменных Google идёт через OAuth Supabase, как Facebook и Telegram.
+  (`signInWithIdToken`). Так на экране Google виден подтверждённый бренд Freudin, а не
+  `<ref>.supabase.co`. Остальные провайдеры идут через OAuth Supabase (`getOAuthSignInUrl`)
+  и `/api/auth/callback`.
 - Формат ошибки API: `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }`
   плюс корректный HTTP-статус. Коды: `bad_request` и `validation_error` (400), `unauthorized` (401),
   `forbidden` (403), `not_found` (404), `conflict` (409), `payload_too_large` (413),
@@ -198,7 +199,7 @@ export { LoginView as default, metadata } from "@/views/login";
 
 | Слой | Слайс или модуль | Что внутри |
 |------|------------------|------------|
-| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (со способом входа `user.provider`), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `getOAuthSignInUrl`, `exchangeAuthCode`, `signOut`, `getAuthProvider`, `deleteUser`, вход Google без OAuth Supabase: `isGoogleOAuthConfigured`, `startGoogleSignIn`, `takeGoogleSignInState`, `completeGoogleSignIn` |
+| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (со способом входа `user.provider`), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `getOAuthSignInUrl`, `exchangeAuthCode`, `signOut`, `getAuthProvider`, `deleteUser`, вход Google без OAuth Supabase: `startGoogleSignIn`, `takeGoogleSignInState`, `completeGoogleSignIn` |
 | `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`, `AVATAR_MAX_DIMENSION`), `profileQueries`, `usernameQueries`, `toProfileInput`, `getProfileChanges`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile`, `updateProfile`, `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles` (сначала обнуляет `avatar_path`), `fetchProviderAvatar`, `detectAvatarImage` (формат и размеры по заголовку файла), `isAvatarSizeAllowed` (не больше `AVATAR_MAX_DIMENSION`), `getProfileSuggestions`; для `viewer` — типы и фабрики запросов через `@x` |
 | `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton` (подпись с ником или доменом: `Telegram · @anna`, `example.com`); для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка и подвал сайта |
@@ -253,8 +254,8 @@ export { LoginView as default, metadata } from "@/views/login";
 |-------|------|------------|:------:|--------|
 | GET | `/api/health` | проверка связки клиент → API | — | готово |
 | GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | готово: Google; Facebook и Telegram → `/login?error=auth_unavailable` до шагов 9–10 |
-| GET | `/api/auth/callback?code=&next=` | обмен кода на сессию и редирект (вход через OAuth Supabase) | — | готово |
-| GET | `/api/auth/callback/google?code=&state=` | возврат от Google без OAuth Supabase: проверка `state`, код → ID-токен → сессия Supabase, редирект | — | готово, включается переменными `GOOGLE_*` |
+| GET | `/api/auth/callback?code=&next=` | обмен кода на сессию и редирект (вход через OAuth Supabase: Facebook, Telegram) | — | готово, пока не используется |
+| GET | `/api/auth/callback/google?code=&state=` | возврат от Google без OAuth Supabase: проверка `state`, код → ID-токен → сессия Supabase, редирект | — | готово |
 | POST | `/api/auth/sign-out` | выход; без сессии тоже 204 | ✓ | готово |
 | GET | `/api/me` | текущий пользователь, его профиль (или `null`) и подсказки для онбординга | ✓ | готово |
 | DELETE | `/api/me` | удаление аккаунта: фото (из профиля, затем из Storage), пользователь через admin API (профиль — каскадом), cookies сессии; 204 | ✓ | готово |

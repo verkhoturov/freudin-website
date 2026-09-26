@@ -10,9 +10,10 @@ import type { CodeExchangeResult } from "./auth.server";
 
 /*
  * Вход через Google без OAuth Supabase: Google возвращает браузер на наш домен, а не на
- * `<ref>.supabase.co`. Так на экране Google виден сайт, и бренд можно подтвердить. Код меняем
+ * `<ref>.supabase.co`. Так на экране Google виден сайт, а его бренд подтверждён. Код меняем
  * на токены Google сами, а сессию Supabase создаём по ID-токену (`signInWithIdToken`):
- * пользователь тот же, что при входе через OAuth Supabase (Supabase узнаёт его по `sub`).
+ * Supabase узнаёт пользователя по `sub`, поэтому аккаунты, созданные через OAuth Supabase,
+ * остались теми же.
  */
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -44,18 +45,6 @@ const tokenResponseSchema = z.object({
   access_token: z.string().min(1),
 });
 
-function getGoogleClient(): { clientId: string; clientSecret: string } | null {
-  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = getServerEnv();
-  return GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET
-    ? { clientId: GOOGLE_CLIENT_ID, clientSecret: GOOGLE_CLIENT_SECRET }
-    : null;
-}
-
-/** Заданы ли `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET`. Иначе Google идёт через OAuth Supabase. */
-export function isGoogleOAuthConfigured(): boolean {
-  return getGoogleClient() !== null;
-}
-
 function randomToken(): string {
   return randomBytes(32).toString("base64url");
 }
@@ -69,8 +58,8 @@ function sha256(value: string, encoding: "hex" | "base64url"): string {
  * PKCE-верификатор сохраняет в httpOnly-cookie ответа вместе с `next`.
  */
 export async function startGoogleSignIn(redirectUri: string, next: string): Promise<string | null> {
-  const client = getGoogleClient();
-  if (!client || !enabledAuthProviders.includes("google")) return null;
+  if (!enabledAuthProviders.includes("google")) return null;
+  const { GOOGLE_CLIENT_ID } = getServerEnv();
 
   const signInState: GoogleSignInState = {
     state: randomToken(),
@@ -85,7 +74,7 @@ export async function startGoogleSignIn(redirectUri: string, next: string): Prom
 
   const url = new URL(GOOGLE_AUTH_URL);
   url.search = new URLSearchParams({
-    client_id: client.clientId,
+    client_id: GOOGLE_CLIENT_ID,
     redirect_uri: redirectUri,
     response_type: "code",
     scope: "openid email profile",
@@ -134,16 +123,15 @@ export async function completeGoogleSignIn(
     signInState: GoogleSignInState;
   },
 ): Promise<CodeExchangeResult> {
-  const client = getGoogleClient();
-  if (!client) return { ok: false, reason: "failed" };
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = getServerEnv();
 
   try {
     const response = await fetch(GOOGLE_TOKEN_URL, {
       method: "POST",
       body: new URLSearchParams({
         code,
-        client_id: client.clientId,
-        client_secret: client.clientSecret,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
         redirect_uri: redirectUri,
         grant_type: "authorization_code",
         code_verifier: signInState.codeVerifier,

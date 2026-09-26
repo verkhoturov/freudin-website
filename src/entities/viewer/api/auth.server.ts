@@ -20,24 +20,19 @@ const authProviderBySupabaseName = new Map<string, AuthProvider>(
 );
 
 /**
- * Адрес, на который отправляем браузер для входа, или `null`, если провайдер не подключён.
- * PKCE-верификатор Supabase сохраняет в cookies ответа.
+ * Адрес входа через OAuth Supabase, или `null`, если провайдер не подключён. PKCE-верификатор
+ * Supabase сохраняет в cookies ответа. Google входит без OAuth Supabase: `startGoogleSignIn`.
  */
 export async function getOAuthSignInUrl(
   supabase: SupabaseServerClient,
-  provider: AuthProvider,
+  provider: Exclude<AuthProvider, "google">,
   redirectTo: string,
 ): Promise<string | null> {
   if (!enabledAuthProviders.includes(provider)) return null;
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: supabaseProviders[provider],
-    options: {
-      redirectTo,
-      skipBrowserRedirect: true,
-      // Google иначе молча входит в последний аккаунт, и сменить его после выхода нельзя
-      queryParams: provider === "google" ? { prompt: "select_account" } : undefined,
-    },
+    options: { redirectTo, skipBrowserRedirect: true },
   });
   if (error) throw error;
   return data.url;

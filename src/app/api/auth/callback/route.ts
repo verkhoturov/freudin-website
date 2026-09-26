@@ -4,9 +4,9 @@ import { createSupabaseServerClient } from "@/shared/api/index.server";
 import { getSafeRedirectPath } from "@/shared/lib/safe-redirect";
 
 /**
- * Возврат от провайдера через OAuth Supabase: обмен кода на сессию и переход дальше — на
- * онбординг, если профиля нет, иначе на `next` или на личную страницу. Ошибки — на `/login`.
- * Google со своим адресом возврата приходит на `/api/auth/callback/google`.
+ * Возврат от провайдера через OAuth Supabase (Facebook, Telegram): обмен кода на сессию
+ * и переход дальше — на онбординг, если профиля нет, иначе на `next` или на личную страницу.
+ * Ошибки — на `/login`. Google возвращается на `/api/auth/callback/google`.
  */
 export const GET = withErrorHandling(async (request) => {
   const { searchParams, origin } = new URL(request.url);

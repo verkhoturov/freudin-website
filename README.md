@@ -90,13 +90,11 @@ npm run dev
 | `SUPABASE_URL` | Supabase → Project Settings → API Keys | шага 7 |
 | `SUPABASE_PUBLISHABLE_KEY` | там же, ключ `sb_publishable_…` | шага 7 |
 | `SUPABASE_SECRET_KEY` | там же, ключ `sb_secret_…` | шага 7 |
-| `GOOGLE_CLIENT_ID` | Google Cloud → Google Auth Platform → Clients (тот же, что в Supabase → Providers → Google) | шага 8.1, необязательна |
-| `GOOGLE_CLIENT_SECRET` | там же, секрет `GOCSPX-…` | шага 8.1, необязательна |
+| `GOOGLE_CLIENT_ID` | Google Cloud → Google Auth Platform → Clients (тот же, что в Supabase → Providers → Google) | шага 8.1 |
+| `GOOGLE_CLIENT_SECRET` | там же, секрет `GOCSPX-…` | шага 8.1 |
 
 Переменные проверяются zod-схемой при первом обращении (`getServerEnv()`), поэтому
-`npm run build` проходит без них. `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET` задаются только
-парой: с ними вход через Google идёт со своим адресом возврата, без них (или с пустыми
-значениями) — через OAuth Supabase.
+`npm run build` проходит без них.
 
 Для Supabase CLI (миграции и генерация типов) нужны ещё две переменные. Приложению они не нужны:
 
@@ -283,30 +281,28 @@ psql --single-transaction --variable ON_ERROR_STOP=1 \
    - Branding: название, логотип, ссылки на `/privacy` и `/terms`;
    - Audience: External, статус In production: войти может любой аккаунт Google. В статусе
      Testing пускают только тестовых пользователей из этого же раздела. Название и логотип
-     Freudin на экране Google появятся только после проверки бренда (brand verification);
-     до этого там виден домен адреса возврата: `www.freud.in` при своём адресе возврата
-     (шаг 8.1), `<ref>.supabase.co` — при входе через OAuth Supabase;
+     Freudin на экране Google видны после проверки бренда (brand verification). Бренд
+     подтверждён 26.09.2026. Для проверки домен `freud.in` подтверждён в Google Search Console
+     TXT-записью в DNS: её не удалять;
    - Data access: `openid`, `email`, `profile`.
 2. Clients → Create client → Web application:
    - Authorized JavaScript origins: `http://localhost:3000` и `https://www.freud.in`;
-   - Authorized redirect URIs: `https://www.freud.in/api/auth/callback/google`,
-     `http://localhost:3000/api/auth/callback/google` и, пока нужен запасной путь через
-     Supabase, `https://<ref>.supabase.co/auth/v1/callback`.
+   - Authorized redirect URIs: `https://www.freud.in/api/auth/callback/google`
+     и `http://localhost:3000/api/auth/callback/google`. Адрес Supabase здесь не нужен.
 3. Client ID и Client Secret внести в Supabase → Authentication → Sign In / Providers → Google
    и включить провайдер: Supabase проверяет по этому Client ID ID-токены Google. Skip nonce
    check оставить выключенным: мы передаём nonce, и Supabase его сверяет.
 4. Те же Client ID и Client Secret задать в `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET`
    (`.env` и Vercel).
 
-Как устроен вход: кнопка ведёт на `/api/auth/sign-in`. Если `GOOGLE_*` заданы, браузер уходит
-прямо к Google, а `state`, `nonce` и PKCE-верификатор хранятся в httpOnly-cookie
-`freudin-google-sign-in` (10 минут). Google возвращает на `/api/auth/callback/google`: сервер
-меняет код на токены Google и создаёт сессию Supabase по ID-токену (`signInWithIdToken`).
-Пользователь тот же, что при входе через OAuth Supabase: Supabase узнаёт его по Google ID.
-Без `GOOGLE_*` браузер идёт к Google через Supabase (PKCE, верификатор в cookie) и возвращается
-на `/api/auth/callback`. В обоих случаях дальше онбординг, если профиля ещё нет, иначе своя
-страница или `?next=`. Cookies сессии `httpOnly`: браузер их не читает, сессию видят только
-API-роуты.
+Как устроен вход: кнопка ведёт на `/api/auth/sign-in`, оттуда браузер уходит прямо к Google,
+а `state`, `nonce` и PKCE-верификатор хранятся в httpOnly-cookie `freudin-google-sign-in`
+(10 минут). Google возвращает на `/api/auth/callback/google`: сервер меняет код на токены
+Google и создаёт сессию Supabase по ID-токену (`signInWithIdToken`). Supabase узнаёт
+пользователя по Google ID, поэтому аккаунты, созданные раньше через OAuth Supabase, остались
+теми же. Дальше онбординг, если профиля ещё нет, иначе своя страница или `?next=`. Cookies
+сессии `httpOnly`: браузер их не читает, сессию видят только API-роуты. Facebook и Telegram
+(шаги 9–10) пойдут через OAuth Supabase и `/api/auth/callback`.
 
 ## Деплой
 

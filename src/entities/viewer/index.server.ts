@@ -9,7 +9,6 @@ export {
 } from "./api/auth.server";
 export {
   completeGoogleSignIn,
-  isGoogleOAuthConfigured,
   startGoogleSignIn,
   takeGoogleSignInState,
 } from "./api/google-oauth.server";

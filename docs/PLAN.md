@@ -84,8 +84,8 @@ Supabase: Auth (google, facebook, custom:telegram) · Postgres + RLS · Storage 
       302: профиля нет → /onboarding; профиль есть → next или /<username>
 ```
 
-Исключение — Google при заданных `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET` (шаг 8.1): он
-возвращает браузер на наш домен, чтобы на экране Google был виден сайт, а не `<ref>.supabase.co`.
+Исключение — Google (шаг 8.1): он возвращает браузер на наш домен, чтобы на экране Google был
+виден подтверждённый бренд Freudin, а не `<ref>.supabase.co`.
 
 ```
   → GET /api/auth/sign-in?provider=google&next=/…
@@ -315,7 +315,8 @@ SEO-база (сделана по итогам ревью вёрстки):
       `http://localhost:3000/**` для локальной разработки.
 - [x] Выбрать, как я буду работать с БД. **Выбрано: переменные окружения + Supabase CLI.**
 - [ ] Только для облачной сессии: добавить в её настройки переменные `SUPABASE_URL`,
-      `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (для приложения), а также
+      `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `GOOGLE_CLIENT_ID`,
+      `GOOGLE_CLIENT_SECRET` (для приложения), а также
       `SUPABASE_ACCESS_TOKEN` и `SUPABASE_DB_PASSWORD` (для миграций и генерации типов).
       Пока работаем локально, это не нужно.
 - [x] (аудит) **Делаешь ты:** выключить провайдер Email в Supabase → Authentication →
@@ -434,20 +435,26 @@ Testing, войти могут только добавленные тестов�
       `https://www.freud.in/api/auth/callback/google` и
       `http://localhost:3000/api/auth/callback/google`. Старый адрес Supabase пока оставить.
       Проверено 26.09.2026: оба адреса Google уже принимает.
-- [ ] **Делаешь ты:** проверить вход на localhost (`GOOGLE_*` уже есть в `.env`): на экране
+- [x] **Делаешь ты:** проверить вход на localhost (`GOOGLE_*` уже есть в `.env`): на экране
       Google виден `localhost`, после входа тот же аккаунт и профиль, что раньше.
-- [ ] **Делаешь ты:** задать `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET` в Vercel → Settings →
+- [x] **Делаешь ты:** задать `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET` в Vercel → Settings →
       Environment Variables (Production), закоммитить и проверить вход на проде: на экране
-      Google должно быть `www.freud.in`.
-- [ ] **Делаешь ты:** Google Search Console → добавить ресурс «Домен» `freud.in` и подтвердить
+      Google должно быть `www.freud.in`. Проверено 26.09.2026: прод ведёт на Google
+      с адресом возврата `https://www.freud.in/api/auth/callback/google`.
+- [x] **Делаешь ты:** Google Search Console → добавить ресурс «Домен» `freud.in` и подтвердить
       его TXT-записью в DNS Timeweb. Аккаунт — тот же, что владеет проектом в Google Cloud.
-- [ ] **Делаешь ты:** Google Auth Platform → Branding: Authorized domains — только `freud.in`
-      (убрать `<ref>.supabase.co`), из Authorized redirect URIs убрать адрес Supabase.
-      Проверить, что заполнены название Freudin, домашняя страница, `/privacy`, `/terms`
-      и контакты. Затем Verification Center → отправить бренд на проверку (несколько рабочих
-      дней). Логотип можно загрузить сразу или после шага 17.3.
-- [ ] Я: после перехода на прод сделать `GOOGLE_*` обязательными и убрать запасной путь
-      Google через OAuth Supabase. Facebook и Telegram остаются на нём.
+- [x] **Делаешь ты:** Google Auth Platform → Branding: Authorized domains — только `freud.in`
+      (убрать `<ref>.supabase.co`). Проверить, что заполнены название Freudin, домашняя
+      страница, `/privacy`, `/terms` и контакты. Затем Verification Center → отправить бренд
+      на проверку. **Сделано 26.09.2026:** «Your branding has been verified and is being shown
+      to users», на экране Google и локально, и на проде написано Freudin.
+- [x] Я: после перехода на прод сделать `GOOGLE_*` обязательными и убрать запасной путь
+      Google через OAuth Supabase. Facebook и Telegram остаются на нём. Сделано 26.09.2026:
+      `getOAuthSignInUrl` по типу не принимает Google, пункт о cookies `sb-…-code-verifier`
+      убран из `/privacy` (без OAuth Supabase их сейчас никто не ставит).
+- [ ] **Делаешь ты:** Google Cloud → Clients → OAuth-клиент → Authorized redirect URIs: удалить
+      `https://<ref>.supabase.co/auth/v1/callback`, он больше не нужен (26.09.2026 ещё был
+      на месте). В Supabase провайдер Google не выключать: по нему проверяются ID-токены.
 
 **Готово, когда:** на экране выбора аккаунта Google написано «Freudin» (после проверки бренда),
 а до неё — `www.freud.in`.
@@ -495,8 +502,9 @@ Facebook.
 - [x] Страницы `/privacy` и `/terms` с разделом «Удаление данных». Они нужны Meta для Live-режима
       и Google для брендинга. Тексты перенесены в этап H (юридические требования).
 - [x] Кнопка Facebook в `sign-in-panel`.
-- [ ] Обновить `/privacy` и `/terms`: вход через Facebook и какие данные он передаёт. В Meta for
-      Developers указать Data Deletion Instructions URL
+- [ ] Обновить `/privacy` и `/terms`: вход через Facebook и какие данные он передаёт. В список
+      cookies вернуть `sb-…-code-verifier`: его ставит OAuth Supabase на время входа. В Meta
+      for Developers указать Data Deletion Instructions URL
       `https://www.freud.in/privacy#account-and-data-deletion`.
 - [ ] Добавить `facebook` в `enabledAuthProviders`: тогда появится кнопка на `/login` и заработает
       `/api/auth/sign-in?provider=facebook`.
@@ -516,7 +524,9 @@ Facebook.
       `custom:telegram`, issuer `https://oauth.telegram.org`, scopes `openid profile`, email
       optional. Можешь сделать ты, или я сделаю через коннектор/admin API.
 - [x] Кнопка Telegram.
-- [ ] Обновить `/privacy` и `/terms`: вход через Telegram и какие данные он передаёт.
+- [ ] Обновить `/privacy` и `/terms`: вход через Telegram и какие данные он передаёт. В список
+      cookies вернуть `sb-…-code-verifier`, если его ещё нет: его ставит OAuth Supabase на время
+      входа.
 - [ ] Добавить `telegram` в `enabledAuthProviders`. Маппинг `telegram` → `custom:telegram`
       в `auth.server.ts` уже есть.
 - [ ] Приведение метаданных провайдеров к единому виду: имя, аватар, подсказка username.
@@ -950,7 +960,7 @@ DNS домена `freud.in` обслуживает Timeweb (`ns1.timeweb.ru` и 
 | Связка Telegram OIDC + кастомный провайдер Supabase появилась недавно | Проверяем на шаге 10 в первую очередь, есть запасной план |
 | Facebook: без Live-режима входят только тестировщики, у части аккаунтов нет email | Live на шаге 18, понятная ошибка на `/login` |
 | Экран согласия Google показывает `<ref>.supabase.co` | Свой адрес возврата на `www.freud.in` и проверка бренда (шаг 8.1) |
-| Свой обмен кода Google: ошибка в проверке `state` или `nonce` ослабит вход | `state` в httpOnly-cookie на 10 минут, одноразовой; PKCE; `nonce` и подпись токена проверяет Supabase; запасной путь через OAuth Supabase — пустые `GOOGLE_*` |
+| Свой обмен кода Google: ошибка в проверке `state` или `nonce` ослабит вход | `state` в httpOnly-cookie на 10 минут, одноразовой; PKCE; `nonce` и подпись токена проверяет Supabase |
 | react-hook-form + React Compiler | Используем TanStack Form |
 | Личные страницы рендерятся на клиенте: без JavaScript поисковик видит пустую страницу, превью ссылок общее, несуществующий адрес отдаёт 200 («мягкая 404») | Серверный рендер `/<username>` и JSON-LD на этапе G, по согласованию |
 | Если аудитория в РФ, 152-ФЗ требует хранить персональные данные россиян на серверах в России, а Supabase за рубежом | ✅ Решено: пока считаем, что пользователи не из РФ (решение 13). Если аудитория изменится, вернёмся к вопросу на этапе H |

@@ -161,10 +161,6 @@ export function PrivacyView() {
           the Service;
         </li>
         <li>
-          <code>sb-…-code-verifier</code> cookies, set by Supabase for the same purpose when sign-in
-          goes through Supabase;
-        </li>
-        <li>
           <code>theme</code> in your browser’s local storage, which remembers whether you chose the
           light, dark, or system theme;
         </li>

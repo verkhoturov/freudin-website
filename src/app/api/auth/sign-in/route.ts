@@ -2,7 +2,6 @@ import { redirectTo, redirectToLogin, withErrorHandling } from "@/app/api/_lib";
 import {
   authProviderSchema,
   getOAuthSignInUrl,
-  isGoogleOAuthConfigured,
   startGoogleSignIn,
 } from "@/entities/viewer/index.server";
 import { createSupabaseServerClient } from "@/shared/api/index.server";
@@ -18,7 +17,7 @@ export const GET = withErrorHandling(async (request) => {
 
   try {
     let url: string | null;
-    if (provider.data === "google" && isGoogleOAuthConfigured()) {
+    if (provider.data === "google") {
       // Google возвращает на наш домен, `next` хранится в cookie попытки входа
       url = await startGoogleSignIn(new URL(apiRoutes.googleAuthCallback, origin).toString(), next);
     } else {
