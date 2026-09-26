@@ -98,7 +98,7 @@ export async function isUsernameAvailable(
 ): Promise<boolean> {
   const { count, error } = await supabase
     .from("profiles")
-    .select("id", { count: "exact", head: true })
+    .select("username", { count: "exact", head: true })
     .eq("username", username);
 
   if (error) throw error;

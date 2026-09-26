@@ -87,6 +87,9 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   успешный ответ отдаём через `jsonOk<T>(data)`, ожидаемую ошибку — `throw new HttpError(status,
   code, message)`, тело запроса читаем через `parseJsonBody(request, schema)` (ошибка валидации
   превращается в 400 с `fields`).
+- `withErrorHandling` защищает от CSRF: изменяющий запрос (не GET, HEAD, OPTIONS) с чужого сайта
+  (`Sec-Fetch-Site` не `same-origin` или чужой `Origin`) получает 403 до вызова обработчика.
+  Запросы без обоих заголовков (curl, вебхуки) проходят. Роуты без обёртки не пишем.
 - Роут с сессией начинается с `const { supabase, claims } = await requireUser()` из
   `@/app/api/_lib`: без сессии это 401, а обновлённая сессия пишется в cookies. Дальше работаем
   через этот `supabase` (RLS действует). Публичные роуты без сессии читают данные через
@@ -274,13 +277,19 @@ export { LoginView as default, metadata } from "@/views/login";
 - Схема меняется только миграциями в `supabase/migrations`. Новую создаём командой
   `npx supabase migration new <name>`, уже применённые миграции не правим.
 - Миграции применяет пользователь (`npm run db:push`): это изменение боевой базы. Перед этим SQL
-  можно проверить в транзакции с откатом (`begin; … rollback;`) через `psql`.
+  можно проверить в транзакции с откатом (`begin; … rollback;`) через `psql`. Перед `db:push`
+  напоминай пользователю сделать резервную копию.
+- Тариф Free: автоматических бэкапов нет. Копию делает пользователь командой `npm run db:dump`
+  (нужен запущенный Docker). Файлы лежат в `backups/`, их нет в git: там персональные данные.
 - После применения генерируем типы: `npm run db:types` пишет
   `src/shared/api/supabase/database.types.ts`. Руками этот файл не правим.
 - CHECK-ограничения повторяют zod-схемы сущностей: меняя лимит, меняй и схему, и миграцию.
   Зарезервированные username проверяет только сервер.
 - На каждой таблице включён RLS. Права ролям выдаём явно (`revoke all`, затем нужные `grant`):
   по умолчанию Supabase открывает `anon` и `authenticated` всё.
+- `anon` читает из `profiles` только колонки публичной страницы (`PUBLIC_PROFILE_COLUMNS`):
+  `select *` и `select("id")` от гостя дают `permission denied`. Новую публичную колонку
+  добавляй и в `PUBLIC_PROFILE_COLUMNS`, и миграцией в `grant select (…) … to anon`.
 - Supabase CLI читает переменные из `.env` в корне. Прямой адрес БД доступен только по IPv6,
   поэтому CLI и `psql` подключаются через пулер `aws-0-eu-central-1.pooler.supabase.com:5432`
   (пользователь `postgres.<ref>`).
@@ -372,6 +381,7 @@ export { LoginView as default, metadata } from "@/views/login";
 | `npm run typecheck` | генерация типов роутов (`next typegen`) и `tsc --noEmit` |
 | `npm run db:push` | применить миграции из `supabase/migrations` к базе проекта (запускает пользователь) |
 | `npm run db:types` | сгенерировать типы БД в `src/shared/api/supabase/database.types.ts` |
+| `npm run db:dump` | резервная копия базы в `backups/<дата-время>/` (запускает пользователь, нужен Docker) |
 
 ## Next.js 16: на что обратить внимание
 

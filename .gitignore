@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# резервные копии базы (npm run db:dump): в них персональные данные
+/backups/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

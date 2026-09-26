@@ -110,6 +110,7 @@ npm run dev
 | `npm run typecheck` | генерация типов роутов (`next typegen`) и проверка типов (`tsc --noEmit`) |
 | `npm run db:push` | применить новые миграции из `supabase/migrations` к базе проекта |
 | `npm run db:types` | сгенерировать типы БД в `src/shared/api/supabase/database.types.ts` |
+| `npm run db:dump` | резервная копия базы в `backups/<дата-время>/`, нужен запущенный Docker (см. «Резервные копии») |
 
 ## Структура проекта
 
@@ -122,7 +123,7 @@ src/
 │  ├─ layout.tsx       # html/body, шрифты, metadata, шапка, <main>, подвал
 │  ├─ _providers/      # темы, TanStack Query, тултипы, уведомления
 │  ├─ robots.ts, sitemap.ts, opengraph-image.jpg   # SEO-файлы
-│  └─ api/             # API-роуты; _lib — общие хелперы (ошибки, ответы, zod)
+│  └─ api/             # API-роуты; _lib — общие хелперы (ошибки, ответы, zod, защита от CSRF)
 ├─ views/              # страницы: home, login, onboarding, settings, profile, privacy, terms, not-found
 ├─ widgets/            # header, footer, sign-in-panel, profile-card, profile-form, account-settings
 ├─ entities/           # viewer (вход), profile (профиль и username), social-link (ссылки на соцсети)
@@ -134,6 +135,9 @@ src/
 supabase/
 ├─ config.toml         # настройки Supabase CLI
 └─ migrations/         # SQL-миграции схемы БД и Storage
+scripts/
+└─ db-dump.sh          # резервная копия базы (npm run db:dump)
+backups/               # резервные копии; не в git: в них персональные данные
 components.json        # настройки shadcn/ui (алиасы под FSD)
 .env.example           # шаблон переменных окружения
 docs/
@@ -211,7 +215,9 @@ API:
 ### Supabase
 
 Один облачный проект `freudin_data` в регионе eu-central-1 (Франкфурт). Он же прод: отдельной
-базы для разработки нет.
+базы для разработки нет. Тариф Free: если к базе неделю никто не обращается, проект засыпает,
+и сайт перестаёт открывать страницы. Разбудить его можно кнопкой Restore в дашборде.
+Автоматических бэкапов на Free нет, копии делаем сами (см. «Резервные копии»).
 
 - Authentication → URL Configuration: Site URL `https://www.freud.in`, в Redirect URLs —
   `http://localhost:3000/**` для локальной разработки.
@@ -223,6 +229,41 @@ API:
 - Прямой адрес базы доступен только по IPv6. Если сеть его не поддерживает, CLI сам идёт через
   пулер, а для `psql` используй `aws-0-eu-central-1.pooler.supabase.com:5432` с пользователем
   `postgres.<ref>`.
+- Гость (роль `anon`) читает из `profiles` только колонки публичной страницы, без `id` и дат.
+
+#### Резервные копии
+
+Запусти Docker Desktop и выполни `npm run db:dump`. Делай копию перед каждым `npm run db:push`
+и регулярно, например раз в неделю. Команда создаёт папку `backups/<дата-время>/` с тремя
+файлами:
+
+- `roles.sql` — настройки ролей;
+- `schema.sql` — схема `public`: таблицы, функции, RLS-политики, права;
+- `data.sql` — данные: пользователи (`auth.users`, `auth.identities`), профили, записи
+  о файлах Storage.
+
+В копию не входят:
+
+- сессии и токены входа: после восстановления пользователи войдут заново;
+- сами файлы фото (Storage хранит их отдельно от базы);
+- политики Storage: они есть в миграции `*_create_avatars_bucket.sql`.
+
+В копиях персональные данные. Папка `backups/` не попадает в git, файлы доступны только
+владельцу. Старые копии удаляй вручную.
+
+Восстановление в новый пустой проект Supabase (строку подключения к его базе возьми
+в дашборде: Connect → Session pooler):
+
+```bash
+cd backups/<дата-время>
+psql --single-transaction --variable ON_ERROR_STOP=1 \
+  --file roles.sql --file schema.sql \
+  --command 'SET session_replication_role = replica' \
+  --file data.sql --dbname "<строка подключения>"
+```
+
+После этого выполни блоки `create policy` из миграции `*_create_avatars_bucket.sql`. В рабочую
+базу копию целиком не накатывают: отдельные строки восстанавливай вручную по `data.sql`.
 
 ### Вход через Google
 

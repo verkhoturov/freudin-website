@@ -10,7 +10,8 @@
     "lint:fix": "biome check --write",
     "typecheck": "next typegen && tsc --noEmit",
     "db:push": "supabase db push",
-    "db:types": "supabase gen types typescript --linked --schema public > src/shared/api/supabase/database.types.ts && biome format --write src/shared/api/supabase/database.types.ts"
+    "db:types": "supabase gen types typescript --linked --schema public > src/shared/api/supabase/database.types.ts && biome format --write src/shared/api/supabase/database.types.ts",
+    "db:dump": "bash scripts/db-dump.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
