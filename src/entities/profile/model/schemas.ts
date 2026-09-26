@@ -38,3 +38,8 @@ export const profileUpdateSchema = profileInputSchema.partial();
 
 export type ProfileUpdateInput = z.input<typeof profileUpdateSchema>;
 export type ProfileUpdateData = z.output<typeof profileUpdateSchema>;
+
+/** Тело `POST /api/profile/avatar` в JSON: скопировать фото из аккаунта провайдера входа. */
+export const providerAvatarRequestSchema = z.object({ source: z.literal("provider") });
+
+export type ProviderAvatarRequest = z.infer<typeof providerAvatarRequestSchema>;

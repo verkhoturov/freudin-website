@@ -8,6 +8,7 @@ export {
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from "./config/limits";
+export { AVATAR_MAX_BYTES, AVATAR_SIZE } from "./config/storage";
 export {
   bioSchema,
   displayNameSchema,
@@ -18,6 +19,6 @@ export {
   profileUpdateSchema,
   socialLinksSchema,
 } from "./model/schemas";
-export type { PublicProfile, UsernameAvailability } from "./model/types";
+export type { AvatarSource, PublicProfile, UsernameAvailability } from "./model/types";
 export { usernameSchema } from "./model/username";
 export { ProfileAvatar } from "./ui/profile-avatar";

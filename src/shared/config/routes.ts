@@ -18,6 +18,7 @@ export const apiRoutes = {
   me: "/api/me",
   /** Профиль текущего пользователя: создание и обновление. */
   profile: "/api/profile",
+  profileAvatar: "/api/profile/avatar",
   publicProfile: (username: string) => `/api/profiles/${encodeURIComponent(username)}`,
   usernameAvailability: (username: string) => `/api/usernames/${encodeURIComponent(username)}`,
 } as const;

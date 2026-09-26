@@ -7,7 +7,7 @@ import { AVATARS_BUCKET } from "../config/storage";
 import type { ProfileData, ProfileUpdateData } from "../model/schemas";
 import type { PublicProfile } from "../model/types";
 
-const PUBLIC_PROFILE_COLUMNS = "username, display_name, bio, avatar_path, social_links";
+export const PUBLIC_PROFILE_COLUMNS = "username, display_name, bio, avatar_path, social_links";
 
 // Код Postgres для нарушения уникальности и имена ограничений из миграции profiles
 const UNIQUE_VIOLATION = "23505";
@@ -29,7 +29,7 @@ function parseSocialLinks(value: Json): SocialLink[] {
   });
 }
 
-function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow): PublicProfile {
+export function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow): PublicProfile {
   return {
     username: row.username,
     displayName: row.display_name,
