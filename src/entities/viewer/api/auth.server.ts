@@ -1,6 +1,7 @@
 import "server-only";
 import {
   isAuthPKCECodeVerifierMissingError,
+  type SupabaseClient,
   type SupabaseServerClient,
 } from "@/shared/api/index.server";
 import type { AuthProvider } from "../config/auth-providers";
@@ -53,6 +54,41 @@ export async function exchangeAuthCode(
     return { ok: false, reason: isAuthPKCECodeVerifierMissingError(error) ? "expired" : "failed" };
   }
   return { ok: true, userId: data.user.id };
+}
+
+// Имена провайдеров в Supabase (`app_metadata.provider`) → провайдеры приложения
+const authProviderBySupabaseName: Record<string, AuthProvider> = {
+  google: "google",
+  facebook: "facebook",
+  "custom:telegram": "telegram",
+};
+
+/** Через какого провайдера пользователь вошёл, по `app_metadata` из сессии. */
+export function getAuthProvider(
+  appMetadata: { provider?: string } | undefined,
+): AuthProvider | null {
+  const name = appMetadata?.provider;
+  return name ? (authProviderBySupabaseName[name] ?? null) : null;
+}
+
+/**
+ * Удаляет пользователя через admin API (профиль удаляется каскадно) и cookies его сессии.
+ * Файлы в Storage каскадом не удаляются: их удаляют заранее.
+ */
+export async function deleteUser(
+  admin: SupabaseClient,
+  supabase: SupabaseServerClient,
+  userId: string,
+): Promise<void> {
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) throw error;
+
+  // Аккаунт уже удалён, поэтому сбой выхода не должен превращаться в ошибку запроса
+  try {
+    await signOut(supabase);
+  } catch (signOutError) {
+    console.warn("Не удалось удалить cookies сессии удалённого пользователя:", signOutError);
+  }
 }
 
 /** Завершает сессию на этом устройстве и удаляет её cookies. Без сессии ничего не делает. */

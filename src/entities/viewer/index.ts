@@ -1,3 +1,4 @@
+export { useDeleteAccountMutation } from "./api/use-delete-account-mutation";
 export {
   type CreateProfileResult,
   type CreateProfileVariables,
