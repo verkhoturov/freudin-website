@@ -1,3 +1,4 @@
+export { useCreateProfileMutation, useUpdateProfileMutation } from "./api/use-profile-mutations";
 export { useSignOutMutation } from "./api/use-sign-out-mutation";
 export { useViewerQuery, viewerQueries } from "./api/viewer-queries";
 export { getAuthErrorMessage } from "./config/auth-errors";

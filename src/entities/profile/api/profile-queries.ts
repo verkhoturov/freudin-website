@@ -9,6 +9,6 @@ export const profileQueries = {
     queryOptions({
       queryKey: [...profileQueries.all(), username],
       queryFn: ({ signal }) =>
-        apiClient.get<PublicProfile>(apiRoutes.profile(username), { signal }),
+        apiClient.get<PublicProfile>(apiRoutes.publicProfile(username), { signal }),
     }),
 };

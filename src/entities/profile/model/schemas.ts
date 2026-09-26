@@ -32,3 +32,9 @@ export const profileInputSchema = z.object({
 
 export type ProfileInput = z.input<typeof profileInputSchema>;
 export type ProfileData = z.output<typeof profileInputSchema>;
+
+/** Обновление профиля (`PATCH /api/profile`): передаются только изменённые поля. */
+export const profileUpdateSchema = profileInputSchema.partial();
+
+export type ProfileUpdateInput = z.input<typeof profileUpdateSchema>;
+export type ProfileUpdateData = z.output<typeof profileUpdateSchema>;

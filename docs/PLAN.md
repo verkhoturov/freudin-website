@@ -412,11 +412,15 @@ admin API.
 - [x] `entities/profile`: типы, zod-схемы (общие для формы и API), правила username,
       `profileQueries.detail`, `ProfileAvatar`. Зарезервированные имена лежат
       в `shared/config/reserved-usernames.ts`: служебные слова и сегменты всех роутов из `routes`.
-- [ ] `entities/profile`: мутации создания и обновления, проверка доступности username,
-      серверные функции БД в `index.server.ts`.
-- [ ] Роуты `POST /api/profile`, `PATCH /api/profile`, `GET /api/profiles/[username]`,
-      `GET /api/usernames/[username]`. Сейчас `GET /api/profiles/[username]` — заглушка
-      с демо-профилем `demo`.
+- [x] `entities/profile`: проверка доступности username (`usernameQueries`), серверные функции
+      БД в `index.server.ts`: чтение по username, проверка username, создание и обновление.
+      Мутации создания и обновления лежат в `entities/viewer`: они обновляют кеш `/api/me`,
+      а `viewer` уже зависит от `profile` через `@x` (обратный импорт дал бы цикл).
+- [x] Роуты `POST /api/profile`, `PATCH /api/profile` (только переданные поля),
+      `GET /api/profiles/[username]`, `GET /api/usernames/[username]`. Публичные роуты читают
+      через клиент без сессии `createSupabasePublicClient()`. Демо-профиль `demo` отдаётся из кода.
+- [ ] Пройти создание и обновление профиля с настоящей сессией (после включения Google, шаг 8).
+      Из облачной сессии проверены чтение, 404, 400 и 401.
 
 **Готово, когда:** профиль создаётся, читается и обновляется через API. Невалидные данные дают 400
 с ошибками по полям, занятый username даёт 409.
