@@ -89,8 +89,13 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   превращается в 400 с `fields`).
 - Роут с сессией начинается с `const { supabase, claims } = await requireUser()` из
   `@/app/api/_lib`: без сессии это 401, а обновлённая сессия пишется в cookies. Дальше работаем
-  через этот `supabase` (RLS действует). `createSupabaseAdminClient()` обходит RLS, поэтому он
-  только для служебных операций вроде удаления аккаунта.
+  через этот `supabase` (RLS действует). Публичные роуты без сессии читают данные через
+  `createSupabasePublicClient()` (роль `anon`, cookies не трогает). `createSupabaseAdminClient()`
+  обходит RLS, поэтому он только для служебных операций вроде удаления аккаунта.
+- Серверные функции сущностей принимают клиент типа `SupabaseClient` из
+  `@/shared/api/index.server` и не бросают `HttpError` (слой `app` им недоступен). Ожидаемый исход
+  вроде занятого username они возвращают как `{ ok: false, reason }`, а роут превращает его
+  в код ответа.
 - Ответ с данными пользователя отдаём с заголовком `Cache-Control: private, no-store`
   (`NO_STORE_HEADERS` из `@/app/api/_lib`).
 - Роуты, куда браузер приходит переходом, а не через `apiClient` (`/api/auth/sign-in`,
@@ -177,8 +182,8 @@ export { LoginView as default, metadata } from "@/views/login";
 
 | Слой | Слайс или модуль | Что внутри |
 |------|------------------|------------|
-| `entities` | `viewer` | провайдеры входа, коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer`, `useViewerQuery`, `useSignOutMutation`, `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `getOAuthSignInUrl`, `exchangeAuthCode`, `signOut` |
-| `entities` | `profile` | правила username, zod-схемы профиля, лимиты, `PublicProfile`, `profileQueries`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileSuggestions`; для `viewer` — типы через `@x` |
+| `entities` | `viewer` | провайдеры входа, коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer`, `useViewerQuery`, `useSignOutMutation`, `useCreateProfileMutation`, `useUpdateProfileMutation` (обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `getOAuthSignInUrl`, `exchangeAuthCode`, `signOut` |
+| `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`), лимиты, `PublicProfile`, `UsernameAvailability`, `profileQueries`, `usernameQueries`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile`, `updateProfile`, `getProfileSuggestions`; для `viewer` — типы и фабрики запросов через `@x` |
 | `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton`; для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка и подвал сайта |
 | `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров |
@@ -186,7 +191,7 @@ export { LoginView as default, metadata } from "@/views/login";
 | `shared/ui` | свои компоненты | `Container`, `Logo`, `ThemeToggle`, `NotFoundState`, `PagePlaceholder` (временный) |
 | `shared/lib` | `utils`, `safe-redirect` | `cn`, `getSafeRedirectPath` |
 | `shared/config` | `routes`, `site`, `reserved-usernames`, `env.server` | пути, настройки сайта, зарезервированные адреса, серверный env |
-| `shared/api` | `index.ts`, `index.server.ts` | клиент: `apiClient`, `ApiError`, QueryClient; сервер: `createSupabaseServerClient`, `createSupabaseAdminClient`, типы БД (`Database`, `Tables`) |
+| `shared/api` | `index.ts`, `index.server.ts` | клиент: `apiClient`, `ApiError`, QueryClient; сервер: `createSupabaseServerClient`, `createSupabasePublicClient`, `createSupabaseAdminClient`, тип `SupabaseClient`, типы БД (`Database`, `Tables`) |
 
 ## Роуты
 
@@ -202,7 +207,7 @@ export { LoginView as default, metadata } from "@/views/login";
 | `/settings` | `src/app/settings/page.tsx` | `settings` | авторизованные с профилем | заглушка за гардом |
 | `/privacy` | `src/app/privacy/page.tsx` | `privacy` | все | заглушка |
 | `/terms` | `src/app/terms/page.tsx` | `terms` | все | заглушка |
-| `/<username>` | `src/app/[username]/page.tsx` | `profile` | все | интерфейс готов, данные — заглушка API |
+| `/<username>` | `src/app/[username]/page.tsx` | `profile` | все | готово: данные из БД, `/demo` — демо-профиль |
 | 404 | `src/app/not-found.tsx` | `not-found` | все | готово |
 
 Служебные файлы:
@@ -221,8 +226,7 @@ export { LoginView as default, metadata } from "@/views/login";
 
 ### API
 
-Когда роут появляется, меняй его статус. Заглушки помечены комментарием в коде и заменяются
-на шаге 11 (профиль): контракт ответа при этом не меняется.
+Когда роут появляется, меняй его статус.
 
 | Метод | Путь | Назначение | Сессия | Статус |
 |-------|------|------------|:------:|--------|
@@ -232,12 +236,12 @@ export { LoginView as default, metadata } from "@/views/login";
 | POST | `/api/auth/sign-out` | выход; без сессии тоже 204 | ✓ | готово |
 | GET | `/api/me` | текущий пользователь, его профиль (или `null`) и подсказки для онбординга | ✓ | готово |
 | DELETE | `/api/me` | удаление аккаунта и всех данных | ✓ | план |
-| POST | `/api/profile` | создание профиля (онбординг) | ✓ | план |
-| PATCH | `/api/profile` | обновление профиля | ✓ | план |
+| POST | `/api/profile` | создание профиля (онбординг): 201; занятый username — 409 с `fields.username`, профиль уже есть — 409 | ✓ | готово |
+| PATCH | `/api/profile` | обновление переданных полей профиля; нет профиля — 404, занятый username — 409 | ✓ | готово |
 | POST | `/api/profile/avatar` | загрузка фото или копирование фото провайдера | ✓ | план |
 | DELETE | `/api/profile/avatar` | удаление фото | ✓ | план |
-| GET | `/api/profiles/[username]` | публичный профиль | — | заглушка: только демо-профиль `demo`, остальным 404 |
-| GET | `/api/usernames/[username]` | проверка, свободен ли username | — | план |
+| GET | `/api/profiles/[username]` | публичный профиль (регистр не важен), `demo` — демо-профиль из кода | — | готово |
+| GET | `/api/usernames/[username]` | `{ username, available }`; неверный формат или зарезервированный адрес — 400. Свой текущий адрес тоже «занят» | — | готово |
 
 ## Состояние и данные
 

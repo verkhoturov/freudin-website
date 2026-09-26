@@ -8,3 +8,9 @@ export type PublicProfile = {
   avatarUrl: string | null;
   socialLinks: SocialLink[];
 };
+
+/** Ответ `GET /api/usernames/[username]`: `username` приведён к нижнему регистру. */
+export type UsernameAvailability = {
+  username: string;
+  available: boolean;
+};

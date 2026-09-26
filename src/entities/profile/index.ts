@@ -1,4 +1,5 @@
 export { profileQueries } from "./api/profile-queries";
+export { usernameQueries } from "./api/username-queries";
 export {
   BIO_MAX_LENGTH,
   DEMO_USERNAME,
@@ -12,9 +13,11 @@ export {
   displayNameSchema,
   type ProfileData,
   type ProfileInput,
+  type ProfileUpdateInput,
   profileInputSchema,
+  profileUpdateSchema,
   socialLinksSchema,
 } from "./model/schemas";
-export type { PublicProfile } from "./model/types";
+export type { PublicProfile, UsernameAvailability } from "./model/types";
 export { usernameSchema } from "./model/username";
 export { ProfileAvatar } from "./ui/profile-avatar";

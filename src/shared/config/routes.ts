@@ -16,5 +16,8 @@ export const apiRoutes = {
   authCallback: "/api/auth/callback",
   signOut: "/api/auth/sign-out",
   me: "/api/me",
-  profile: (username: string) => `/api/profiles/${encodeURIComponent(username)}`,
+  /** Профиль текущего пользователя: создание и обновление. */
+  profile: "/api/profile",
+  publicProfile: (username: string) => `/api/profiles/${encodeURIComponent(username)}`,
+  usernameAvailability: (username: string) => `/api/usernames/${encodeURIComponent(username)}`,
 } as const;
