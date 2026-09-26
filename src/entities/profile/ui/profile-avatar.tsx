@@ -25,7 +25,11 @@ export function ProfileAvatar({
 
   return (
     <Avatar className={cn(sizeClassNames[size].avatar, className)}>
-      {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
+      {/* Без Referer: Google отвечает 429 на фото аккаунта, запрошенные с localhost,
+          и не должен знать, с какой страницы сайта открыто фото */}
+      {avatarUrl ? (
+        <AvatarImage src={avatarUrl} alt={displayName} referrerPolicy="no-referrer" />
+      ) : null}
       <AvatarFallback className={sizeClassNames[size].fallback}>
         {initials || <UserIcon aria-hidden="true" className="size-1/2" />}
       </AvatarFallback>

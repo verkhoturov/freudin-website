@@ -4,14 +4,20 @@ import {
   type SupabaseClient,
   type SupabaseServerClient,
 } from "@/shared/api/index.server";
-import type { AuthProvider } from "../config/auth-providers";
+import { type AuthProvider, authProviders, enabledAuthProviders } from "../config/auth-providers";
 
 type SupabaseProvider = "google" | "facebook" | `custom:${string}`;
 
-/** Провайдеры, подключённые в Supabase. Остальные кнопки ведут на «Способ входа недоступен». */
-const supabaseProviders: Partial<Record<AuthProvider, SupabaseProvider>> = {
+// Имена провайдеров в Supabase (`app_metadata.provider`)
+const supabaseProviders: Record<AuthProvider, SupabaseProvider> = {
   google: "google",
+  facebook: "facebook",
+  telegram: "custom:telegram",
 };
+
+const authProviderBySupabaseName = new Map<string, AuthProvider>(
+  authProviders.map((provider) => [supabaseProviders[provider], provider]),
+);
 
 /**
  * Адрес, на который отправляем браузер для входа, или `null`, если провайдер не подключён.
@@ -22,11 +28,10 @@ export async function getOAuthSignInUrl(
   provider: AuthProvider,
   redirectTo: string,
 ): Promise<string | null> {
-  const supabaseProvider = supabaseProviders[provider];
-  if (!supabaseProvider) return null;
+  if (!enabledAuthProviders.includes(provider)) return null;
 
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: supabaseProvider,
+    provider: supabaseProviders[provider],
     options: {
       redirectTo,
       skipBrowserRedirect: true,
@@ -56,19 +61,12 @@ export async function exchangeAuthCode(
   return { ok: true, userId: data.user.id };
 }
 
-// Имена провайдеров в Supabase (`app_metadata.provider`) → провайдеры приложения
-const authProviderBySupabaseName: Record<string, AuthProvider> = {
-  google: "google",
-  facebook: "facebook",
-  "custom:telegram": "telegram",
-};
-
 /** Через какого провайдера пользователь вошёл, по `app_metadata` из сессии. */
 export function getAuthProvider(
   appMetadata: { provider?: string } | undefined,
 ): AuthProvider | null {
   const name = appMetadata?.provider;
-  return name ? (authProviderBySupabaseName[name] ?? null) : null;
+  return name ? (authProviderBySupabaseName.get(name) ?? null) : null;
 }
 
 /**

@@ -106,8 +106,10 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   ошибку отправляем на страницу входа через `redirectToLogin(origin, code, next)`. Коды ошибок
   и их тексты лежат в `entities/viewer/config/auth-errors.ts`.
 - Cookies сессии Supabase — `httpOnly`: браузер их не читает, сессию видят только API-роуты.
-  Подключённые провайдеры входа перечислены в `entities/viewer/api/auth.server.ts`, остальные
-  ведут на `auth_unavailable`.
+  Подключённые провайдеры входа перечислены в `enabledAuthProviders`
+  (`entities/viewer/config/auth-providers.ts`): только их кнопки видны на `/login`, остальные
+  `/api/auth/sign-in` отправляет на `auth_unavailable`. Подключая провайдер в Supabase,
+  добавь его туда.
 - Формат ошибки API: `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }`
   плюс корректный HTTP-статус. Коды: `bad_request` и `validation_error` (400), `unauthorized` (401),
   `forbidden` (403), `not_found` (404), `conflict` (409), `payload_too_large` (413),
@@ -185,7 +187,7 @@ export { LoginView as default, metadata } from "@/views/login";
 
 | Слой | Слайс или модуль | Что внутри |
 |------|------------------|------------|
-| `entities` | `viewer` | провайдеры входа, коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (со способом входа `user.provider`), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `getOAuthSignInUrl`, `exchangeAuthCode`, `signOut`, `getAuthProvider`, `deleteUser` |
+| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (со способом входа `user.provider`), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `getOAuthSignInUrl`, `exchangeAuthCode`, `signOut`, `getAuthProvider`, `deleteUser` |
 | `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`), `profileQueries`, `usernameQueries`, `toProfileInput`, `getProfileChanges`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile`, `updateProfile`, `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles`, `fetchProviderAvatar`, `detectAvatarImage`, `getProfileSuggestions`; для `viewer` — типы и фабрики запросов через `@x` |
 | `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton`; для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка и подвал сайта |

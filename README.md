@@ -26,7 +26,7 @@
 - проверка границ между слоями FSD в линтере;
 - модель профиля: правила адреса страницы (username) и зарезервированные адреса, проверка имени,
   описания и ссылок на соцсети, приведение `@handle` к ссылке;
-- экран входа с кнопками Google, Facebook и Telegram и показом ошибок;
+- экран входа с кнопками подключённых провайдеров (сейчас только Google) и показом ошибок;
 - вход и выход через Google (OAuth через Supabase), меню пользователя в шапке, защита
   приватных страниц: гостя `/onboarding` и `/settings` отправляют на вход;
 - личная страница: карточка, состояния загрузки, 404 и ошибки, кнопка «Поделиться»;
@@ -41,8 +41,10 @@
 - минимальная главная;
 - схема БД в Supabase: таблица `profiles` с RLS и bucket `avatars` для фото.
 
-Вход через Facebook и Telegram пока возвращает на `/login` с ошибкой «Этот способ входа пока
-недоступен» (шаги 9–10). Страницы `/privacy` и `/terms` — заглушки (этап H). Пример личной
+Кнопок Facebook и Telegram на `/login` пока нет (шаги 9–10). Прямая ссылка на вход через них
+возвращает на `/login` с ошибкой «Этот способ входа пока недоступен». Провайдер появляется
+на странице входа, когда его добавляют в `enabledAuthProviders`
+(`src/entities/viewer/config/auth-providers.ts`). Страницы `/privacy` и `/terms` — заглушки (этап H). Пример личной
 страницы — демо-профиль по адресу `/demo`.
 
 ## Стек
@@ -269,7 +271,10 @@ psql --single-transaction --variable ON_ERROR_STOP=1 \
 
 1. Google Cloud → Google Auth Platform:
    - Branding: название, логотип, ссылки на `/privacy` и `/terms`;
-   - Audience: External. Пока приложение в статусе Testing, войти могут только тестовые пользователи из этого же раздела;
+   - Audience: External, статус In production: войти может любой аккаунт Google. В статусе
+     Testing пускают только тестовых пользователей из этого же раздела. Название и логотип
+     Freudin на экране Google появятся только после проверки бренда (brand verification);
+     до этого там виден домен `<ref>.supabase.co`;
    - Data access: `openid`, `email`, `profile`.
 2. Clients → Create client → Web application:
    - Authorized JavaScript origins: `http://localhost:3000` и `https://www.freud.in`;
