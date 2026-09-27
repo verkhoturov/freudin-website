@@ -10,8 +10,8 @@ import { upgradeFacebookPhoto } from "./facebook-photo.server";
 
 type SupabaseProvider = "google" | "facebook" | `custom:${string}`;
 
-// Имена провайдеров в Supabase (`app_metadata.provider`)
-const supabaseProviders: Record<AuthProvider, SupabaseProvider> = {
+/** Имена провайдеров в Supabase (`app_metadata.provider`). */
+export const supabaseProviders: Record<AuthProvider, SupabaseProvider> = {
   google: "google",
   facebook: "facebook",
   telegram: "custom:telegram",
@@ -23,11 +23,12 @@ const authProviderBySupabaseName = new Map<string, AuthProvider>(
 
 /**
  * Адрес входа через OAuth Supabase, или `null`, если провайдер не подключён. PKCE-верификатор
- * Supabase сохраняет в cookies ответа. Google входит без OAuth Supabase: `startGoogleSignIn`.
+ * Supabase сохраняет в cookies ответа. Google и Telegram на https входят без OAuth Supabase:
+ * `getOidcProvider`.
  */
 export async function getOAuthSignInUrl(
   supabase: SupabaseServerClient,
-  provider: Exclude<AuthProvider, "google">,
+  provider: AuthProvider,
   redirectTo: string,
 ): Promise<string | null> {
   if (!enabledAuthProviders.includes(provider)) return null;

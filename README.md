@@ -26,8 +26,8 @@
 - проверка границ между слоями FSD в линтере;
 - модель профиля: правила адреса страницы (username) и зарезервированные адреса, проверка имени,
   описания и ссылок на соцсети, приведение `@handle` к ссылке;
-- экран входа с кнопками подключённых провайдеров (сейчас Google и Facebook) и показом ошибок;
-- вход и выход через Google (своя схема OAuth) и Facebook (OAuth через Supabase), меню
+- экран входа с кнопками подключённых провайдеров (Google, Facebook, Telegram) и показом ошибок;
+- вход и выход через Google (своя схема OAuth), Facebook и Telegram (OAuth через Supabase), меню
   пользователя в шапке, защита
   приватных страниц: гостя `/onboarding` и `/settings` отправляют на вход;
 - личная страница: карточка, состояния загрузки, 404 и ошибки, кнопка Share;
@@ -35,7 +35,8 @@
   адрес страницы;
 - фото профиля: загрузка с кропом и сжатием на клиенте, копирование фото из аккаунта
   провайдера, удаление;
-- онбординг: форма с предзаполнением из данных провайдера, проверкой адреса и черновиком,
+- онбординг: форма с предзаполнением из данных провайдера (адрес — username Telegram или имя
+  латиницей), проверкой адреса и черновиком,
   который переживает перезагрузку страницы;
 - настройки: редактирование профиля и фото, способ входа, выход и удаление аккаунта;
   владелец видит на своей странице кнопку Edit;
@@ -43,11 +44,9 @@
 - схема БД в Supabase: таблица `profiles` с RLS, `account_contacts` (контактная почта, видна
   только владельцу) и bucket `avatars` для фото;
 - необязательная контактная почта в онбординге и настройках для аккаунтов без email
-  у провайдера (например, Facebook по номеру телефона).
+  у провайдера (Telegram, Facebook по номеру телефона).
 
-Кнопки Telegram на `/login` пока нет (шаг 10). Прямая ссылка на вход через него
-возвращает на `/login` с ошибкой «This sign-in method isn’t available yet». Провайдер появляется
-на странице входа, когда его добавляют в `enabledAuthProviders`
+Провайдер появляется на странице входа, когда его добавляют в `enabledAuthProviders`
 (`src/entities/viewer/config/auth-providers.ts`). Интерфейс сайта, ошибки API и юридические
 тексты `/privacy` и `/terms` — на английском. Пример личной страницы — демо-профиль по адресу
 `/demo`.
@@ -65,7 +64,7 @@
 | Формы | TanStack Form | ✅ |
 | Клиентское состояние | Zustand (черновик онбординга) | ✅ |
 | Кроп фото | react-easy-crop | ✅ |
-| БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI (миграции и типы) | ✅ БД, вход через Google и Facebook; Telegram — шаг 10 |
+| БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI (миграции и типы) | ✅ БД, вход через Google, Facebook и Telegram |
 | Линтер и форматтер | Biome | ✅ |
 | Хостинг | Vercel, прод на `www.freud.in` | ✅ |
 
@@ -96,6 +95,8 @@ npm run dev
 | `SUPABASE_SECRET_KEY` | там же, ключ `sb_secret_…` | шага 7 |
 | `GOOGLE_CLIENT_ID` | Google Cloud → Google Auth Platform → Clients (тот же, что в Supabase → Providers → Google) | шага 8.1 |
 | `GOOGLE_CLIENT_SECRET` | там же, секрет `GOCSPX-…` | шага 8.1 |
+| `TELEGRAM_CLIENT_ID` | @BotFather → бот → Web Login (OpenID Connect), тот же, что в Supabase → Providers → `custom:telegram` | шага 10 |
+| `TELEGRAM_CLIENT_SECRET` | там же, Client Secret (не токен бота) | шага 10 |
 
 Переменные проверяются zod-схемой при первом обращении (`getServerEnv()`), поэтому
 `npm run build` проходит без них.
@@ -175,8 +176,9 @@ API:
 | Метод | Путь | Назначение | Статус |
 |-------|------|------------|--------|
 | GET | `/api/health` | проверка связки клиент → API | готово |
-| GET | `/api/auth/sign-in?provider=&next=` | старт входа, редирект к провайдеру | готово: Google |
-| GET | `/api/auth/callback?code=&next=` | обмен кода на сессию, редирект дальше | готово |
+| GET | `/api/auth/sign-in?provider=&next=` | старт входа, редирект к провайдеру | готово: Google, Facebook, Telegram |
+| GET | `/api/auth/callback?code=&next=` | обмен кода на сессию после OAuth Supabase (Facebook, Telegram на localhost), редирект дальше | готово |
+| GET | `/api/auth/callback/[provider]?code=&state=` | возврат от Google и Telegram на наш домен: код → ID-токен → сессия Supabase, редирект дальше | готово |
 | POST | `/api/auth/sign-out` | выход | готово |
 | GET | `/api/me` | текущий пользователь, способ входа, контактная почта, его профиль и подсказки для онбординга | готово |
 | DELETE | `/api/me` | удаление аккаунта со всеми данными; тело `{ "username": "…" }` — подтверждение, без совпадения 400 | готово |
@@ -220,7 +222,7 @@ API:
 - Supabase (БД, авторизация, хранилище фото): см. ниже;
 - вход через Google: см. ниже;
 - вход через Facebook: см. ниже;
-- вход через Telegram: шаг 10;
+- вход через Telegram: см. ниже;
 - Vercel: подключён, см. «Деплой»;
 - почта поддержки `freudin.support@gmail.com` (Gmail): где прописать адрес и как позже перейти
   на `support@freud.in` — в [`docs/PLAN.md`](docs/PLAN.md), этап H. Адрес задан
@@ -302,7 +304,8 @@ psql --single-transaction --variable ON_ERROR_STOP=1 \
 Как устроен вход: кнопка ведёт на `/api/auth/sign-in`, оттуда браузер уходит прямо к Google,
 а `state`, `nonce` и PKCE-верификатор хранятся в httpOnly-cookie `freudin-google-sign-in`
 (10 минут). Google возвращает на `/api/auth/callback/google`: сервер меняет код на токены
-Google и создаёт сессию Supabase по ID-токену (`signInWithIdToken`). Supabase узнаёт
+Google и создаёт сессию Supabase по ID-токену (`signInWithIdToken`). Так же, тем же кодом
+(`oidc-sign-in.server.ts`), входит Telegram. Supabase узнаёт
 пользователя по Google ID, поэтому аккаунты, созданные раньше через OAuth Supabase, остались
 теми же. Дальше онбординг, если профиля ещё нет, иначе своя страница или `?next=`. Cookies
 сессии `httpOnly`: браузер их не читает, сессию видят только API-роуты.
@@ -333,6 +336,37 @@ PKCE-верификатор в cookie `sb-…-code-verifier`). Email от Facebo
 и после входа колбэк по токену Facebook берёт у Graph API ссылку на фото 512×512 и кладёт её
 в `user_metadata`. Для этого в приложении Meta должен быть выключен Require app secret
 (App settings → Advanced → Security).
+
+### Вход через Telegram
+
+Telegram подключён через OpenID Connect как свой провайдер Supabase (`custom:telegram`).
+На сайте он входит, как Google, через свой адрес возврата: так на экране Telegram виден
+`www.freud.in`, а не `<ref>.supabase.co`.
+
+1. @BotFather: `/newbot` — отдельный бот только для входа (`@freudin_bot`). В мини-приложении
+   BotFather: бот → Bot Settings → Web Login → OpenID Connect Login. Переключение необратимо:
+   старый Login Widget у этого бота больше не работает.
+2. Там же: Redirect URIs — `https://www.freud.in/api/auth/callback/telegram` и
+   `https://<ref>.supabase.co/auth/v1/callback` (для localhost, см. ниже), Trusted Origins —
+   `https://www.freud.in`. BotFather показывает Client ID и Client Secret (это не токен бота).
+   Адреса с `http://` BotFather не принимает.
+3. Supabase → Authentication → Sign In / Providers → New Provider → Auto-discovery (OIDC):
+   Identifier `custom:telegram`, Issuer URL `https://oauth.telegram.org`, scopes
+   `openid profile`, PKCE включён, вход без email разрешён (Telegram email не отдаёт).
+   Supabase по этим настройкам проверяет ID-токены Telegram. На тарифе Free можно до трёх
+   своих провайдеров.
+4. Те же Client ID и Client Secret задать в `TELEGRAM_CLIENT_ID` и `TELEGRAM_CLIENT_SECRET`
+   (`.env` и Vercel).
+
+Как устроен вход на сайте: `/api/auth/sign-in?provider=telegram` → `oauth.telegram.org` →
+`/api/auth/callback/telegram`, cookie попытки входа `freudin-telegram-sign-in`. Код меняется
+на токены с секретом в заголовке Basic. Ошибки токен-эндпоинт Telegram отдаёт со статусом 200,
+поэтому ответ разбирается по полям. На `http://localhost` вход идёт через OAuth Supabase, как
+у Facebook (`… → Supabase → /api/auth/callback`), и на экране Telegram виден `<ref>.supabase.co`.
+Аккаунт в обоих случаях один: Client ID общий, и `sub` у пользователя тот же. Telegram передаёт
+имя, username и фото. Email нет, поэтому онбординг и настройки показывают необязательное поле
+контактной почты. Подсказка адреса страницы — username Telegram, иначе имя латиницей
+(`transliterate` из `shared/lib`), и только в последнюю очередь часть email до «@».
 
 ## Деплой
 

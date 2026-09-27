@@ -108,7 +108,7 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
 - Ответ с данными пользователя отдаём с заголовком `Cache-Control: private, no-store`
   (`NO_STORE_HEADERS` из `@/app/api/_lib`).
 - Роуты, куда браузер приходит переходом, а не через `apiClient` (`/api/auth/sign-in`,
-  `/api/auth/callback`, `/api/auth/callback/google`), отвечают редиректом, а не JSON. Редирект
+  `/api/auth/callback`, `/api/auth/callback/[provider]`), отвечают редиректом, а не JSON. Редирект
   строим через `redirectTo`, после входа — через `redirectAfterSignIn`, ошибку отправляем
   на страницу входа через `redirectToLogin(origin, code, next)`. Коды ошибок
   и их тексты лежат в `entities/viewer/config/auth-errors.ts`.
@@ -117,11 +117,12 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   (`entities/viewer/config/auth-providers.ts`): только их кнопки видны на `/login`, остальные
   `/api/auth/sign-in` отправляет на `auth_unavailable`. Подключая провайдер в Supabase,
   добавь его туда.
-- Google входит без OAuth Supabase (`GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET` обязательны):
-  Google возвращает на наш `/api/auth/callback/google`, сессия создаётся по ID-токену
-  (`signInWithIdToken`). Так на экране Google виден подтверждённый бренд Freudin, а не
-  `<ref>.supabase.co`. Остальные провайдеры идут через OAuth Supabase (`getOAuthSignInUrl`)
-  и `/api/auth/callback`.
+- Google и Telegram входят без OAuth Supabase (`GOOGLE_*` и `TELEGRAM_*` обязательны): провайдер
+  возвращает на наш `/api/auth/callback/<provider>`, сессия создаётся по ID-токену
+  (`signInWithIdToken`), код общий — `oidc-sign-in.server.ts`. Так на экране провайдера виден
+  наш сайт, а не `<ref>.supabase.co`. Telegram не принимает адреса возврата с `http://`, поэтому
+  на localhost он входит через OAuth Supabase (решает `getOidcProvider`). Facebook идёт через
+  OAuth Supabase (`getOAuthSignInUrl`) и `/api/auth/callback`.
 - Формат ошибки API: `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }`
   плюс корректный HTTP-статус. Коды: `bad_request` и `validation_error` (400), `unauthorized` (401),
   `forbidden` (403), `not_found` (404), `conflict` (409), `payload_too_large` (413),
@@ -199,8 +200,8 @@ export { LoginView as default, metadata } from "@/views/login";
 
 | Слой | Слайс или модуль | Что внутри |
 |------|------------------|------------|
-| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (со способом входа `user.provider`), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation` (с подтверждением username), `isAccountDeletionConfirmed`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `deleteAccountInputSchema`, `isAccountDeletionConfirmed`, `getOAuthSignInUrl`, `getOAuthErrorCode`, `exchangeAuthCode`, `signOut`, `getAuthProvider`, `deleteUser`, вход Google без OAuth Supabase: `startGoogleSignIn`, `takeGoogleSignInState`, `completeGoogleSignIn` |
-| `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`, `contactEmailSchema` — необязательная контактная почта, пустая строка — нет почты), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`, `AVATAR_MAX_DIMENSION`), `profileQueries`, `usernameQueries`, `toProfileInput(profile, contactEmail)`, `getProfileChanges(saved, input)`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile` и `updateProfile` (контактную почту сохраняют первой), `getContactEmail`, `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles` (сначала обнуляет `avatar_path`), `fetchProviderAvatar`, `detectAvatarImage` (формат и размеры по заголовку файла), `isAvatarSizeAllowed` (не больше `AVATAR_MAX_DIMENSION`), `getProfileSuggestions`; для `viewer` — типы и фабрики запросов через `@x` |
+| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (со способом входа `user.provider`), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation` (с подтверждением username), `isAccountDeletionConfirmed`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `deleteAccountInputSchema`, `isAccountDeletionConfirmed`, `getOAuthSignInUrl`, `getOAuthErrorCode`, `exchangeAuthCode`, `signOut`, `getAuthProvider`, `deleteUser`, вход Google и Telegram без OAuth Supabase: `getOidcProvider`, `oidcProviderSchema`, `startOidcSignIn`, `takeOidcSignInState`, `completeOidcSignIn` |
+| `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`, `contactEmailSchema` — необязательная контактная почта, пустая строка — нет почты), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`, `AVATAR_MAX_DIMENSION`), `profileQueries`, `usernameQueries`, `toProfileInput(profile, contactEmail)`, `getProfileChanges(saved, input)`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile` и `updateProfile` (контактную почту сохраняют первой), `getContactEmail`, `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles` (сначала обнуляет `avatar_path`), `fetchProviderAvatar`, `detectAvatarImage` (формат и размеры по заголовку файла), `isAvatarSizeAllowed` (не больше `AVATAR_MAX_DIMENSION`), `getProfileSuggestions` (адрес: username провайдера → имя латиницей → часть email до «@»); для `viewer` — типы и фабрики запросов через `@x` |
 | `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton` (подпись с ником или доменом: `Telegram · @anna`, `example.com`); для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка сайта; подвал: ссылки на Privacy и Terms, почта поддержки, строка © с годами (`useCopyrightYears`: `2026`, затем `2026–<текущий год>`) и реквизиты ИП из `legalConfig` (по ним Meta сверяет компанию с сайтом) |
 | `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров |
@@ -211,7 +212,7 @@ export { LoginView as default, metadata } from "@/views/login";
 | `views` | `onboarding` | онбординг; черновик формы — Zustand-стор `useOnboardingDraftStore` в `model` |
 | `views` | `settings` | настройки: `profile-form` в режиме редактирования и `account-settings` |
 | `shared/ui` | свои компоненты | `Container`, `Logo`, `ThemeToggle`, `NotFoundState`, `SupportEmailLink` (`mailto:` на почту поддержки) |
-| `shared/lib` | `utils`, `safe-redirect`, `crop-image`, `clipboard`, `use-unsaved-changes-warning` | `cn`, `getSafeRedirectPath`, `cropImage` (кроп и сжатие через canvas), `copyToClipboard`, `useUnsavedChangesWarning` |
+| `shared/lib` | `utils`, `safe-redirect`, `crop-image`, `clipboard`, `use-unsaved-changes-warning`, `transliterate` | `cn`, `getSafeRedirectPath`, `cropImage` (кроп и сжатие через canvas), `copyToClipboard`, `useUnsavedChangesWarning`, `transliterate` (кириллица и диакритика → латиница) |
 | `shared/config` | `routes`, `site`, `legal`, `reserved-usernames`, `env.server` | пути, настройки сайта (в том числе `supportEmail`), реквизиты оператора `legalConfig`, зарезервированные адреса, серверный env |
 | `shared/api` | `index.ts`, `index.server.ts` | клиент: `apiClient`, `ApiError`, QueryClient; сервер: `createSupabaseServerClient`, `createSupabasePublicClient`, `createSupabaseAdminClient`, тип `SupabaseClient`, типы БД (`Database`, `Tables`) |
 
@@ -224,7 +225,7 @@ export { LoginView as default, metadata } from "@/views/login";
 | Путь | Файл роутинга | View | Доступ | Статус |
 |------|---------------|------|--------|--------|
 | `/` | `src/app/page.tsx` | `home` | все | готово (минимальная) |
-| `/login` | `src/app/login/page.tsx` | `login` | гости; авторизованных редиректим | готово: Google и Facebook; Telegram — шаг 10 |
+| `/login` | `src/app/login/page.tsx` | `login` | гости; авторизованных редиректим | готово: Google, Facebook и Telegram |
 | `/onboarding` | `src/app/onboarding/page.tsx` | `onboarding` | авторизованные без профиля; с профилем уводим на `/<username>` | готово |
 | `/settings` | `src/app/settings/page.tsx` | `settings` | авторизованные с профилем | готово: профиль и аккаунт |
 | `/privacy` | `src/app/privacy/page.tsx` | `privacy` | все | готово: Privacy Policy на английском, у разделов якоря (`#account-and-data-deletion`) |
@@ -253,9 +254,9 @@ export { LoginView as default, metadata } from "@/views/login";
 | Метод | Путь | Назначение | Сессия | Статус |
 |-------|------|------------|:------:|--------|
 | GET | `/api/health` | проверка связки клиент → API | — | готово |
-| GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | готово: Google и Facebook; Telegram → `/login?error=auth_unavailable` до шага 10 |
-| GET | `/api/auth/callback?code=&provider=&next=` | обмен кода на сессию и редирект (вход через OAuth Supabase: Facebook, Telegram); ошибку провайдера переводит в код через `getOAuthErrorCode`; после Facebook берёт фото 512×512 из Graph API | — | готово: Facebook |
-| GET | `/api/auth/callback/google?code=&state=` | возврат от Google без OAuth Supabase: проверка `state`, код → ID-токен → сессия Supabase, редирект | — | готово |
+| GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | готово: Google, Facebook и Telegram |
+| GET | `/api/auth/callback?code=&provider=&next=` | обмен кода на сессию и редирект (вход через OAuth Supabase: Facebook, Telegram на localhost); ошибку провайдера переводит в код через `getOAuthErrorCode`; после Facebook берёт фото 512×512 из Graph API | — | готово: Facebook и Telegram |
+| GET | `/api/auth/callback/[provider]?code=&state=` | возврат от Google и Telegram без OAuth Supabase (`provider`: `google`, `telegram`): проверка `state` по cookie `freudin-<provider>-sign-in`, код → ID-токен → сессия Supabase, редирект | — | готово |
 | POST | `/api/auth/sign-out` | выход; без сессии тоже 204 | ✓ | готово |
 | GET | `/api/me` | текущий пользователь (`email` от провайдера и `contactEmail` — своя почта, если провайдер её не дал), его профиль (или `null`) и подсказки для онбординга | ✓ | готово |
 | DELETE | `/api/me` | удаление аккаунта: тело `{ "username": "…" }` — подтверждение, без совпадения с профилем (пробелы по краям и регистр не важны) 400 с `fields.username`; фото (из профиля, затем из Storage), пользователь через admin API (профиль — каскадом), cookies сессии; 204 | ✓ | готово |

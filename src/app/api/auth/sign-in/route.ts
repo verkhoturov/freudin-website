@@ -2,7 +2,8 @@ import { redirectTo, redirectToLogin, withErrorHandling } from "@/app/api/_lib";
 import {
   authProviderSchema,
   getOAuthSignInUrl,
-  startGoogleSignIn,
+  getOidcProvider,
+  startOidcSignIn,
 } from "@/entities/viewer/index.server";
 import { createSupabaseServerClient } from "@/shared/api/index.server";
 import { apiRoutes, routes } from "@/shared/config";
@@ -17,9 +18,11 @@ export const GET = withErrorHandling(async (request) => {
 
   try {
     let url: string | null;
-    if (provider.data === "google") {
-      // Google возвращает на наш домен, `next` хранится в cookie попытки входа
-      url = await startGoogleSignIn(new URL(apiRoutes.googleAuthCallback, origin).toString(), next);
+    const oidcProvider = getOidcProvider(provider.data, origin);
+    if (oidcProvider) {
+      // Провайдер возвращает на наш домен, `next` хранится в cookie попытки входа
+      const callbackUrl = new URL(apiRoutes.oidcAuthCallback(oidcProvider), origin);
+      url = await startOidcSignIn(oidcProvider, callbackUrl.toString(), next);
     } else {
       const callbackUrl = new URL(apiRoutes.authCallback, origin);
       callbackUrl.searchParams.set("provider", provider.data);

@@ -85,8 +85,9 @@ Facebook, Telegram и Apple проходят через один OAuth-пото�
       302: профиля нет → /onboarding; профиль есть → next или /<username>
 ```
 
-Исключение — Google (шаг 8.1): он возвращает браузер на наш домен, чтобы на экране Google был
-виден подтверждённый бренд Freudin, а не `<ref>.supabase.co`.
+Исключения — Google (шаг 8.1) и Telegram на https (шаг 10): они возвращают браузер на наш домен,
+чтобы на экране провайдера был виден сайт, а не `<ref>.supabase.co`. Код общий
+(`oidc-sign-in.server.ts`), колбэк — `/api/auth/callback/[provider]`. Схема на примере Google:
 
 ```
   → GET /api/auth/sign-in?provider=google&next=/…
@@ -317,7 +318,7 @@ SEO-база (сделана по итогам ревью вёрстки):
 - [x] Выбрать, как я буду работать с БД. **Выбрано: переменные окружения + Supabase CLI.**
 - [ ] Только для облачной сессии: добавить в её настройки переменные `SUPABASE_URL`,
       `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `GOOGLE_CLIENT_ID`,
-      `GOOGLE_CLIENT_SECRET` (для приложения), а также
+      `GOOGLE_CLIENT_SECRET`, `TELEGRAM_CLIENT_ID`, `TELEGRAM_CLIENT_SECRET` (для приложения), а также
       `SUPABASE_ACCESS_TOKEN` и `SUPABASE_DB_PASSWORD` (для миграций и генерации типов).
       Пока работаем локально, это не нужно.
 - [x] (аудит) **Делаешь ты:** выключить провайдер Email в Supabase → Authentication →
@@ -643,21 +644,61 @@ DNS домена обслуживает Timeweb. Сейчас у `freud.in` од
 открыть mini app BotFather → бот → Login Widget → «Switch to OpenID Connect Login».
 Переключение **необратимо**. BotFather покажет Client ID и Client Secret (это не токен бота).
 В Redirect URI указать `https://<ref>.supabase.co/auth/v1/callback`, при необходимости добавить
-домены сайта в Trusted origins.
+домены сайта в Trusted origins. **Сделано 27.09.2026:** бот `@freudin_bot`, Redirect URIs —
+адрес Supabase, Trusted Origins — `https://www.freud.in`.
 
-- [ ] Провайдер в Supabase → Auth → Providers → New Provider → Auto-discovery (OIDC):
+- [x] Провайдер в Supabase → Auth → Providers → New Provider → Auto-discovery (OIDC):
       `custom:telegram`, issuer `https://oauth.telegram.org`, scopes `openid profile`, email
-      optional. Можешь сделать ты, или я сделаю через коннектор/admin API.
+      optional. Можешь сделать ты, или я сделаю через коннектор/admin API. Сделал пользователь
+      27.09.2026. Через admin API (`/auth/v1/admin/custom-providers`) проверено: провайдер
+      включён, PKCE и `email_optional` включены. Цепочка `/api/auth/sign-in?provider=telegram`
+      → Supabase → `oauth.telegram.org` открывает экран входа бота без ошибок.
 - [x] Кнопка Telegram.
-- [ ] Обновить `/privacy` и `/terms`: вход через Telegram и какие данные он передаёт. В список
+- [x] Обновить `/privacy` и `/terms`: вход через Telegram и какие данные он передаёт. В список
       cookies вернуть `sb-…-code-verifier`, если его ещё нет: его ставит OAuth Supabase на время
-      входа.
-- [ ] Добавить `telegram` в `enabledAuthProviders`. Маппинг `telegram` → `custom:telegram`
+      входа. Сделано 27.09.2026: в Privacy новый раздел 1.3 о Telegram Login (следующие
+      разделы сдвинулись до 1.7), Telegram в разделах 2, 3, 6, 7, 9, 10 и 13 (в разделе 9 —
+      как отвязать сайт и как запросить удаление без email). В Terms — раздел 3 и список
+      в разделе 8. Дата «Last updated» — September 27, 2026.
+- [x] Добавить `telegram` в `enabledAuthProviders`. Маппинг `telegram` → `custom:telegram`
       в `auth.server.ts` уже есть.
-- [ ] Приведение метаданных провайдеров к единому виду: имя, аватар, подсказка username.
+- [x] Приведение метаданных провайдеров к единому виду: имя, аватар, подсказка username.
       У Telegram — `preferred_username`, у Google и Facebook — транслит имени (`anna-smirnova`).
       (аудит) Часть email до `@` — только запасной вариант: сейчас подсказка берётся из email,
       и публичный адрес выдаёт логин почты (`ivan.petrov1987@…` → `ivanpetrov1987`).
+      Сделано 27.09.2026: `getProfileSuggestions` берёт первый допустимый адрес из username
+      провайдера, имени латиницей (`transliterate` в `shared/lib`: кириллица ru/uk/be
+      и диакритика) и части email до «@». Имя и фото Telegram (`name`, `picture`) читались
+      и раньше, хосты фото Telegram уже разрешены в `fetchProviderAvatar`.
+- [x] Свой адрес возврата, как у Google (решение пользователя 27.09.2026): через OAuth Supabase
+      на экране Telegram было «log in on `<ref>.supabase.co`». Своё название вместо домена Telegram
+      не показывает, только домен адреса возврата и бота. Сделано 27.09.2026:
+      - **Сделал пользователь:** Redirect URIs в BotFather —
+        `https://www.freud.in/api/auth/callback/telegram` (адрес с `http://localhost` BotFather
+        не принимает), `TELEGRAM_CLIENT_ID` и `TELEGRAM_CLIENT_SECRET` в `.env` и Vercel;
+      - вход Google переписан в общий модуль `oidc-sign-in.server.ts` (настройки на провайдера:
+        адреса, scopes, способ передачи секрета), колбэк `/api/auth/callback/google` стал
+        динамическим `/api/auth/callback/[provider]`, адрес у Google не изменился;
+      - Telegram: секрет в заголовке Basic, ошибки токен-эндпоинт отдаёт со статусом 200 (ответ
+        разбирается по полям), nonce передаётся в Supabase, только если он есть в ID-токене;
+      - на `http://` (localhost) Telegram входит через OAuth Supabase: аккаунт тот же, Client ID
+        общий. Cookie попытки входа `freudin-telegram-sign-in` добавлена в Privacy.
+
+      Проверено на прод-сборке: у Google параметры экрана входа прежние; экран Telegram
+      с адресом возврата `www.freud.in` открывается с origin `https://www.freud.in`; колбэк
+      на неизвестный провайдер, без cookie, с чужим `state`, с отменой у провайдера и с неверным
+      кодом отправляет на `/login` с нужной ошибкой. Настоящий обмен кода и `signInWithIdToken`
+      для `custom:telegram` проверяются только живым входом на проде.
+- [ ] **Делаешь ты:** закоммитить, дождаться деплоя и проверить на `www.freud.in`:
+      - на экране Telegram — `www.freud.in`;
+      - Continue with Telegram → подтвердить вход в Telegram → онбординг: имя и адрес
+        предзаполнены, «Use account photo» ставит фото, есть поле «Email (optional)»;
+      - выйти и войти снова — тот же профиль, в Settings «Signed in with: Telegram»;
+      - вход через Google работает как раньше (его код переписан);
+      - есть ли Freudin в Telegram → Settings → Privacy and Security → Active Websites: так
+        в Privacy описано, как отвязать сайт;
+      - при ошибке — `?error=` из адреса `/login` и строки из логов Vercel (Logs, фильтр
+        `rejected` или `sign-in`).
 
 **Готово, когда:** вход через Telegram создаёт пользователя без email и ведёт на онбординг.
 
@@ -1187,9 +1228,12 @@ npm run dev (локально) ────────────────�
 - [ ] **Делаешь ты:** Google Cloud → OAuth-клиент → Authorized redirect URIs: добавить
       `https://dev.freud.in/api/auth/callback/google`. Клиент и подтверждённый бренд те же:
       `freud.in` подтверждён в Search Console вместе с поддоменами.
+- [ ] **Делаешь ты:** Telegram: в Redirect URIs бота добавить
+      `https://dev.freud.in/api/auth/callback/telegram`, в Trusted Origins — `https://dev.freud.in`;
+      провайдер `custom:telegram` в Supabase стенда с теми же Client ID и Secret.
 - [ ] **Делаешь ты:** Vercel:
       - Settings → Environment Variables: `SUPABASE_*` стенда для окружения Preview (можно
-        только для ветки `dev`), `GOOGLE_*` — тоже для Preview;
+        только для ветки `dev`), `GOOGLE_*` и `TELEGRAM_*` — тоже для Preview;
       - Settings → Domains → добавить `dev.freud.in` и привязать к ветке `dev` (Git Branch);
       - DNS в Timeweb: CNAME `dev` на адрес, который покажет Vercel;
       - Deployment Protection — по решению выше.
@@ -1348,7 +1392,7 @@ DNS домена `freud.in` обслуживает Timeweb (`ns1.timeweb.ru` и 
 | Шаг 9 | Meta for Developers: приложение с Facebook Login |
 | Этап H | Почта поддержки — ✅ `freudin.support@gmail.com`; прописать её в Google Branding и включить 2FA |
 | Этап H | Для `/privacy` и `/terms`: оператор данных и юрисдикция — ✅ сделано; вычитка текстов юристом — рекомендуется |
-| Шаг 10 | Бот в @BotFather с OpenID Connect Login |
+| Шаг 10 | Бот в @BotFather с OpenID Connect Login — ✅ сделано; проверка входа на localhost и на проде |
 | Шаг 10.1 | Apple Developer Program ($99 в год): App ID, Services ID, ключ `.p8`; секрет в Supabase и его перевыпуск раз в 6 месяцев |
 | Шаг 10.2 | Включить Allow manual linking в Supabase (прод и стенд); проверить сценарии привязки и отвязки |
 | Шаг 18 | Перевод Google (✅ сделано) и Facebook в прод, прод-домен в Telegram |

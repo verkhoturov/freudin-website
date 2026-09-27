@@ -14,8 +14,11 @@ export const apiRoutes = {
   health: "/api/health",
   signIn: "/api/auth/sign-in",
   authCallback: "/api/auth/callback",
-  /** Возврат от Google при входе без OAuth Supabase: этот адрес указан в OAuth-клиенте Google. */
-  googleAuthCallback: "/api/auth/callback/google",
+  /**
+   * Возврат от провайдера при входе без OAuth Supabase. Адрес указан у провайдера: в OAuth-клиенте
+   * Google и в Redirect URIs бота Telegram.
+   */
+  oidcAuthCallback: (provider: "google" | "telegram") => `/api/auth/callback/${provider}`,
   signOut: "/api/auth/sign-out",
   me: "/api/me",
   /** Профиль текущего пользователя: создание и обновление. */

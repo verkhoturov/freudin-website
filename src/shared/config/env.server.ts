@@ -8,6 +8,9 @@ const serverEnvSchema = z.object({
   // OAuth-клиент Google: вход со своим адресом возврата (шаг 8.1 в docs/PLAN.md)
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
+  // Бот Telegram с OpenID Connect Login: вход со своим адресом возврата (шаг 10 в docs/PLAN.md)
+  TELEGRAM_CLIENT_ID: z.string().min(1),
+  TELEGRAM_CLIENT_SECRET: z.string().min(1),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

@@ -9,10 +9,13 @@ export {
   signOut,
 } from "./api/auth.server";
 export {
-  completeGoogleSignIn,
-  startGoogleSignIn,
-  takeGoogleSignInState,
-} from "./api/google-oauth.server";
+  completeOidcSignIn,
+  getOidcProvider,
+  type OidcProvider,
+  oidcProviderSchema,
+  startOidcSignIn,
+  takeOidcSignInState,
+} from "./api/oidc-sign-in.server";
 export type { AuthErrorCode } from "./config/auth-errors";
 export { type AuthProvider, authProviders } from "./config/auth-providers";
 export { isAccountDeletionConfirmed } from "./lib/is-account-deletion-confirmed";

@@ -13,6 +13,8 @@ const GOOGLE_SCOPES = ["openid", "userinfo.email", "userinfo.profile"] as const;
 
 const FACEBOOK_PERMISSIONS = ["public_profile", "email"] as const;
 
+const TELEGRAM_SCOPES = ["openid", "profile"] as const;
+
 function PrivacyPolicyLink() {
   return <Link href={routes.privacy}>Privacy Policy</Link>;
 }
@@ -23,7 +25,7 @@ function SettingsLink() {
 
 export function TermsView() {
   return (
-    <LegalDocument title="Terms of Service" lastUpdated="September 26, 2026">
+    <LegalDocument title="Terms of Service" lastUpdated="September 27, 2026">
       <p>
         These Terms of Service (“Terms”) govern your access to and use of the Freudin website,
         applications, features, and related services available through <strong>{SITE_HOST}</strong>{" "}
@@ -65,7 +67,7 @@ export function TermsView() {
       <p>By using the Service, you confirm that you meet these requirements.</p>
 
       <h2 id="account-registration">3. Account registration and sign-in</h2>
-      <p>You may create an account or sign in using your Google or Facebook account.</p>
+      <p>You may create an account or sign in using your Google, Facebook, or Telegram account.</p>
       <p>
         When you sign in with Google, Freudin requests access to the following Google OAuth scopes:
       </p>
@@ -81,16 +83,24 @@ export function TermsView() {
         These permissions allow us to identify your Facebook account and receive your name, profile
         picture, email address (if available), and a Facebook identifier specific to Freudin.
       </p>
+      <p>When you sign in with Telegram, Freudin requests the following Telegram scopes:</p>
+      <CodeList items={TELEGRAM_SCOPES} />
       <p>
-        We do not receive or store your Google or Facebook password. We do not request access to
-        your Gmail messages, Google Drive files, contacts, calendar, or other Google services, or to
-        your Facebook posts, friends list, or messages, and we never post on your behalf.
+        These scopes allow us to identify your Telegram account and receive your name, Telegram
+        username (if you have one), and profile picture. Telegram does not share your email address
+        or phone number with us.
+      </p>
+      <p>
+        We do not receive or store your Google or Facebook password or your Telegram login codes. We
+        do not request access to your Gmail messages, Google Drive files, contacts, calendar, or
+        other Google services, to your Facebook posts, friends list, or messages, or to your
+        Telegram chats, contacts, or messages, and we never post or send messages on your behalf.
       </p>
       <p>You are responsible for:</p>
       <ul>
         <li>
-          maintaining the security of your Google or Facebook account and any devices used to access
-          the Service;
+          maintaining the security of your Google, Facebook, or Telegram account and any devices
+          used to access the Service;
         </li>
         <li>all activities performed through your Freudin account;</li>
         <li>providing accurate and current information;</li>
@@ -104,8 +114,8 @@ export function TermsView() {
         unauthorized access to another user’s account.
       </p>
       <p>
-        Your use of Google and Facebook is also subject to the terms and policies of Google and
-        Meta.
+        Your use of Google, Facebook, and Telegram is also subject to the terms and policies of
+        Google, Meta, and Telegram.
       </p>
 
       <h2 id="acceptable-use">4. Acceptable use</h2>
@@ -193,6 +203,7 @@ export function TermsView() {
       <ul>
         <li>Google Sign-In;</li>
         <li>Facebook Login, provided by Meta;</li>
+        <li>Telegram Login;</li>
         <li>Supabase, for authentication, database, and file storage;</li>
         <li>Vercel, for hosting and infrastructure;</li>
         <li>Gmail, for our support email;</li>
