@@ -4,8 +4,9 @@ export { createSupabaseAdminClient } from "./supabase/admin";
 export {
   isAuthPKCECodeVerifierMissingError,
   isAuthRetryableFetchError,
+  isIdentityAlreadyExistsError,
 } from "./supabase/auth-errors";
-export type { SupabaseClient } from "./supabase/client";
+export type { SupabaseClient, UserIdentity } from "./supabase/client";
 export type {
   Database,
   Json,

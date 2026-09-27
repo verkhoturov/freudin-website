@@ -16,4 +16,4 @@ export type UsernameAvailability = {
 };
 
 /** Новое фото профиля: файл после кропа или копия фото из аккаунта провайдера входа. */
-export type AvatarSource = { type: "file"; file: Blob } | { type: "provider" };
+export type AvatarSource = { type: "file"; file: Blob } | { type: "provider"; provider?: string };

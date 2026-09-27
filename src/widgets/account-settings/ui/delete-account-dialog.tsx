@@ -3,7 +3,7 @@
 import { type FormEvent, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { isAccountDeletionConfirmed, useDeleteAccountMutation } from "@/entities/viewer";
-import { siteConfig } from "@/shared/config";
+import { routes, siteConfig } from "@/shared/config";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -20,19 +20,18 @@ import { Input } from "@/shared/ui/input";
 
 const SITE_HOST = new URL(siteConfig.url).host;
 
-type DeleteAccountDialogProps = {
-  username: string;
-  onDeleted: () => void;
-};
-
-/** Удаление аккаунта: кнопка «Delete» активна, только когда введён username. */
-export function DeleteAccountDialog({ username, onDeleted }: DeleteAccountDialogProps) {
+/**
+ * Удаление аккаунта: кнопка «Delete» активна, только когда введён username. У аккаунта без
+ * страницы (`username` — `null`, онбординг) подтверждать нечего. После удаления страница
+ * полностью перезагружается на главную: так сбрасываются кеш запросов и состояние пользователя.
+ */
+export function DeleteAccountDialog({ username }: { username: string | null }) {
   const deleteAccount = useDeleteAccountMutation();
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
-  const isConfirmed = isAccountDeletionConfirmed(confirmation, username);
+  const isConfirmed = username === null || isAccountDeletionConfirmed(confirmation, username);
   // После успеха страница перезагружается: до этого повторный запрос не нужен
   const isBusy = deleteAccount.isPending || deleteAccount.isSuccess;
 
@@ -45,13 +44,10 @@ export function DeleteAccountDialog({ username, onDeleted }: DeleteAccountDialog
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!isConfirmed || isBusy) return;
-    deleteAccount.mutate(
-      { username: confirmation },
-      {
-        onSuccess: onDeleted,
-        onError: () => toast.error("Couldn’t delete your account. Please try again."),
-      },
-    );
+    deleteAccount.mutate(username === null ? {} : { username: confirmation }, {
+      onSuccess: () => window.location.assign(routes.home),
+      onError: () => toast.error("Couldn’t delete your account. Please try again."),
+    });
   };
 
   return (
@@ -62,35 +58,40 @@ export function DeleteAccountDialog({ username, onDeleted }: DeleteAccountDialog
       <AlertDialogContent
         onOpenAutoFocus={(event) => {
           // По умолчанию фокус получает «Cancel», а здесь сразу вводят username
+          if (!inputRef.current) return;
           event.preventDefault();
-          inputRef.current?.focus();
+          inputRef.current.focus();
         }}>
         <form onSubmit={handleSubmit} className="grid gap-4">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete account?</AlertDialogTitle>
             <AlertDialogDescription>
-              Your page {SITE_HOST}/{username}, photo, and links will be deleted permanently. This
-              can’t be undone.
+              {username === null
+                ? "Your account and sign-in details will be deleted permanently."
+                : `Your page ${SITE_HOST}/${username}, photo, and links will be deleted permanently.`}{" "}
+              This can’t be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <Field>
-            <FieldLabel htmlFor={inputId}>
-              <span>
-                Type <span className="break-all font-semibold">{username}</span> to confirm
-              </span>
-            </FieldLabel>
-            <Input
-              ref={inputRef}
-              id={inputId}
-              value={confirmation}
-              onChange={(event) => setConfirmation(event.target.value)}
-              disabled={isBusy}
-              autoComplete="off"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-            />
-          </Field>
+          {username === null ? null : (
+            <Field>
+              <FieldLabel htmlFor={inputId}>
+                <span>
+                  Type <span className="break-all font-semibold">{username}</span> to confirm
+                </span>
+              </FieldLabel>
+              <Input
+                ref={inputRef}
+                id={inputId}
+                value={confirmation}
+                onChange={(event) => setConfirmation(event.target.value)}
+                disabled={isBusy}
+                autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+            </Field>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isBusy}>Cancel</AlertDialogCancel>
             <Button type="submit" variant="destructive" disabled={!isConfirmed || isBusy}>

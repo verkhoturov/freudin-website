@@ -3,12 +3,21 @@ import "server-only";
 export {
   deleteUser,
   exchangeAuthCode,
-  getAuthProvider,
   getOAuthErrorCode,
   getOAuthSignInUrl,
   signOut,
 } from "./api/auth.server";
 export {
+  getLinkedIdentities,
+  getOAuthLinkError,
+  getOAuthLinkUrl,
+  type IdentityLinkResult,
+  type LinkedIdentity,
+  toSignInMethod,
+  unlinkIdentity,
+} from "./api/identities.server";
+export {
+  completeOidcLink,
   completeOidcSignIn,
   getOidcProvider,
   type OidcProvider,
@@ -17,8 +26,9 @@ export {
   takeOidcSignInState,
 } from "./api/oidc-sign-in.server";
 export type { AuthErrorCode } from "./config/auth-errors";
-export { type AuthProvider, authProviders } from "./config/auth-providers";
+export { type AuthProvider, authProviders, enabledAuthProviders } from "./config/auth-providers";
+export { identityLinkParams } from "./config/identity-link";
 export { isAccountDeletionConfirmed } from "./lib/is-account-deletion-confirmed";
-export { authProviderSchema } from "./model/auth-provider-schema";
+export { authProviderSchema, identityLinkInputSchema } from "./model/auth-provider-schema";
 export { deleteAccountInputSchema } from "./model/delete-account-schema";
-export type { Viewer } from "./model/types";
+export type { IdentityLinkStart, SignInMethod, Viewer } from "./model/types";

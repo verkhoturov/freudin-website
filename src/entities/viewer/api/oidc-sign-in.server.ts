@@ -2,17 +2,19 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { z } from "zod";
-import type { SupabaseServerClient } from "@/shared/api/index.server";
+import { isIdentityAlreadyExistsError, type SupabaseServerClient } from "@/shared/api/index.server";
 import { apiRoutes } from "@/shared/config";
 import { getServerEnv } from "@/shared/config/index.server";
 import { type AuthProvider, enabledAuthProviders } from "../config/auth-providers";
 import { type CodeExchangeResult, supabaseProviders } from "./auth.server";
+import type { IdentityLinkResult } from "./identities.server";
 
 /*
  * Вход без OAuth Supabase (Google, Telegram): провайдер возвращает браузер на наш домен, а не на
  * `<ref>.supabase.co`, поэтому на его экране виден сайт. Код меняем на токены сами, а сессию
  * Supabase создаём по ID-токену (`signInWithIdToken`): Supabase узнаёт пользователя по `sub`,
- * поэтому аккаунты, созданные через OAuth Supabase, остались теми же.
+ * поэтому аккаунты, созданные через OAuth Supabase, остались теми же. Тот же путь привязывает
+ * способ входа к текущему аккаунту (`linkIdentity` по ID-токену).
  */
 
 export const oidcProviderSchema = z.enum(["google", "telegram"]);
@@ -63,6 +65,8 @@ const signInStateSchema = z.object({
   nonce: z.string().min(1),
   codeVerifier: z.string().min(43),
   next: z.string(),
+  /** Не вход, а привязка способа входа к этому пользователю. */
+  linkUserId: z.string().min(1).optional(),
 });
 
 export type OidcSignInState = z.infer<typeof signInStateSchema>;
@@ -107,12 +111,14 @@ export function getOidcProvider(provider: AuthProvider, origin: string): OidcPro
 
 /**
  * Адрес экрана входа провайдера или `null`, если провайдер не подключён. `state`, `nonce`
- * и PKCE-верификатор сохраняет в httpOnly-cookie ответа вместе с `next`.
+ * и PKCE-верификатор сохраняет в httpOnly-cookie ответа вместе с `next`. С `linkUserId` —
+ * привязка способа входа к этому пользователю.
  */
 export async function startOidcSignIn(
   provider: OidcProvider,
   redirectUri: string,
   next: string,
+  linkUserId?: string,
 ): Promise<string | null> {
   if (!enabledAuthProviders.includes(provider)) return null;
   const config = oidcProviders[provider];
@@ -123,6 +129,7 @@ export async function startOidcSignIn(
     nonce: randomToken(),
     codeVerifier: randomToken(),
     next,
+    linkUserId,
   };
   (await cookies()).set(cookie.name, JSON.stringify(signInState), {
     ...cookie.options,
@@ -176,10 +183,26 @@ function hasNonceClaim(idToken: string): boolean {
   }
 }
 
+type Tokens = { idToken: string; accessToken?: string };
+
+function toIdTokenCredentials(
+  provider: OidcProvider,
+  tokens: Tokens,
+  signInState: OidcSignInState,
+) {
+  return {
+    provider: supabaseProviders[provider],
+    token: tokens.idToken,
+    access_token: tokens.accessToken,
+    // Supabase требует nonce, если он есть в токене; без nonce в токене его передавать нельзя
+    nonce: hasNonceClaim(tokens.idToken) ? signInState.nonce : undefined,
+  };
+}
+
 async function requestTokens(
   provider: OidcProvider,
   { code, redirectUri, codeVerifier }: { code: string; redirectUri: string; codeVerifier: string },
-): Promise<{ idToken: string; accessToken?: string } | null> {
+): Promise<Tokens | null> {
   const config = oidcProviders[provider];
   const client = config.getClient();
   const body = new URLSearchParams({
@@ -251,13 +274,9 @@ export async function completeOidcSignIn(
     });
     if (!tokens) return { ok: false, reason: "failed" };
 
-    const { data, error } = await supabase.auth.signInWithIdToken({
-      provider: supabaseProviders[provider],
-      token: tokens.idToken,
-      access_token: tokens.accessToken,
-      // Supabase требует nonce, если он есть в токене; без nonce в токене его передавать нельзя
-      nonce: hasNonceClaim(tokens.idToken) ? signInState.nonce : undefined,
-    });
+    const { data, error } = await supabase.auth.signInWithIdToken(
+      toIdTokenCredentials(provider, tokens, signInState),
+    );
     if (error) {
       console.warn(`Supabase rejected the ${provider} ID token:`, error.message);
       return { ok: false, reason: "failed" };
@@ -266,5 +285,52 @@ export async function completeOidcSignIn(
   } catch (error) {
     console.warn(`Couldn't complete ${provider} sign-in:`, error);
     return { ok: false, reason: "failed" };
+  }
+}
+
+/**
+ * Привязывает способ входа к текущему пользователю по коду провайдера. Привязка идёт, только если
+ * сессия принадлежит тому, кто её начал: пока человек был у провайдера, в браузере мог войти
+ * другой пользователь. Supabase сохраняет обновлённую сессию в cookies.
+ */
+export async function completeOidcLink(
+  supabase: SupabaseServerClient,
+  provider: OidcProvider,
+  {
+    code,
+    redirectUri,
+    signInState,
+  }: {
+    code: string;
+    redirectUri: string;
+    signInState: OidcSignInState;
+  },
+): Promise<IdentityLinkResult> {
+  try {
+    const { data: session } = await supabase.auth.getClaims();
+    if (!signInState.linkUserId || session?.claims.sub !== signInState.linkUserId) {
+      console.warn(`The session changed before the ${provider} identity was linked`);
+      return { ok: false, error: "link_failed" };
+    }
+
+    const tokens = await requestTokens(provider, {
+      code,
+      redirectUri,
+      codeVerifier: signInState.codeVerifier,
+    });
+    if (!tokens) return { ok: false, error: "link_failed" };
+
+    const { error } = await supabase.auth.linkIdentity(
+      toIdTokenCredentials(provider, tokens, signInState),
+    );
+    if (error) {
+      console.warn(`Supabase couldn't link the ${provider} identity:`, error.code, error.message);
+      const alreadyExists = isIdentityAlreadyExistsError(error);
+      return { ok: false, error: alreadyExists ? "identity_already_exists" : "link_failed" };
+    }
+    return { ok: true };
+  } catch (error) {
+    console.warn(`Couldn't link the ${provider} identity:`, error);
+    return { ok: false, error: "link_failed" };
   }
 }

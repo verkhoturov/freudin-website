@@ -110,8 +110,9 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
 - Роуты, куда браузер приходит переходом, а не через `apiClient` (`/api/auth/sign-in`,
   `/api/auth/callback`, `/api/auth/callback/[provider]`), отвечают редиректом, а не JSON. Редирект
   строим через `redirectTo`, после входа — через `redirectAfterSignIn`, ошибку отправляем
-  на страницу входа через `redirectToLogin(origin, code, next)`. Коды ошибок
-  и их тексты лежат в `entities/viewer/config/auth-errors.ts`.
+  на страницу входа через `redirectToLogin(origin, code, next)`, итог привязки способа входа —
+  в настройки через `redirectToSettings`. Коды ошибок и их тексты лежат
+  в `entities/viewer/config/auth-errors.ts`.
 - Cookies сессии Supabase — `httpOnly`: браузер их не читает, сессию видят только API-роуты.
   Подключённые провайдеры входа перечислены в `enabledAuthProviders`
   (`entities/viewer/config/auth-providers.ts`): только их кнопки видны на `/login`, остальные
@@ -123,6 +124,13 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   наш сайт, а не `<ref>.supabase.co`. Telegram не принимает адреса возврата с `http://`, поэтому
   на localhost он входит через OAuth Supabase (решает `getOidcProvider`). Facebook идёт через
   OAuth Supabase (`getOAuthSignInUrl`) и `/api/auth/callback`.
+- К одному аккаунту можно привязать несколько способов входа (в Supabase включён Allow manual
+  linking). Привязка начинается `POST /api/auth/identities` и идёт теми же путями, что вход:
+  Google и Telegram на https — `linkIdentity` по ID-токену (`linkUserId` в cookie попытки входа,
+  привязка только к тому, кто её начал), остальные — `linkIdentity` через OAuth Supabase
+  и `/api/auth/callback?mode=link`. Итог колбэки отдают в `/settings?linked=` или `?link_error=`
+  (`identityLinkParams`). Привязанные способы и их фото читает `getLinkedIdentities`
+  (`auth.getUser()`: идентичностей нет в JWT).
 - Формат ошибки API: `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }`
   плюс корректный HTTP-статус. Коды: `bad_request` и `validation_error` (400), `unauthorized` (401),
   `forbidden` (403), `not_found` (404), `conflict` (409), `payload_too_large` (413),
@@ -200,16 +208,16 @@ export { LoginView as default, metadata } from "@/views/login";
 
 | Слой | Слайс или модуль | Что внутри |
 |------|------------------|------------|
-| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (со способом входа `user.provider`), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation` (с подтверждением username), `isAccountDeletionConfirmed`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `deleteAccountInputSchema`, `isAccountDeletionConfirmed`, `getOAuthSignInUrl`, `getOAuthErrorCode`, `exchangeAuthCode`, `signOut`, `getAuthProvider`, `deleteUser`, вход Google и Telegram без OAuth Supabase: `getOidcProvider`, `oidcProviderSchema`, `startOidcSignIn`, `takeOidcSignInState`, `completeOidcSignIn` |
+| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (привязанные способы входа `user.signInMethods`: провайдер, email или `@username`, фото), `SignInMethod`, `getAccountPhotos`, `AuthProviderIcon` (логотипы провайдеров), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation` (с подтверждением username, без профиля — без него), `isAccountDeletionConfirmed`, `useLinkIdentityMutation`, `useUnlinkIdentityMutation`, `identityLinkParams`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `identityLinkInputSchema`, `deleteAccountInputSchema`, `isAccountDeletionConfirmed`, `getOAuthSignInUrl`, `getOAuthErrorCode`, `exchangeAuthCode`, `signOut`, `deleteUser`, способы входа: `getLinkedIdentities`, `toSignInMethod`, `getOAuthLinkUrl`, `getOAuthLinkError`, `unlinkIdentity`; вход и привязка Google и Telegram без OAuth Supabase: `getOidcProvider`, `oidcProviderSchema`, `startOidcSignIn`, `takeOidcSignInState`, `completeOidcSignIn`, `completeOidcLink` |
 | `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`, `contactEmailSchema` — необязательная контактная почта, пустая строка — нет почты), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`, `AVATAR_MAX_DIMENSION`), `profileQueries`, `usernameQueries`, `toProfileInput(profile, contactEmail)`, `getProfileChanges(saved, input)`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile` и `updateProfile` (контактную почту сохраняют первой), `getContactEmail`, `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles` (сначала обнуляет `avatar_path`), `fetchProviderAvatar`, `detectAvatarImage` (формат и размеры по заголовку файла), `isAvatarSizeAllowed` (не больше `AVATAR_MAX_DIMENSION`), `getProfileSuggestions` (адрес: username провайдера → имя латиницей → часть email до «@»); для `viewer` — типы и фабрики запросов через `@x` |
 | `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton` (подпись с ником или доменом: `Telegram · @anna`, `example.com`); для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка сайта; подвал: ссылки на Privacy и Terms, почта поддержки, строка © с годами (`useCopyrightYears`: `2026`, затем `2026–<текущий год>`) и реквизиты ИП из `legalConfig` (по ним Meta сверяет компанию с сайтом) |
-| `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров |
+| `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров (`AuthProviderIcon` из `viewer`) |
 | `widgets` | `profile-card` | карточка личной страницы, скелетон, Share, Edit для владельца (`isOwner`) |
-| `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом, имя, адрес с проверкой (`— available` по ответу сервера), описание, соцсети, необязательная почта (`showContactEmail`: у аккаунта нет email от провайдера или контакт уже сохранён); `mode="edit"` — кнопка активна только при изменениях и предупреждение об уходе с несохранёнными изменениями; `AvatarValue`, `getAvatarSource` |
-| `widgets` | `account-settings` | способ входа, Sign out, Delete account с подтверждением вводом username (`DeleteAccountDialog`) |
+| `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом и фото из аккаунтов (`accountPhotos`; если их несколько — меню выбора), имя, адрес с проверкой (`— available` по ответу сервера), описание, соцсети, необязательная почта (`showContactEmail`: у аккаунта нет email от провайдера или контакт уже сохранён); `mode="edit"` — кнопка активна только при изменениях и предупреждение об уходе с несохранёнными изменениями; `AvatarValue`, `getAvatarSource` |
+| `widgets` | `account-settings` | способы входа (Connect, Disconnect, тост итога привязки), Sign out, Delete account с подтверждением вводом username; `DeleteAccountDialog` (с `username={null}` — для аккаунта без страницы) |
 | `widgets` | `legal-document` | обёртка юридической страницы `LegalDocument` (заголовок, дата редакции, типографика), `OperatorDetails` (реквизиты из `legalConfig`), `CodeList` |
-| `views` | `onboarding` | онбординг; черновик формы — Zustand-стор `useOnboardingDraftStore` в `model` |
+| `views` | `onboarding` | онбординг и удаление аккаунта без страницы; черновик формы — Zustand-стор `useOnboardingDraftStore` в `model` |
 | `views` | `settings` | настройки: `profile-form` в режиме редактирования и `account-settings` |
 | `shared/ui` | свои компоненты | `Container`, `Logo`, `ThemeToggle`, `NotFoundState`, `SupportEmailLink` (`mailto:` на почту поддержки) |
 | `shared/lib` | `utils`, `safe-redirect`, `crop-image`, `clipboard`, `use-unsaved-changes-warning`, `transliterate` | `cn`, `getSafeRedirectPath`, `cropImage` (кроп и сжатие через canvas), `copyToClipboard`, `useUnsavedChangesWarning`, `transliterate` (кириллица и диакритика → латиница) |
@@ -255,14 +263,16 @@ export { LoginView as default, metadata } from "@/views/login";
 |-------|------|------------|:------:|--------|
 | GET | `/api/health` | проверка связки клиент → API | — | готово |
 | GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | готово: Google, Facebook и Telegram |
-| GET | `/api/auth/callback?code=&provider=&next=` | обмен кода на сессию и редирект (вход через OAuth Supabase: Facebook, Telegram на localhost); ошибку провайдера переводит в код через `getOAuthErrorCode`; после Facebook берёт фото 512×512 из Graph API | — | готово: Facebook и Telegram |
-| GET | `/api/auth/callback/[provider]?code=&state=` | возврат от Google и Telegram без OAuth Supabase (`provider`: `google`, `telegram`): проверка `state` по cookie `freudin-<provider>-sign-in`, код → ID-токен → сессия Supabase, редирект | — | готово |
+| GET | `/api/auth/callback?code=&provider=&next=&mode=` | обмен кода на сессию и редирект (вход через OAuth Supabase: Facebook, Telegram на localhost); ошибку провайдера переводит в код через `getOAuthErrorCode`; после Facebook берёт фото 512×512 из Graph API. `mode=link` — привязка способа входа, итог в `/settings` | — | готово: Facebook и Telegram |
+| GET | `/api/auth/callback/[provider]?code=&state=` | возврат от Google и Telegram без OAuth Supabase (`provider`: `google`, `telegram`): проверка `state` по cookie `freudin-<provider>-sign-in`, код → ID-токен → сессия Supabase, редирект. С `linkUserId` в cookie — привязка способа входа, итог в `/settings` | — | готово |
+| POST | `/api/auth/identities` | старт привязки способа входа: `{ provider }` → `{ url }` провайдера; не подключён — 400, уже привязан — 409 | ✓ | готово |
+| DELETE | `/api/auth/identities/[provider]` | отвязка способа входа, ответ — оставшиеся способы; не привязан — 404, последний — 409 | ✓ | готово |
 | POST | `/api/auth/sign-out` | выход; без сессии тоже 204 | ✓ | готово |
-| GET | `/api/me` | текущий пользователь (`email` от провайдера и `contactEmail` — своя почта, если провайдер её не дал), его профиль (или `null`) и подсказки для онбординга | ✓ | готово |
-| DELETE | `/api/me` | удаление аккаунта: тело `{ "username": "…" }` — подтверждение, без совпадения с профилем (пробелы по краям и регистр не важны) 400 с `fields.username`; фото (из профиля, затем из Storage), пользователь через admin API (профиль — каскадом), cookies сессии; 204 | ✓ | готово |
+| GET | `/api/me` | текущий пользователь (`email` от провайдера, `contactEmail` — своя почта, если провайдер её не дал, `signInMethods` — привязанные способы входа), его профиль (или `null`) и подсказки для онбординга | ✓ | готово |
+| DELETE | `/api/me` | удаление аккаунта: тело `{ "username": "…" }` — подтверждение, без совпадения с профилем (пробелы по краям и регистр не важны) 400 с `fields.username`; без профиля подтверждение не нужно (`{}`); фото (из профиля, затем из Storage), пользователь через admin API (профиль — каскадом), cookies сессии; 204 | ✓ | готово |
 | POST | `/api/profile` | создание профиля (онбординг) и контактной почты, если она указана: 201; занятый username — 409 с `fields.username`, профиль уже есть — 409 | ✓ | готово |
 | PATCH | `/api/profile` | обновление переданных полей профиля; `contactEmail: ""` удаляет контактную почту; нет профиля — 404, занятый username — 409 | ✓ | готово |
-| POST | `/api/profile/avatar` | новое фото: `multipart/form-data` с полем `file` (JPEG, PNG, WebP до 2 МБ и не больше 1024×1024, иначе 400 или 413) или JSON `{ "source": "provider" }` — копия фото провайдера входа | ✓ | готово |
+| POST | `/api/profile/avatar` | новое фото: `multipart/form-data` с полем `file` (JPEG, PNG, WebP до 2 МБ и не больше 1024×1024, иначе 400 или 413) или JSON `{ "source": "provider", "provider"?: "telegram" }` — копия фото привязанного способа входа (без `provider` — первого с фото) | ✓ | готово |
 | DELETE | `/api/profile/avatar` | удаление фото | ✓ | готово |
 | GET | `/api/profiles/[username]` | публичный профиль (регистр не важен), `demo` — демо-профиль из кода | — | готово |
 | GET | `/api/usernames/[username]` | `{ username, available }`; неверный формат или зарезервированный адрес — 400. Свой текущий адрес тоже «занят» | — | готово |

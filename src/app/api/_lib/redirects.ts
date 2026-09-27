@@ -1,5 +1,9 @@
 import { getProfileByUserId } from "@/entities/profile/index.server";
-import type { AuthErrorCode } from "@/entities/viewer/index.server";
+import {
+  type AuthErrorCode,
+  type AuthProvider,
+  identityLinkParams,
+} from "@/entities/viewer/index.server";
 import type { SupabaseServerClient } from "@/shared/api/index.server";
 import { routes } from "@/shared/config";
 import { NO_STORE_HEADERS } from "./responses";
@@ -17,6 +21,20 @@ export function redirectToLogin(origin: string, error: AuthErrorCode, next: stri
   const url = new URL(routes.login, origin);
   url.searchParams.set("error", error);
   if (next !== routes.home) url.searchParams.set("next", next);
+  return redirectTo(url);
+}
+
+/**
+ * Возврат в настройки после привязки способа входа: `?linked=` при успехе, `?link_error=`
+ * при ошибке, без параметров — если привязку отменили у провайдера.
+ */
+export function redirectToSettings(
+  origin: string,
+  result: { linked: AuthProvider } | { error: AuthErrorCode | null },
+): Response {
+  const url = new URL(routes.settings, origin);
+  if ("linked" in result) url.searchParams.set(identityLinkParams.linked, result.linked);
+  else if (result.error) url.searchParams.set(identityLinkParams.error, result.error);
   return redirectTo(url);
 }
 

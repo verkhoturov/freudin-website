@@ -17,6 +17,7 @@ import {
   usernameSchema,
 } from "@/entities/profile";
 import { type SocialPlatform, socialPlatformIds, socialPlatforms } from "@/entities/social-link";
+import type { AccountPhoto } from "@/entities/viewer";
 import { ApiError } from "@/shared/api";
 import { siteConfig } from "@/shared/config";
 import { useUnsavedChangesWarning } from "@/shared/lib/use-unsaved-changes-warning";
@@ -51,8 +52,8 @@ type ProfileFormProps = {
   defaultAvatar: AvatarValue;
   /** Фото, которое уже есть в профиле (настройки). */
   currentAvatarUrl?: string | null;
-  /** Фото из аккаунта провайдера входа. */
-  providerAvatarUrl: string | null;
+  /** Фото из аккаунтов привязанных провайдеров входа. */
+  accountPhotos: AccountPhoto[];
   /** Текущий адрес владельца: его не проверяем на занятость (настройки). */
   currentUsername?: string;
   /**
@@ -98,7 +99,7 @@ export function ProfileForm({
   defaultValues,
   defaultAvatar,
   currentAvatarUrl = null,
-  providerAvatarUrl,
+  accountPhotos,
   currentUsername,
   showContactEmail = false,
   submitLabel,
@@ -170,7 +171,7 @@ export function ProfileForm({
               onChange={setAvatar}
               displayName={displayName}
               currentAvatarUrl={currentAvatarUrl}
-              providerAvatarUrl={providerAvatarUrl}
+              accountPhotos={accountPhotos}
             />
           )}
         </form.Subscribe>

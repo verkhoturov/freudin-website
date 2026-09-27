@@ -59,6 +59,13 @@ export type ProfileUpdateInput = z.input<typeof profileUpdateSchema>;
 export type ProfileUpdateData = z.output<typeof profileUpdateSchema>;
 
 /** Тело `POST /api/profile/avatar` в JSON: скопировать фото из аккаунта провайдера входа. */
-export const providerAvatarRequestSchema = z.object({ source: z.literal("provider") });
+/**
+ * JSON-тело `POST /api/profile/avatar`: копия фото из аккаунта провайдера входа. `provider` —
+ * чьё фото взять, если способов входа несколько; без него — первое найденное.
+ */
+export const providerAvatarRequestSchema = z.object({
+  source: z.literal("provider"),
+  provider: z.string().min(1).optional(),
+});
 
 export type ProviderAvatarRequest = z.infer<typeof providerAvatarRequestSchema>;

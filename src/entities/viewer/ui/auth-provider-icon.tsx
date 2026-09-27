@@ -1,8 +1,8 @@
-import type { AuthProvider } from "@/entities/viewer";
+import type { AuthProvider } from "../config/auth-providers";
 
 // Логотипы по брендбукам. Facebook и Telegram — simple-icons (CC0); белая подложка
 // нужна, чтобы «f» и самолётик оставались белыми и в тёмной теме.
-export function ProviderIcon({ provider }: { provider: AuthProvider }) {
+export function AuthProviderIcon({ provider }: { provider: AuthProvider }) {
   switch (provider) {
     case "google":
       return (

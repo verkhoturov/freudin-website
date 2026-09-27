@@ -1,7 +1,14 @@
-import { redirectAfterSignIn, redirectToLogin, withErrorHandling } from "@/app/api/_lib";
 import {
+  redirectAfterSignIn,
+  redirectToLogin,
+  redirectToSettings,
+  withErrorHandling,
+} from "@/app/api/_lib";
+import {
+  completeOidcLink,
   completeOidcSignIn,
   getOAuthErrorCode,
+  getOAuthLinkError,
   oidcProviderSchema,
   takeOidcSignInState,
 } from "@/entities/viewer/index.server";
@@ -12,6 +19,8 @@ import { getSafeRedirectPath } from "@/shared/lib/safe-redirect";
 /**
  * Возврат от Google или Telegram при входе без OAuth Supabase: проверка `state` по cookie попытки
  * входа, обмен кода на ID-токен и сессия Supabase по нему. Дальше — как в `/api/auth/callback`.
+ * Если попытку начали из настроек (`linkUserId` в cookie), способ входа привязывается к аккаунту,
+ * а итог показывают настройки.
  */
 export const GET = withErrorHandling(
   async (request, { params }: RouteContext<"/api/auth/callback/[provider]">) => {
@@ -21,24 +30,45 @@ export const GET = withErrorHandling(
 
     const signInState = await takeOidcSignInState(provider.data);
     const next = getSafeRedirectPath(signInState?.next);
+    const isLink = Boolean(signInState?.linkUserId);
 
     const providerError = searchParams.get("error");
     if (providerError) {
       const description = searchParams.get("error_description");
       console.warn(`${provider.data} returned a sign-in error:`, providerError, description);
+      if (isLink) {
+        return redirectToSettings(origin, {
+          error: getOAuthLinkError(providerError, null, description),
+        });
+      }
       return redirectToLogin(origin, getOAuthErrorCode(providerError, description), next);
     }
     if (!signInState) return redirectToLogin(origin, "auth_expired", next);
 
     const code = searchParams.get("code");
     if (!code || searchParams.get("state") !== signInState.state) {
-      return redirectToLogin(origin, "oauth_failed", next);
+      return isLink
+        ? redirectToSettings(origin, { error: "link_failed" })
+        : redirectToLogin(origin, "oauth_failed", next);
     }
 
     const supabase = await createSupabaseServerClient();
+    const redirectUri = new URL(apiRoutes.oidcAuthCallback(provider.data), origin).toString();
+    if (isLink) {
+      const result = await completeOidcLink(supabase, provider.data, {
+        code,
+        redirectUri,
+        signInState,
+      });
+      return redirectToSettings(
+        origin,
+        result.ok ? { linked: provider.data } : { error: result.error },
+      );
+    }
+
     const result = await completeOidcSignIn(supabase, provider.data, {
       code,
-      redirectUri: new URL(apiRoutes.oidcAuthCallback(provider.data), origin).toString(),
+      redirectUri,
       signInState,
     });
     if (!result.ok) return redirectToLogin(origin, "oauth_failed", next);

@@ -3,7 +3,14 @@
 import { type ChangeEvent, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ProfileAvatar } from "@/entities/profile";
+import type { AccountPhoto } from "@/entities/viewer";
 import { Button } from "@/shared/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/ui/dropdown-menu";
 import { FieldLegend, FieldSet } from "@/shared/ui/field";
 import type { AvatarValue } from "../model/avatar-value";
 import { AvatarCropDialog } from "./avatar-crop-dialog";
@@ -19,21 +26,21 @@ type AvatarFieldProps = {
   displayName: string;
   /** Фото, которое уже есть в профиле. */
   currentAvatarUrl: string | null;
-  /** Фото из аккаунта провайдера входа. */
-  providerAvatarUrl: string | null;
+  /** Фото из аккаунтов привязанных провайдеров входа. */
+  accountPhotos: AccountPhoto[];
   disabled?: boolean;
 };
 
 function getPreviewUrl(
   value: AvatarValue,
   currentAvatarUrl: string | null,
-  providerAvatarUrl: string | null,
+  accountPhotos: AccountPhoto[],
 ): string | null {
   switch (value.type) {
     case "current":
       return currentAvatarUrl;
     case "provider":
-      return providerAvatarUrl;
+      return accountPhotos.find((photo) => photo.provider === value.provider)?.avatarUrl ?? null;
     case "file":
       return value.previewUrl;
     case "none":
@@ -46,12 +53,16 @@ export function AvatarField({
   onChange,
   displayName,
   currentAvatarUrl,
-  providerAvatarUrl,
+  accountPhotos,
   disabled,
 }: AvatarFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
-  const previewUrl = getPreviewUrl(value, currentAvatarUrl, providerAvatarUrl);
+  const previewUrl = getPreviewUrl(value, currentAvatarUrl, accountPhotos);
+  // Фото аккаунтов, кроме уже выбранного
+  const otherPhotos = accountPhotos.filter(
+    (photo) => value.type !== "provider" || photo.provider !== value.provider,
+  );
 
   const closeCrop = () => {
     if (cropSrc) URL.revokeObjectURL(cropSrc);
@@ -92,14 +103,32 @@ export function AvatarField({
             onClick={() => inputRef.current?.click()}>
             Upload photo
           </Button>
-          {providerAvatarUrl && value.type !== "provider" ? (
+          {accountPhotos.length === 1 && otherPhotos.length === 1 ? (
             <Button
               type="button"
               variant="ghost"
               disabled={disabled}
-              onClick={() => onChange({ type: "provider" })}>
+              onClick={() => onChange({ type: "provider", provider: otherPhotos[0].provider })}>
               Use account photo
             </Button>
+          ) : null}
+          {accountPhotos.length > 1 && otherPhotos.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="ghost" disabled={disabled}>
+                  Use account photo
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {otherPhotos.map((photo) => (
+                  <DropdownMenuItem
+                    key={photo.provider}
+                    onSelect={() => onChange({ type: "provider", provider: photo.provider })}>
+                    {photo.label} photo
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : null}
           {previewUrl ? (
             <Button

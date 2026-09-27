@@ -4,6 +4,12 @@ import { AVATAR_SIZE } from "@/entities/profile/@x/viewer";
 import type { SupabaseServerClient } from "@/shared/api/index.server";
 
 const GRAPH_PICTURE_URL = "https://graph.facebook.com/me/picture";
+
+/**
+ * Крупное фото Facebook в `user_metadata`. Общие `avatar_url` и `picture` перезаписывает вход через
+ * другого провайдера, а этот ключ остаётся за Facebook. Пустая строка — фото у аккаунта нет.
+ */
+export const FACEBOOK_AVATAR_METADATA_KEY = "facebook_avatar_url";
 const GRAPH_TIMEOUT_MS = 5000;
 
 const pictureResponseSchema = z.object({
@@ -49,7 +55,7 @@ export async function upgradeFacebookPhoto(
     const photo = isSilhouette ? null : photoUrl;
 
     const { error } = await supabase.auth.updateUser({
-      data: { avatar_url: photo, picture: photo },
+      data: { avatar_url: photo, picture: photo, [FACEBOOK_AVATAR_METADATA_KEY]: photo ?? "" },
     });
     if (error) {
       console.warn("Couldn't save the Facebook photo:", error.message);

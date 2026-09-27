@@ -143,7 +143,7 @@ export function PrivacyView() {
       <p>We may store information associated with your Freudin account, including:</p>
       <ul>
         <li>your internal Freudin account identifier;</li>
-        <li>the identifier of the Google, Facebook, or Telegram account you use to sign in;</li>
+        <li>the identifiers of the Google, Facebook, or Telegram accounts you use to sign in;</li>
         <li>your name and, where available, your email address and Telegram username;</li>
         <li>a contact email address, if you add one because your sign-in account has no email;</li>
         <li>your profile picture;</li>
@@ -156,6 +156,13 @@ export function PrivacyView() {
         A contact email address is optional. We use it only to contact you about your account and to
         respond to your requests. It is not verified, is not used to sign in, and is not shown on
         your public profile. You can change or remove it in <SettingsLink />.
+      </p>
+      <p>
+        You can connect more than one sign-in method to your Freudin account and disconnect them in{" "}
+        <SettingsLink />, as long as at least one remains connected. Each connected method shares
+        the information described for it in Sections 1.1–1.3. After you disconnect a method, you can
+        no longer sign in with it, but name and photo details already received from it may remain in
+        your account data until you delete your account.
       </p>
 
       <h3 id="public-profile">1.5. Public profile</h3>
@@ -447,9 +454,10 @@ export function PrivacyView() {
 
       <h2 id="account-and-data-deletion">9. Account and data deletion</h2>
       <p>
-        You can delete your Freudin account at any time in <SettingsLink /> → Delete account.
-        Deletion takes effect immediately: your account, public profile, and profile photos are
-        deleted, and your public page stops being available.
+        You can delete your Freudin account at any time in <SettingsLink /> → Delete account. If you
+        have not created your page yet, you can delete your account on the page creation screen.
+        Deletion takes effect immediately: your account, all connected sign-in methods, public
+        profile, and profile photos are deleted, and your public page stops being available.
       </p>
       <p>
         You may also request deletion of your Freudin account and associated personal data by
@@ -481,8 +489,10 @@ export function PrivacyView() {
       <p>
         You may separately manage or delete information associated with Google, Facebook, or
         Telegram through their privacy controls. To disconnect Freudin from your Facebook account,
-        remove it under Apps and websites in your Facebook settings. To disconnect it from Telegram,
-        use Active Websites in the Privacy and Security settings of Telegram.
+        remove it under Apps and websites in your Facebook settings. Telegram Login does not create
+        an ongoing connection: we receive your Telegram information only when you sign in, so
+        Freudin does not appear among connected websites in Telegram. To stop sharing it, stop
+        signing in with Telegram or delete your Freudin account.
       </p>
 
       <h2 id="data-security">10. Data security</h2>

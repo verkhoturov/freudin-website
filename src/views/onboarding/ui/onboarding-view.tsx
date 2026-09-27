@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { ProfileInput } from "@/entities/profile";
 import {
+  getAccountPhotos,
   useCreateProfileMutation,
   useViewerQuery,
   type Viewer,
@@ -12,6 +13,7 @@ import {
 import { routes } from "@/shared/config";
 import { copyToClipboard } from "@/shared/lib/clipboard";
 import { Container } from "@/shared/ui/container";
+import { DeleteAccountDialog } from "@/widgets/account-settings";
 import { type AvatarValue, getAvatarSource, ProfileForm } from "@/widgets/profile-form";
 import { useOnboardingDraftStore } from "../model/draft-store";
 
@@ -21,6 +23,11 @@ export function OnboardingView() {
       <Container className="flex max-w-lg flex-col gap-6 py-10">
         <h1 className="font-semibold text-2xl tracking-tight">Create your page</h1>
         <OnboardingForm />
+        {/* Аккаунт, созданный не тем способом входа, иначе не удалить: без страницы нет настроек */}
+        <div className="flex flex-col items-start gap-2 border-t pt-6">
+          <p className="text-muted-foreground text-sm">Signed in with the wrong account?</p>
+          <DeleteAccountDialog username={null} />
+        </div>
       </Container>
     </ViewerGuard>
   );
@@ -47,6 +54,7 @@ function showPageReadyToast(username: string) {
 
 function OnboardingProfileForm({ viewer }: { viewer: Viewer }) {
   const { user, suggestions } = viewer;
+  const accountPhotos = getAccountPhotos(user.signInMethods);
   const saveDraft = useOnboardingDraftStore((state) => state.saveDraft);
   const clearDraft = useOnboardingDraftStore((state) => state.clearDraft);
   const createProfile = useCreateProfileMutation();
@@ -65,7 +73,7 @@ function OnboardingProfileForm({ viewer }: { viewer: Viewer }) {
     return draft?.userId === user.id ? { ...suggested, ...draft.values } : suggested;
   });
   const [defaultAvatar] = useState<AvatarValue>(() =>
-    suggestions.avatarUrl ? { type: "provider" } : { type: "none" },
+    accountPhotos[0] ? { type: "provider", provider: accountPhotos[0].provider } : { type: "none" },
   );
 
   const submit = async (values: ProfileInput, avatar: AvatarValue) => {
@@ -85,7 +93,7 @@ function OnboardingProfileForm({ viewer }: { viewer: Viewer }) {
     <ProfileForm
       defaultValues={defaultValues}
       defaultAvatar={defaultAvatar}
-      providerAvatarUrl={suggestions.avatarUrl}
+      accountPhotos={accountPhotos}
       showContactEmail={!user.email}
       submitLabel="Create page"
       onSubmit={submit}

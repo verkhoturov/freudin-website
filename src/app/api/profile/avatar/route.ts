@@ -13,13 +13,14 @@ import {
   type AvatarUpdateResult,
   detectAvatarImage,
   fetchProviderAvatar,
-  getProfileSuggestions,
   isAvatarSizeAllowed,
   type PublicProfile,
   providerAvatarRequestSchema,
   removeProfileAvatar,
   setProfileAvatar,
 } from "@/entities/profile/index.server";
+import { getLinkedIdentities } from "@/entities/viewer/index.server";
+import type { SupabaseServerClient } from "@/shared/api/index.server";
 
 // Запас на заголовки частей multipart поверх самого файла
 const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
@@ -61,12 +62,15 @@ async function readUploadedAvatar(request: Request): Promise<AvatarImage> {
 
 async function readProviderAvatar(
   request: Request,
-  metadata: Record<string, unknown> | undefined,
+  supabase: SupabaseServerClient,
 ): Promise<AvatarImage> {
-  await parseJsonBody(request, providerAvatarRequestSchema);
+  const { provider } = await parseJsonBody(request, providerAvatarRequestSchema);
 
-  // Адрес фото берём только из данных провайдера в сессии, а не из запроса
-  const { avatarUrl } = getProfileSuggestions(metadata, null);
+  // Адрес фото берём только из данных привязанного способа входа, а не из запроса
+  const identities = await getLinkedIdentities(supabase);
+  const avatarUrl = provider
+    ? identities.find((identity) => identity.provider === provider)?.avatarUrl
+    : identities.find((identity) => identity.avatarUrl)?.avatarUrl;
   if (!avatarUrl) throw new HttpError(400, "bad_request", "Your account has no photo.");
 
   const image = await fetchProviderAvatar(avatarUrl);
@@ -87,14 +91,15 @@ function toResponse(result: AvatarUpdateResult): Response {
 
 /**
  * Новое фото профиля: файл в `multipart/form-data` (поле `file`)
- * или JSON `{ "source": "provider" }` — копия фото из аккаунта провайдера входа.
+ * или JSON `{ "source": "provider", "provider"?: "telegram" }` — копия фото из аккаунта
+ * провайдера входа.
  */
 export const POST = withErrorHandling(async (request) => {
   const { supabase, claims } = await requireUser();
   const isMultipart = request.headers.get("content-type")?.startsWith("multipart/form-data");
   const image = isMultipart
     ? await readUploadedAvatar(request)
-    : await readProviderAvatar(request, claims.user_metadata);
+    : await readProviderAvatar(request, supabase);
 
   return toResponse(await setProfileAvatar(supabase, claims.sub, image));
 });

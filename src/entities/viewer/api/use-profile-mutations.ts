@@ -37,7 +37,7 @@ function syncContactEmailCache(queryClient: QueryClient, contactEmail: string | 
 
 function uploadAvatar(source: AvatarSource): Promise<PublicProfile> {
   if (source.type === "provider") {
-    const body: ProviderAvatarRequest = { source: "provider" };
+    const body: ProviderAvatarRequest = { source: "provider", provider: source.provider };
     return apiClient.post<PublicProfile>(apiRoutes.profileAvatar, body);
   }
   const body = new FormData();

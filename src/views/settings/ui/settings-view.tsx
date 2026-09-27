@@ -9,6 +9,7 @@ import {
   toProfileInput,
 } from "@/entities/profile";
 import {
+  getAccountPhotos,
   useDeleteAvatarMutation,
   useSetAvatarMutation,
   useUpdateProfileMutation,
@@ -84,7 +85,7 @@ function ProfileSettingsForm({ viewer, profile }: ProfileSettingsFormProps) {
       defaultValues={savedValues}
       defaultAvatar={{ type: "current" }}
       currentAvatarUrl={profile.avatarUrl}
-      providerAvatarUrl={viewer.suggestions.avatarUrl}
+      accountPhotos={getAccountPhotos(viewer.user.signInMethods)}
       currentUsername={profile.username}
       showContactEmail={!email || contactEmail !== null}
       submitLabel="Save"

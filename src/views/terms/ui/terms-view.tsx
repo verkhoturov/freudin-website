@@ -114,6 +114,11 @@ export function TermsView() {
         unauthorized access to another user’s account.
       </p>
       <p>
+        You may connect several sign-in methods to your account and disconnect them in{" "}
+        <SettingsLink />, as long as at least one remains connected. Each sign-in method may be
+        connected to only one Freudin account.
+      </p>
+      <p>
         Your use of Google, Facebook, and Telegram is also subject to the terms and policies of
         Google, Meta, and Telegram.
       </p>

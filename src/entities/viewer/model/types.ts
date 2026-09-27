@@ -1,6 +1,18 @@
 import type { ProfileSuggestions, PublicProfile } from "@/entities/profile/@x/viewer";
 import type { AuthProvider } from "../config/auth-providers";
 
+/** Способ входа, привязанный к аккаунту. */
+export type SignInMethod = {
+  provider: AuthProvider;
+  /** Как показать аккаунт провайдера: email или `@username`; `null` — провайдер их не дал. */
+  accountLabel: string | null;
+  /** Фото из аккаунта провайдера (https) для «Use account photo». */
+  avatarUrl: string | null;
+};
+
+/** Ответ `POST /api/auth/identities`: адрес провайдера, куда уходит браузер для привязки. */
+export type IdentityLinkStart = { url: string };
+
 /** Текущий пользователь — ответ `GET /api/me`. */
 export type Viewer = {
   user: {
@@ -12,8 +24,11 @@ export type Viewer = {
      * Не подтверждается и не используется для входа.
      */
     contactEmail: string | null;
-    /** Способ входа; `null` — провайдер, которого приложение не знает. */
-    provider: AuthProvider | null;
+    /**
+     * Привязанные способы входа, от первого к последнему. Провайдеров, которых приложение
+     * не знает, здесь нет.
+     */
+    signInMethods: SignInMethod[];
   };
   /** `null` — профиль ещё не создан: пользователь не прошёл онбординг. */
   profile: PublicProfile | null;

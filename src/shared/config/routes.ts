@@ -20,6 +20,9 @@ export const apiRoutes = {
    */
   oidcAuthCallback: (provider: "google" | "telegram") => `/api/auth/callback/${provider}`,
   signOut: "/api/auth/sign-out",
+  /** Способы входа текущего пользователя: привязка (POST) и отвязка (DELETE с провайдером). */
+  identities: "/api/auth/identities",
+  identity: (provider: string) => `/api/auth/identities/${encodeURIComponent(provider)}`,
   me: "/api/me",
   /** Профиль текущего пользователя: создание и обновление. */
   profile: "/api/profile",
