@@ -1,38 +1,23 @@
 "use client";
 
 import { toast } from "sonner";
-import {
-  authProviderLabels,
-  useDeleteAccountMutation,
-  useSignOutMutation,
-  type Viewer,
-} from "@/entities/viewer";
-import { routes, siteConfig } from "@/shared/config";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/shared/ui/alert-dialog";
+import type { PublicProfile } from "@/entities/profile";
+import { authProviderLabels, useSignOutMutation, type Viewer } from "@/entities/viewer";
+import { routes } from "@/shared/config";
 import { Button } from "@/shared/ui/button";
-
-const SITE_HOST = new URL(siteConfig.url).host;
+import { DeleteAccountDialog } from "./delete-account-dialog";
 
 // Полная перезагрузка сбрасывает кеш запросов и всё состояние пользователя
 function reloadToHome() {
   window.location.assign(routes.home);
 }
 
+type AccountSettingsProps = { viewer: Viewer; profile: PublicProfile };
+
 /** Способ входа, выход и удаление аккаунта. */
-export function AccountSettings({ viewer }: { viewer: Viewer }) {
+export function AccountSettings({ viewer, profile }: AccountSettingsProps) {
   const signOut = useSignOutMutation();
-  const deleteAccount = useDeleteAccountMutation();
-  const { user, profile } = viewer;
+  const { user } = viewer;
   const provider = user.provider ? authProviderLabels[user.provider] : null;
   const signInMethod = [provider, user.email].filter(Boolean).join(", ");
 
@@ -40,13 +25,6 @@ export function AccountSettings({ viewer }: { viewer: Viewer }) {
     signOut.mutate(undefined, {
       onSuccess: reloadToHome,
       onError: () => toast.error("Couldn’t sign out. Please try again."),
-    });
-  };
-
-  const handleDelete = () => {
-    deleteAccount.mutate(undefined, {
-      onSuccess: reloadToHome,
-      onError: () => toast.error("Couldn’t delete your account. Please try again."),
     });
   };
 
@@ -65,35 +43,7 @@ export function AccountSettings({ viewer }: { viewer: Viewer }) {
         <Button variant="outline" disabled={signOut.isPending} onClick={handleSignOut}>
           Sign out
         </Button>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive">Delete account</Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete account?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {profile
-                  ? `Your page ${SITE_HOST}/${profile.username}, photo, and links`
-                  : "Your data"}{" "}
-                will be deleted permanently. This can’t be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleteAccount.isPending}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                variant="destructive"
-                disabled={deleteAccount.isPending}
-                onClick={(event) => {
-                  // Диалог остаётся открытым, пока идёт удаление
-                  event.preventDefault();
-                  handleDelete();
-                }}>
-                {deleteAccount.isPending ? "Deleting…" : "Delete"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <DeleteAccountDialog username={profile.username} onDeleted={reloadToHome} />
       </div>
     </section>
   );

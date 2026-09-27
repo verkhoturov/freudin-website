@@ -44,7 +44,7 @@ function SettingsContent() {
         </h2>
         <ProfileSettingsForm viewer={viewer.data} profile={viewer.data.profile} />
       </section>
-      <AccountSettings viewer={viewer.data} />
+      <AccountSettings viewer={viewer.data} profile={viewer.data.profile} />
     </>
   );
 }

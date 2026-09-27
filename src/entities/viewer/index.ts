@@ -18,6 +18,8 @@ export {
 export { getLoginHref } from "./lib/get-login-href";
 export { getSignInHref } from "./lib/get-sign-in-href";
 export { getViewerHomePath, type ViewerAccess } from "./lib/get-viewer-redirect";
+export { isAccountDeletionConfirmed } from "./lib/is-account-deletion-confirmed";
 export { useViewerRedirect } from "./lib/use-viewer-redirect";
+export type { DeleteAccountInput } from "./model/delete-account-schema";
 export type { Viewer } from "./model/types";
 export { ViewerGuard } from "./ui/viewer-guard";
