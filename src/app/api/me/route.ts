@@ -11,6 +11,7 @@ import {
   getProfileByUserId,
   getProfileSuggestions,
   removeUserAvatarFiles,
+  removeUserDocumentFiles,
 } from "@/entities/profile/index.server";
 import {
   deleteAccountInputSchema,
@@ -49,8 +50,8 @@ export const GET = withErrorHandling(async () => {
 const CONFIRMATION_MISMATCH_MESSAGE = "The username doesn’t match your page.";
 
 /**
- * Удаление аккаунта: сначала фото (из профиля, затем из Storage), потом пользователь, профиль —
- * каскадом. Если что-то упадёт, данные останутся согласованными, и удаление можно повторить.
+ * Удаление аккаунта: сначала фото и документы (из профиля, затем из Storage), потом пользователь,
+ * профиль — каскадом. Если что-то упадёт, данные останутся согласованными, и удаление можно повторить.
  * Подтверждение — username профиля в теле запроса: страховка от случайного вызова API.
  * Аккаунт без профиля (онбординг не пройден) удаляется без подтверждения: терять в нём нечего.
  */
@@ -67,6 +68,7 @@ export const DELETE = withErrorHandling(async (request) => {
   const admin = createSupabaseAdminClient();
 
   await removeUserAvatarFiles(admin, claims.sub);
+  await removeUserDocumentFiles(admin, claims.sub);
   await deleteUser(admin, supabase, claims.sub);
   return new Response(null, { status: 204, headers: NO_STORE_HEADERS });
 });

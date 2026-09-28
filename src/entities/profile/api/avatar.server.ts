@@ -6,15 +6,12 @@ import {
   AVATAR_MAX_DIMENSION,
   AVATAR_SIZE,
   AVATARS_BUCKET,
-  type AvatarMimeType,
-  avatarFileExtensions,
+  IMAGE_CACHE_SECONDS,
+  imageFileExtensions,
 } from "../config/storage";
-import { type ImageSize, readImageSize } from "../lib/read-image-size";
+import { type DetectedImage, detectImage } from "../lib/detect-image";
 import type { PublicProfile } from "../model/types";
 import { getProfileByUserId, PUBLIC_PROFILE_COLUMNS, toPublicProfile } from "./profile.server";
-
-/** Картинка, формат и размеры которой прочитаны из заголовка файла. */
-export type AvatarImage = ImageSize & { bytes: Uint8Array; contentType: AvatarMimeType };
 
 export type AvatarUpdateResult =
   | { ok: true; profile: PublicProfile }
@@ -32,36 +29,9 @@ const PROVIDER_AVATAR_HOSTS = [
 ];
 const PROVIDER_FETCH_TIMEOUT_MS = 5000;
 const PROVIDER_MAX_REDIRECTS = 3;
-// Имена файлов уникальны, поэтому картинку можно кешировать надолго
-const AVATAR_CACHE_SECONDS = String(60 * 60 * 24 * 365);
-
-function startsWith(bytes: Uint8Array, signature: number[], offset = 0): boolean {
-  return signature.every((byte, index) => bytes[offset + index] === byte);
-}
-
-/**
- * Формат картинки по первым байтам файла (заголовку `Content-Type` не доверяем) и её размеры.
- * `null` — это не JPEG, PNG или WebP либо заголовок файла повреждён.
- */
-export function detectAvatarImage(bytes: Uint8Array): AvatarImage | null {
-  let contentType: AvatarMimeType | null = null;
-  if (startsWith(bytes, [0xff, 0xd8, 0xff])) contentType = "image/jpeg";
-  else if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {
-    contentType = "image/png";
-  } else if (
-    startsWith(bytes, [0x52, 0x49, 0x46, 0x46]) &&
-    startsWith(bytes, [0x57, 0x45, 0x42, 0x50], 8)
-  ) {
-    contentType = "image/webp";
-  }
-  if (!contentType) return null;
-
-  const size = readImageSize(bytes, contentType);
-  return size ? { ...size, bytes, contentType } : null;
-}
 
 /** Фото не больше `AVATAR_MAX_DIMENSION` по каждой стороне. */
-export function isAvatarSizeAllowed(image: AvatarImage): boolean {
+function isAvatarSizeAllowed(image: DetectedImage): boolean {
   return image.width <= AVATAR_MAX_DIMENSION && image.height <= AVATAR_MAX_DIMENSION;
 }
 
@@ -112,7 +82,7 @@ async function readBodyWithLimit(response: Response, limit: number): Promise<Uin
  * при редиректах. `null` — фото недоступно, это не JPEG, PNG или WebP до 2 МБ или оно
  * больше `AVATAR_MAX_DIMENSION`.
  */
-export async function fetchProviderAvatar(avatarUrl: string): Promise<AvatarImage | null> {
+export async function fetchProviderAvatar(avatarUrl: string): Promise<DetectedImage | null> {
   let url: URL;
   try {
     url = withLargerSize(new URL(avatarUrl));
@@ -134,7 +104,7 @@ export async function fetchProviderAvatar(avatarUrl: string): Promise<AvatarImag
       if (!response.ok) return null;
 
       const bytes = await readBodyWithLimit(response, AVATAR_MAX_BYTES);
-      const image = bytes ? detectAvatarImage(bytes) : null;
+      const image = bytes ? detectImage(bytes) : null;
       return image && isAvatarSizeAllowed(image) ? image : null;
     }
   } catch (error) {
@@ -167,15 +137,15 @@ async function removeAvatarFile(supabase: SupabaseClient, path: string): Promise
 export async function setProfileAvatar(
   supabase: SupabaseClient,
   userId: string,
-  image: AvatarImage,
+  image: DetectedImage,
 ): Promise<AvatarUpdateResult> {
   const current = await getAvatarPath(supabase, userId);
   if (!current) return { ok: false, reason: "profile_missing" };
 
-  const path = `${userId}/${randomUUID()}.${avatarFileExtensions[image.contentType]}`;
+  const path = `${userId}/${randomUUID()}.${imageFileExtensions[image.contentType]}`;
   const upload = await supabase.storage.from(AVATARS_BUCKET).upload(path, image.bytes, {
     contentType: image.contentType,
-    cacheControl: AVATAR_CACHE_SECONDS,
+    cacheControl: IMAGE_CACHE_SECONDS,
   });
   if (upload.error) throw upload.error;
 

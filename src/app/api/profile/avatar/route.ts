@@ -3,17 +3,16 @@ import {
   jsonOk,
   NO_STORE_HEADERS,
   parseJsonBody,
+  readImageUpload,
   requireUser,
   withErrorHandling,
 } from "@/app/api/_lib";
 import {
   AVATAR_MAX_BYTES,
   AVATAR_MAX_DIMENSION,
-  type AvatarImage,
   type AvatarUpdateResult,
-  detectAvatarImage,
+  type DetectedImage,
   fetchProviderAvatar,
-  isAvatarSizeAllowed,
   type PublicProfile,
   providerAvatarRequestSchema,
   removeProfileAvatar,
@@ -22,48 +21,18 @@ import {
 import { getLinkedIdentities } from "@/entities/viewer/index.server";
 import type { SupabaseServerClient } from "@/shared/api/index.server";
 
-// Запас на заголовки частей multipart поверх самого файла
-const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
-
-function tooLargeError(): HttpError {
-  return new HttpError(413, "payload_too_large", "The photo must be 2 MB or smaller.");
-}
-
-async function readUploadedAvatar(request: Request): Promise<AvatarImage> {
-  if (Number(request.headers.get("content-length")) > AVATAR_MAX_BYTES + MULTIPART_OVERHEAD_BYTES) {
-    throw tooLargeError();
-  }
-
-  let formData: FormData;
-  try {
-    formData = await request.formData();
-  } catch {
-    throw new HttpError(400, "bad_request", "Couldn’t read the file.");
-  }
-
-  const file = formData.get("file");
-  if (!(file instanceof File)) {
-    throw new HttpError(400, "validation_error", "Choose a photo.", { file: "Choose a photo" });
-  }
-  if (file.size > AVATAR_MAX_BYTES) throw tooLargeError();
-
-  const image = detectAvatarImage(new Uint8Array(await file.arrayBuffer()));
-  if (!image) {
-    const message = "Upload a JPEG, PNG, or WebP photo.";
-    throw new HttpError(400, "validation_error", message, { file: message });
-  }
-  if (!isAvatarSizeAllowed(image)) {
-    const side = AVATAR_MAX_DIMENSION;
-    const message = `The photo must be at most ${side}×${side} pixels.`;
-    throw new HttpError(400, "validation_error", message, { file: message });
-  }
-  return image;
+function readUploadedAvatar(request: Request): Promise<DetectedImage> {
+  return readImageUpload(request, {
+    maxBytes: AVATAR_MAX_BYTES,
+    maxDimension: AVATAR_MAX_DIMENSION,
+    noun: "photo",
+  });
 }
 
 async function readProviderAvatar(
   request: Request,
   supabase: SupabaseServerClient,
-): Promise<AvatarImage> {
+): Promise<DetectedImage> {
   const { provider } = await parseJsonBody(request, providerAvatarRequestSchema);
 
   // Адрес фото берём только из данных привязанного способа входа, а не из запроса

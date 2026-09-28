@@ -68,7 +68,7 @@ export function DeleteAccountDialog({ username }: { username: string | null }) {
             <AlertDialogDescription>
               {username === null
                 ? "Your account and sign-in details will be deleted permanently."
-                : `Your page ${SITE_HOST}/${username}, photo, and links will be deleted permanently.`}{" "}
+                : `Your page ${SITE_HOST}/${username}, photo, documents, and links will be deleted permanently.`}{" "}
               This can’t be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

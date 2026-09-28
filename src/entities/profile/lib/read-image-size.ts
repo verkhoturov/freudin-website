@@ -1,4 +1,4 @@
-import type { AvatarMimeType } from "../config/storage";
+import type { ImageMimeType } from "../config/storage";
 
 export type ImageSize = { width: number; height: number };
 
@@ -71,7 +71,7 @@ function readWebpSize(view: DataView): ImageSize | null {
  * Ширина и высота картинки из заголовка файла, без декодирования. `null` — заголовок
  * не прочитать или размер нулевой.
  */
-export function readImageSize(bytes: Uint8Array, contentType: AvatarMimeType): ImageSize | null {
+export function readImageSize(bytes: Uint8Array, contentType: ImageMimeType): ImageSize | null {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let size: ImageSize | null;
   try {

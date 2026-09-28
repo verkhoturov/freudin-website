@@ -33,7 +33,7 @@ function SettingsLink() {
 
 export function PrivacyView() {
   return (
-    <LegalDocument title="Privacy Policy" lastUpdated="September 27, 2026">
+    <LegalDocument title="Privacy Policy" lastUpdated="September 28, 2026">
       <p>
         This Privacy Policy explains how Freudin collects, uses, stores, and shares personal data
         when you access or use the Freudin website, applications, features, and related services
@@ -175,12 +175,32 @@ export function PrivacyView() {
           your profile photo, which you upload or choose to copy from your Google, Facebook, or
           Telegram account;
         </li>
-        <li>links to your social media profiles and websites.</li>
+        <li>links to your social media profiles and websites;</li>
+        <li>
+          details about your practice, if you add them: your country and the city where you see
+          clients in person, whether you work online or in person, who you work with, your therapy
+          approaches, the languages you work in, and your starting price per session;
+        </li>
+        <li>
+          documents you upload, such as diplomas, certificates, or licenses, together with their
+          captions.
+        </li>
       </ul>
       <p>
         Your public profile is available to anyone at {SITE_HOST}/&lt;username&gt; without signing
         in. It may be indexed by search engines, shared by other people, and copied or cached by
         third parties. Do not add information to your profile that you do not want to make public.
+      </p>
+      <p>
+        Documents are published as soon as you upload them. Before uploading, cover ID numbers,
+        dates of birth, signatures, and other details you do not want to make public. The Service
+        reduces the image in your browser and removes embedded metadata, such as the location where
+        a photo was taken, before uploading it. We store the image and a smaller preview of it. When
+        you delete a document in <SettingsLink />, we delete both from our storage.
+      </p>
+      <p>
+        The list of cities is based on data from GeoNames. Choosing a city does not send any
+        information to GeoNames.
       </p>
       <p>
         Your email address and sign-in account identifiers are not shown on your public profile. You
@@ -386,8 +406,9 @@ export function PrivacyView() {
       <p>We use the following providers to operate the Service:</p>
       <ul>
         <li>
-          <strong>Supabase</strong> — authentication, database, and storage of profile photos. Your
-          account and profile data are stored in the European Union (Frankfurt, Germany);
+          <strong>Supabase</strong> — authentication, database, and storage of profile photos and
+          documents. Your account and profile data are stored in the European Union (Frankfurt,
+          Germany);
         </li>
         <li>
           <strong>Vercel</strong> — website hosting and server infrastructure. Server functions run
@@ -457,7 +478,8 @@ export function PrivacyView() {
         You can delete your Freudin account at any time in <SettingsLink /> → Delete account. If you
         have not created your page yet, you can delete your account on the page creation screen.
         Deletion takes effect immediately: your account, all connected sign-in methods, public
-        profile, and profile photos are deleted, and your public page stops being available.
+        profile, profile photos, and documents are deleted, and your public page stops being
+        available.
       </p>
       <p>
         You may also request deletion of your Freudin account and associated personal data by

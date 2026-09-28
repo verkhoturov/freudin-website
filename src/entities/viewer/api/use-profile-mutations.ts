@@ -120,3 +120,41 @@ export function useDeleteAvatarMutation() {
     onSuccess: (profile) => syncProfileCache(queryClient, profile),
   });
 }
+
+export type UploadDocumentVariables = {
+  /** Изображение документа после уменьшения и перекодирования на клиенте. */
+  file: Blob;
+  /** Превью с теми же пропорциями. */
+  thumbnail: Blob;
+  title: string;
+};
+
+/** Новый документ психолога. Шестой документ — `ApiError` 409, не та картинка — 400 или 413. */
+export function useUploadDocumentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, thumbnail, title }: UploadDocumentVariables) => {
+      const body = new FormData();
+      body.set("title", title);
+      body.set("file", file, "document");
+      body.set("thumbnail", thumbnail, "thumbnail");
+      return apiClient.post<PublicProfile>(apiRoutes.profileDocuments, body);
+    },
+    onSuccess: (profile) => syncProfileCache(queryClient, profile),
+  });
+}
+
+/** Удаление документа психолога по id. */
+export function useDeleteDocumentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete<PublicProfile>(apiRoutes.profileDocument(id)),
+    onSuccess: (profile) => syncProfileCache(queryClient, profile),
+    onError: (error) => {
+      // Документ уже удалён, например в другой вкладке: список в кеше устарел
+      if (error instanceof ApiError && error.status === 404) {
+        void queryClient.invalidateQueries({ queryKey: viewerQueries.me().queryKey });
+      }
+    },
+  });
+}

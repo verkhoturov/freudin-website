@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import { HttpError } from "./http-error";
 
-function issuesToFields(issues: z.core.$ZodIssue[]): Record<string, string> {
+export function issuesToFields(issues: z.core.$ZodIssue[]): Record<string, string> {
   const fields: Record<string, string> = {};
   for (const issue of issues) {
     const key = issue.path.map(String).join(".");

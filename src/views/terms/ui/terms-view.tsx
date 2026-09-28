@@ -25,7 +25,7 @@ function SettingsLink() {
 
 export function TermsView() {
   return (
-    <LegalDocument title="Terms of Service" lastUpdated="September 27, 2026">
+    <LegalDocument title="Terms of Service" lastUpdated="September 28, 2026">
       <p>
         These Terms of Service (“Terms”) govern your access to and use of the Freudin website,
         applications, features, and related services available through <strong>{SITE_HOST}</strong>{" "}
@@ -45,6 +45,12 @@ export function TermsView() {
       <p>
         Freudin provides online features, content, and tools made available through the Service.
         Certain features require you to create an account.
+      </p>
+      <p>
+        Psychologists can use the Service to publish a page about their practice. Freudin does not
+        provide psychological, medical, or other professional services, is not a party to any
+        arrangement between users, and does not process payments for sessions. Prices on user pages
+        are set by the users who publish them.
       </p>
       <p>
         We may add, modify, suspend, or discontinue any part of the Service. Where reasonably
@@ -162,17 +168,32 @@ export function TermsView() {
         secure, and provide the Service.
       </p>
       <p>
-        Your profile — display name, page address (username), bio, profile photo, and links — is
-        public. Anyone can view it at {SITE_HOST}/&lt;username&gt; without signing in, and search
-        engines may index it. You decide what to publish and can change or remove it at any time in{" "}
-        <SettingsLink />.
+        Your profile — display name, page address (username), bio, profile photo, links, details
+        about your practice, and documents — is public. Anyone can view it at {SITE_HOST}
+        /&lt;username&gt; without signing in, and search engines may index it. You decide what to
+        publish and can change or remove it at any time in <SettingsLink />.
       </p>
       <p>You are responsible for your User Content and confirm that:</p>
       <ul>
         <li>you own it or have the necessary rights to use it;</li>
         <li>it does not violate applicable law or third-party rights;</li>
-        <li>it is not unlawful, harmful, deceptive, defamatory, or malicious.</li>
+        <li>it is not unlawful, harmful, deceptive, defamatory, or malicious;</li>
+        <li>the information about your qualifications and practice is accurate and up to date;</li>
+        <li>
+          the documents you upload, such as diplomas, certificates, or licenses, were issued to you,
+          are genuine, and have not been altered, except for covering details you do not want to
+          make public.
+        </li>
       </ul>
+      <p>
+        Documents appear on your page as soon as you upload them. We do not review or verify
+        documents or qualifications before publication. If you believe a document is not genuine or
+        belongs to someone else, report it to{" "}
+        <strong>
+          <SupportEmailLink />
+        </strong>
+        .
+      </p>
       <p>
         We may remove or restrict access to User Content if we reasonably believe that it violates
         these Terms, applicable law, or another person’s rights.
@@ -190,6 +211,15 @@ export function TermsView() {
         our prior written permission.
       </p>
       <p>These Terms do not transfer ownership of any intellectual property rights to you.</p>
+      <p>
+        The list of cities is based on data from <a href="https://www.geonames.org/">GeoNames</a>,
+        licensed under{" "}
+        <a href="https://creativecommons.org/licenses/by/4.0/">
+          Creative Commons Attribution 4.0 (CC BY 4.0)
+        </a>
+        . We have modified the data: we use a selection of populated places and have adapted the
+        names for search.
+      </p>
 
       <h2 id="cookies">7. Cookies</h2>
       <p>
@@ -227,7 +257,7 @@ export function TermsView() {
       <p>You may stop using the Service at any time.</p>
       <p>
         You can delete your account at any time in <SettingsLink /> → Delete account. Deletion is
-        immediate and removes your profile and public page.
+        immediate and removes your profile, photos, documents, and public page.
       </p>
       <p>
         You may also request deletion of your account by contacting{" "}
@@ -276,6 +306,10 @@ export function TermsView() {
         <li>
           all information provided through the Service will be complete, accurate, or suitable for a
           particular purpose;
+        </li>
+        <li>
+          the qualifications, documents, prices, and other information that users publish about
+          themselves are accurate — we do not verify them;
         </li>
         <li>defects or interruptions will always be corrected immediately;</li>
         <li>the Service will meet every user’s individual requirements.</li>

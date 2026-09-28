@@ -13,4 +13,12 @@ export const demoProfile: PublicProfile = {
     { platform: "instagram", url: "https://www.instagram.com/instagram" },
     { platform: "website", url: `${siteConfig.url}/` },
   ],
+  country: null,
+  city: null,
+  workFormats: [],
+  clientTypes: [],
+  approaches: [],
+  languages: [],
+  price: null,
+  documents: [],
 };

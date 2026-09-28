@@ -106,8 +106,10 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   идёт в серверных функциях сущностей (`@/entities/<slice>/index.server`).
 - Хелперы route handlers лежат в `@/app/api/_lib`: обработчик оборачиваем в `withErrorHandling`,
   успешный ответ отдаём через `jsonOk<T>(data)`, ожидаемую ошибку — `throw new HttpError(status,
-  code, message)`, тело запроса читаем через `parseJsonBody(request, schema)` (ошибка валидации
-  превращается в 400 с `fields`).
+  code, message)`, тело запроса читаем через `parseJsonBody(request, schema)`, query — через
+  `parseSearchParams(request, schema)` (ошибка валидации превращается в 400 с `fields`).
+  Картинку из `multipart/form-data` (поле `file`) читает `readImageUpload(request, { maxBytes,
+  maxDimension, noun })`: формат по сигнатуре, 413 за размер, 400 за формат и стороны.
 - `withErrorHandling` защищает от CSRF: изменяющий запрос (не GET, HEAD, OPTIONS) с чужого сайта
   (`Sec-Fetch-Site` не `same-origin` или чужой `Origin`) получает 403 до вызова обработчика.
   Запросы без обоих заголовков (curl, вебхуки) проходят. Роуты без обёртки не пишем.
@@ -223,19 +225,21 @@ export { LoginView as default, metadata } from "@/views/login";
 
 | Слой | Слайс или модуль | Что внутри |
 |------|------------------|------------|
-| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (привязанные способы входа `user.signInMethods`: провайдер, email или `@username`, фото), `SignInMethod`, `getAccountPhotos`, `AuthProviderIcon` (логотипы провайдеров), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation` (с подтверждением username, без профиля — без него), `isAccountDeletionConfirmed`, `useLinkIdentityMutation`, `useUnlinkIdentityMutation`, `identityLinkParams`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `identityLinkInputSchema`, `deleteAccountInputSchema`, `isAccountDeletionConfirmed`, `getOAuthSignInUrl`, `getOAuthErrorCode`, `exchangeAuthCode`, `signOut`, `deleteUser`, способы входа: `getLinkedIdentities`, `toSignInMethod`, `getOAuthLinkUrl`, `getOAuthLinkError`, `unlinkIdentity`; вход и привязка Google и Telegram без OAuth Supabase: `getOidcProvider`, `oidcProviderSchema`, `startOidcSignIn`, `takeOidcSignInState`, `completeOidcSignIn`, `completeOidcLink` |
-| `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`, `contactEmailSchema` — необязательная контактная почта, пустая строка — нет почты), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`, `AVATAR_MAX_DIMENSION`), `profileQueries`, `usernameQueries`, `toProfileInput(profile, contactEmail)`, `getProfileChanges(saved, input)`, `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile` и `updateProfile` (контактную почту сохраняют первой), `getContactEmail`, `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles` (сначала обнуляет `avatar_path`), `fetchProviderAvatar`, `detectAvatarImage` (формат и размеры по заголовку файла), `isAvatarSizeAllowed` (не больше `AVATAR_MAX_DIMENSION`), `getProfileSuggestions` (адрес: username провайдера → имя латиницей → часть email до «@»); для `viewer` — типы и фабрики запросов через `@x` |
+| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (привязанные способы входа `user.signInMethods`: провайдер, email или `@username`, фото), `SignInMethod`, `getAccountPhotos`, `AuthProviderIcon` (логотипы провайдеров), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation` (с подтверждением username, без профиля — без него), `isAccountDeletionConfirmed`, `useLinkIdentityMutation`, `useUnlinkIdentityMutation`, `identityLinkParams`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation`, `useUploadDocumentMutation` (изображение, превью и подпись), `useDeleteDocumentMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `identityLinkInputSchema`, `deleteAccountInputSchema`, `isAccountDeletionConfirmed`, `getOAuthSignInUrl`, `getOAuthErrorCode`, `exchangeAuthCode`, `signOut`, `deleteUser`, способы входа: `getLinkedIdentities`, `toSignInMethod`, `getOAuthLinkUrl`, `getOAuthLinkError`, `unlinkIdentity`; вход и привязка Google и Telegram без OAuth Supabase: `getOidcProvider`, `oidcProviderSchema`, `startOidcSignIn`, `takeOidcSignInState`, `completeOidcSignIn`, `completeOidcLink` |
+| `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`, `contactEmailSchema` — необязательная контактная почта, пустая строка — нет почты), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`, `AVATAR_MAX_DIMENSION`), `profileQueries`, `usernameQueries`, `toProfileInput(profile, contactEmail)`, `getProfileChanges(saved, input)` (связанные поля — группой), `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; данные психолога: справочники `approachIds`/`approachLabels`, `clientTypeIds`/`clientTypeLabels`, `workFormatIds`/`workFormatLabels`, `languageCodes`, `currencyCodes`, `getLanguageName`, `getCurrencyName`, `getEmptyPracticeInput`, лимиты (`APPROACHES_MAX`, `LANGUAGES_MAX`, `PRICE_AMOUNT_MAX`, `DOCUMENTS_MAX`, `DOCUMENT_MAX_BYTES`, `DOCUMENT_MAX_DIMENSION`), `documentTitleSchema`, типы `ProfilePrice`, `ProfileDocument`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile` и `updateProfile` (контактную почту сохраняют первой; город не из справочника — `city_invalid`), `getContactEmail`, `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles` (сначала обнуляет `avatar_path`), `fetchProviderAvatar`, `detectImage` (формат и размеры по заголовку файла), документы: `addProfileDocument`, `removeProfileDocument` (список пишется целиком с проверкой `updated_at`), `removeUserDocumentFiles`, `getProfileSuggestions` (адрес: username провайдера → имя латиницей → часть email до «@»); для `viewer` — типы и фабрики запросов через `@x` |
+| `entities` | `location` | коды стран `countryCodes` (ISO 3166-1 и `XK`), `getCountryName`, `countryCodeSchema`, тип `City`, `cityQueries.search(country, query)`; на сервере `searchCities` (по `cities.search_name`, до 10 городов по населению), `citySearchParamsSchema`; для `profile` — `City`, `toCity`, `CITY_COLUMNS` через `@x` |
 | `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton` (подпись с ником или доменом: `Telegram · @anna`, `example.com`); для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка сайта; подвал: ссылки на Privacy и Terms, почта поддержки, строка © с годами (`useCopyrightYears`: `2026`, затем `2026–<текущий год>`) и реквизиты ИП из `legalConfig` (по ним Meta сверяет компанию с сайтом) |
 | `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров (`AuthProviderIcon` из `viewer`) |
 | `widgets` | `profile-card` | карточка личной страницы, скелетон, Share, Edit для владельца (`isOwner`) |
-| `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом и фото из аккаунтов (`accountPhotos`; если их несколько — меню выбора), имя, адрес с проверкой (`— available` по ответу сервера), описание, соцсети, необязательная почта (`showContactEmail`: у аккаунта нет email от провайдера или контакт уже сохранён); `mode="edit"` — кнопка активна только при изменениях и предупреждение об уходе с несохранёнными изменениями; `AvatarValue`, `getAvatarSource` |
+| `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом и фото из аккаунтов (`accountPhotos`; если их несколько — меню выбора), имя, адрес с проверкой (`— available` по ответу сервера), описание, соцсети, необязательная почта (`showContactEmail`: у аккаунта нет email от провайдера или контакт уже сохранён), раздел Practice с данными психолога (`showPractice`, `currentCity` — только в настройках): страна, формат работы, город из справочника, с кем работает, подходы, языки, цена; `mode="edit"` — кнопка активна только при изменениях и предупреждение об уходе с несохранёнными изменениями; `AvatarValue`, `getAvatarSource` |
 | `widgets` | `account-settings` | способы входа (Connect, Disconnect, тост итога привязки), Sign out, Delete account с подтверждением вводом username; `DeleteAccountDialog` (с `username={null}` — для аккаунта без страницы) |
 | `widgets` | `legal-document` | обёртка юридической страницы `LegalDocument` (заголовок, дата редакции, типографика), `OperatorDetails` (реквизиты из `legalConfig`), `CodeList` |
 | `views` | `onboarding` | онбординг и удаление аккаунта без страницы; черновик формы — Zustand-стор `useOnboardingDraftStore` в `model` |
-| `views` | `settings` | настройки: `profile-form` в режиме редактирования и `account-settings` |
-| `shared/ui` | свои компоненты | `Container`, `Logo`, `ThemeToggle`, `NotFoundState`, `SupportEmailLink` (`mailto:` на почту поддержки) |
-| `shared/lib` | `utils`, `safe-redirect`, `crop-image`, `clipboard`, `use-unsaved-changes-warning`, `transliterate` | `cn`, `getSafeRedirectPath`, `cropImage` (кроп и сжатие через canvas), `copyToClipboard`, `useUnsavedChangesWarning`, `transliterate` (кириллица и диакритика → латиница) |
+| `widgets` | `profile-documents` | документы психолога в настройках: список с превью, загрузка в диалоге (картинка уменьшается в браузере до 2048 px, превью — до 480 px, подпись обязательна) и удаление с подтверждением; сохраняются сразу, без формы профиля |
+| `views` | `settings` | настройки: `profile-form` в режиме редактирования (с разделом Practice), `profile-documents` и `account-settings` |
+| `shared/ui` | свои компоненты | `Container`, `Logo`, `ThemeToggle`, `NotFoundState`, `SupportEmailLink` (`mailto:` на почту поддержки), `Combobox` (выбор из длинного списка с поиском на `popover` и `command`: одиночный и мультивыбор, поиск на сервере через `search`, кнопка очистки `onClear`) |
+| `shared/lib` | `utils`, `safe-redirect`, `canvas-image`, `crop-image`, `clipboard`, `use-unsaved-changes-warning`, `use-debounced-value`, `field-errors`, `transliterate` | `cn`, `getSafeRedirectPath`, `loadImage`, `resizeImage` и `encodeCanvas` (уменьшение и перекодирование через canvas в WebP или JPEG, EXIF пропадают, качество снижается, пока файл не влезет в лимит), `cropImage` (кроп и сжатие через canvas), `useDebouncedValue`, `toFieldErrors` и `toFormFieldName` (ошибки TanStack Form для `FieldError` и пути полей из ответа API), `copyToClipboard`, `useUnsavedChangesWarning`, `transliterate` (кириллица и диакритика → латиница), `toSearchKey` (ключ поиска по началу строки, им собран `cities.search_name`) |
 | `shared/config` | `routes`, `site`, `legal`, `reserved-usernames`, `env.server` | пути, настройки сайта (в том числе `supportEmail`), реквизиты оператора `legalConfig`, зарезервированные адреса, серверный env |
 | `shared/api` | `index.ts`, `index.server.ts` | клиент: `apiClient`, `ApiError`, QueryClient; сервер: `createSupabaseServerClient`, `createSupabasePublicClient`, `createSupabaseAdminClient`, тип `SupabaseClient`, типы БД (`Database`, `Tables`) |
 
@@ -284,12 +288,15 @@ export { LoginView as default, metadata } from "@/views/login";
 | DELETE | `/api/auth/identities/[provider]` | отвязка способа входа, ответ — оставшиеся способы; не привязан — 404, последний — 409 | ✓ | готово |
 | POST | `/api/auth/sign-out` | выход; без сессии тоже 204 | ✓ | готово |
 | GET | `/api/me` | текущий пользователь (`email` от провайдера, `contactEmail` — своя почта, если провайдер её не дал, `signInMethods` — привязанные способы входа), его профиль (или `null`) и подсказки для онбординга | ✓ | готово |
-| DELETE | `/api/me` | удаление аккаунта: тело `{ "username": "…" }` — подтверждение, без совпадения с профилем (пробелы по краям и регистр не важны) 400 с `fields.username`; без профиля подтверждение не нужно (`{}`); фото (из профиля, затем из Storage), пользователь через admin API (профиль — каскадом), cookies сессии; 204 | ✓ | готово |
-| POST | `/api/profile` | создание профиля (онбординг) и контактной почты, если она указана: 201; занятый username — 409 с `fields.username`, профиль уже есть — 409 | ✓ | готово |
-| PATCH | `/api/profile` | обновление переданных полей профиля; `contactEmail: ""` удаляет контактную почту; нет профиля — 404, занятый username — 409 | ✓ | готово |
+| DELETE | `/api/me` | удаление аккаунта: тело `{ "username": "…" }` — подтверждение, без совпадения с профилем (пробелы по краям и регистр не важны) 400 с `fields.username`; без профиля подтверждение не нужно (`{}`); фото и документы (из профиля, затем из Storage), пользователь через admin API (профиль — каскадом), cookies сессии; 204 | ✓ | готово |
+| POST | `/api/profile` | создание профиля (онбординг) и контактной почты, если она указана: 201; занятый username — 409 с `fields.username`, профиль уже есть — 409, город не из справочника или не из `country` — 400 с `fields.cityId` | ✓ | готово |
+| PATCH | `/api/profile` | обновление переданных полей профиля; `contactEmail: ""` удаляет контактную почту; связанные поля передаются группой (`country`, `cityId`, `workFormats`; `priceAmount`, `priceCurrency`), иначе 400; нет профиля — 404, занятый username — 409 | ✓ | готово |
 | POST | `/api/profile/avatar` | новое фото: `multipart/form-data` с полем `file` (JPEG, PNG, WebP до 2 МБ и не больше 1024×1024, иначе 400 или 413) или JSON `{ "source": "provider", "provider"?: "telegram" }` — копия фото привязанного способа входа (без `provider` — первого с фото) | ✓ | готово |
 | DELETE | `/api/profile/avatar` | удаление фото | ✓ | готово |
-| GET | `/api/profiles/[username]` | публичный профиль (регистр не важен), `demo` — демо-профиль из кода | — | готово |
+| POST | `/api/profile/documents` | документ психолога: `multipart/form-data` с полями `file` (JPEG, PNG, WebP до 2 МБ и 2048×2048), `thumbnail` (превью до 256 КБ и 480×480) и `title` (подпись до 100 символов); 201 с профилем, шестой документ — 409 | ✓ | готово |
+| DELETE | `/api/profile/documents/[id]` | удаление документа, ответ — профиль; нет документа — 404 | ✓ | готово |
+| GET | `/api/cities?country=&q=` | поиск города в стране по началу названия (регистр, диакритика и апострофы не важны, кириллица транслитерируется): до 10 `City`, крупные первыми; ответ кешируется (`s-maxage` сутки) | — | готово |
+| GET | `/api/profiles/[username]` | публичный профиль (регистр не важен), в том числе данные психолога (город — объект `City` из справочника, документы со ссылками), `demo` — демо-профиль из кода | — | готово |
 | GET | `/api/usernames/[username]` | `{ username, available }`; неверный формат или зарезервированный адрес — 400. Свой текущий адрес тоже «занят» | — | готово |
 
 ## Состояние и данные
@@ -332,6 +339,13 @@ export { LoginView as default, metadata } from "@/views/login";
 - `anon` читает из `profiles` только колонки публичной страницы (`PUBLIC_PROFILE_COLUMNS`):
   `select *` и `select("id")` от гостя дают `permission denied`. Новую публичную колонку
   добавляй и в `PUBLIC_PROFILE_COLUMNS`, и миграцией в `grant select (…) … to anon`.
+  Поэтому данные публичной страницы не выносим в таблицы, связанные с профилем по `id`: гость
+  не сможет их присоединить. Списки вроде соцсетей и документов — jsonb-колонки `profiles`.
+- Справочник городов `cities` (GeoNames, CC BY 4.0) заполняют миграции, собранные скриптом
+  `scripts/generate-cities-migration.mjs`: руками их не правим, обновление — новой миграцией
+  (команды в README). Ключ поиска `search_name` строит `toSearchKey` из
+  `@/shared/lib/transliterate`: меняя её, пересобери справочник.
+  Лицензия требует указать источник: атрибуция стоит в `/terms`, раздел Intellectual property.
 - Приватные данные пользователя не кладём в `profiles`: её читают все. Контактная почта лежит
   в `account_contacts`, где RLS пускает только владельца, а у `anon` прав нет. Это не email
   аккаунта в Supabase Auth: неподтверждённый адрес там связал бы аккаунты по email, и чужая
@@ -365,8 +379,12 @@ export { LoginView as default, metadata } from "@/views/login";
   правим только при необходимости.
 - После `npx shadcn add` или `npx shadcn apply` проверь три вещи. Первое — пересобери lock-файл
   через npm 11 (см. «Процесс работы»). Второе — CLI перезаписывает компоненты: если `npm run lint:fix`
-  находит в них ошибки, исправь точечно (так уже сделано в `field.tsx`). Третье — `apply` умеет
-  переписать шрифты в `src/app/layout.tsx`: у Geist должны остаться `subsets: ["latin", "cyrillic"]`.
+  находит в них ошибки, исправь точечно (так уже сделано в `field.tsx` и `input-group.tsx`).
+  Третье — `apply` умеет переписать шрифты в `src/app/layout.tsx`: у Geist должны остаться
+  `subsets: ["latin", "cyrillic"]`.
+- Если новый компонент тянет уже установленные (`button`, `input`, `dialog`), CLI спрашивает, перезаписать
+  ли их, а без терминала ответить некому. Тогда ставь с `--overwrite` и верни задетые файлы:
+  `git checkout -- src/shared/ui/<файл>.tsx` (в них правки форматирования и наши исправления).
 - Классы объединяем через `cn` из `@/shared/lib/utils`.
 - Тему переключает next-themes (класс `.dark` на `<html>`), переключатель — `ThemeToggle`
   из `@/shared/ui/theme-toggle`.

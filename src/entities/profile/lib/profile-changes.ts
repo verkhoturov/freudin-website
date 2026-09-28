@@ -1,6 +1,32 @@
 import { type ProfileInput, type ProfileUpdateInput, profileInputSchema } from "../model/schemas";
 import type { PublicProfile } from "../model/types";
 
+type PracticeInput = Pick<
+  ProfileInput,
+  | "country"
+  | "cityId"
+  | "workFormats"
+  | "clientTypes"
+  | "approaches"
+  | "languages"
+  | "priceAmount"
+  | "priceCurrency"
+>;
+
+/** Незаполненные данные психолога в виде значений формы: для онбординга. */
+export function getEmptyPracticeInput(): PracticeInput {
+  return {
+    country: "",
+    cityId: null,
+    workFormats: [],
+    clientTypes: [],
+    approaches: [],
+    languages: [],
+    priceAmount: "",
+    priceCurrency: "",
+  };
+}
+
 /** Сохранённый профиль и контактная почта (`null` — её нет) в виде значений формы. */
 export function toProfileInput(profile: PublicProfile, contactEmail: string | null): ProfileInput {
   return {
@@ -9,8 +35,22 @@ export function toProfileInput(profile: PublicProfile, contactEmail: string | nu
     bio: profile.bio,
     socialLinks: profile.socialLinks,
     contactEmail: contactEmail ?? "",
+    country: profile.country ?? "",
+    cityId: profile.city?.id ?? null,
+    workFormats: profile.workFormats,
+    clientTypes: profile.clientTypes,
+    approaches: profile.approaches,
+    languages: profile.languages,
+    priceAmount: profile.price ? String(profile.price.amount) : "",
+    priceCurrency: profile.price?.currency ?? "",
   };
 }
+
+// Связанные поля сервер проверяет вместе, поэтому отправляем группу целиком
+const linkedFieldGroups: (keyof ProfileUpdateInput)[][] = [
+  ["country", "cityId", "workFormats"],
+  ["priceAmount", "priceCurrency"],
+];
 
 /**
  * Изменённые поля для `PATCH /api/profile` или `null`, если менять нечего. `saved` — значения
@@ -26,13 +66,13 @@ export function getProfileChanges(
   if (!parsed.success) return input;
 
   const next = parsed.data;
-  const changes: ProfileUpdateInput = {};
-  if (next.username !== saved.username) changes.username = next.username;
-  if (next.displayName !== saved.displayName) changes.displayName = next.displayName;
-  if (next.bio !== saved.bio) changes.bio = next.bio;
-  if (JSON.stringify(next.socialLinks) !== JSON.stringify(saved.socialLinks)) {
-    changes.socialLinks = next.socialLinks;
+  const changes: Record<string, unknown> = {};
+  for (const key of Object.keys(next) as (keyof typeof next)[]) {
+    if (JSON.stringify(next[key]) !== JSON.stringify(saved[key])) changes[key] = next[key];
   }
-  if (next.contactEmail !== saved.contactEmail) changes.contactEmail = next.contactEmail;
-  return Object.keys(changes).length > 0 ? changes : null;
+  for (const group of linkedFieldGroups) {
+    if (!group.some((key) => key in changes)) continue;
+    for (const key of group) changes[key] = next[key];
+  }
+  return Object.keys(changes).length > 0 ? (changes as ProfileUpdateInput) : null;
 }

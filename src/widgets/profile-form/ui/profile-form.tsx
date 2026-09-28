@@ -5,21 +5,32 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import type { City } from "@/entities/location";
 import {
+  APPROACHES_MAX,
+  approachIds,
+  approachLabels,
   BIO_MAX_LENGTH,
   CONTACT_EMAIL_MAX_LENGTH,
+  clientTypeIds,
+  clientTypeLabels,
   DISPLAY_NAME_MAX_LENGTH,
+  LANGUAGES_MAX,
+  PRICE_AMOUNT_MAX,
   type ProfileInput,
   profileInputSchema,
   SOCIAL_LINKS_MAX,
   USERNAME_MAX_LENGTH,
   usernameQueries,
   usernameSchema,
+  workFormatIds,
+  workFormatLabels,
 } from "@/entities/profile";
 import { type SocialPlatform, socialPlatformIds, socialPlatforms } from "@/entities/social-link";
 import type { AccountPhoto } from "@/entities/viewer";
 import { ApiError } from "@/shared/api";
 import { siteConfig } from "@/shared/config";
+import { toFieldErrors, toFormFieldName } from "@/shared/lib/field-errors";
 import { useUnsavedChangesWarning } from "@/shared/lib/use-unsaved-changes-warning";
 import { Button } from "@/shared/ui/button";
 import {
@@ -29,18 +40,25 @@ import {
   FieldGroup,
   FieldLabel,
   FieldLegend,
+  FieldSeparator,
   FieldSet,
 } from "@/shared/ui/field";
 import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Textarea } from "@/shared/ui/textarea";
-import { toFieldErrors, toFormFieldName } from "../lib/field-errors";
 import type { AvatarValue } from "../model/avatar-value";
 import { AvatarField } from "./avatar-field";
+import { CheckboxGroup } from "./checkbox-group";
+import { CitySelect, CountrySelect, CurrencySelect, LanguagesSelect } from "./practice-selects";
 
 const USERNAME_CHECK_DEBOUNCE_MS = 400;
 const VALUES_CHANGE_DEBOUNCE_MS = 300;
 const SITE_HOST = new URL(siteConfig.url).host;
+const PRICE_AMOUNT_MAX_LENGTH = String(PRICE_AMOUNT_MAX).length;
+
+const workFormatOptions = workFormatIds.map((id) => ({ value: id, label: workFormatLabels[id] }));
+const clientTypeOptions = clientTypeIds.map((id) => ({ value: id, label: clientTypeLabels[id] }));
+const approachOptions = approachIds.map((id) => ({ value: id, label: approachLabels[id] }));
 
 type ProfileFormProps = {
   /**
@@ -61,6 +79,10 @@ type ProfileFormProps = {
    * или контакт уже сохранён.
    */
   showContactEmail?: boolean;
+  /** Раздел с данными психолога: страна и город, формат работы, подходы, языки, цена. */
+  showPractice?: boolean;
+  /** Город из профиля: подпись для `cityId` из значений формы. */
+  currentCity?: City | null;
   submitLabel: string;
   /** Сохранение. `ApiError` с `fields` показывается у полей формы, остальные ошибки — тостом. */
   onSubmit: (values: ProfileInput, avatar: AvatarValue) => Promise<void>;
@@ -102,11 +124,22 @@ export function ProfileForm({
   accountPhotos,
   currentUsername,
   showContactEmail = false,
+  showPractice = false,
+  currentCity = null,
   submitLabel,
   onSubmit,
   onValuesChange,
 }: ProfileFormProps) {
   const queryClient = useQueryClient();
+  // В форме только id города, а на кнопке списка нужны название и регион: берём их у города,
+  // выбранного здесь, или у города из профиля. Профиль после сохранения приходит позже,
+  // чем пересоздаётся форма, поэтому подпись не храним в состоянии, а находим по id
+  const [pickedCity, setPickedCity] = useState<City | null>(null);
+  const findCity = (id: number | null): City | null => {
+    if (id === null) return null;
+    if (pickedCity?.id === id) return pickedCity;
+    return currentCity?.id === id ? currentCity : null;
+  };
   // Первое значение храним: проп может приходить новым объектом на каждом рендере
   const [initialAvatar] = useState(defaultAvatar);
   const [avatar, setAvatar] = useState<AvatarValue>(initialAvatar);
@@ -414,6 +447,204 @@ export function ProfileForm({
               );
             }}
           </form.Field>
+        ) : null}
+
+        {showPractice ? <FieldSeparator /> : null}
+        {showPractice ? (
+          <FieldSet>
+            <FieldLegend>Practice</FieldLegend>
+            <FieldGroup>
+              <form.Field name="country">
+                {(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Country</FieldLabel>
+                      <CountrySelect
+                        id={field.name}
+                        value={field.state.value}
+                        aria-invalid={isInvalid}
+                        onChange={(country) => {
+                          // Город выбирается внутри страны: при смене страны он сбрасывается
+                          if (country !== field.state.value) form.setFieldValue("cityId", null);
+                          field.handleChange(country);
+                          field.handleBlur();
+                        }}
+                      />
+                      {isInvalid ? (
+                        <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                      ) : null}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+
+              <form.Field name="workFormats">
+                {(field) => (
+                  <CheckboxGroup
+                    name={field.name}
+                    legend="Work format"
+                    options={workFormatOptions}
+                    value={field.state.value}
+                    onChange={field.handleChange}
+                    onBlur={field.handleBlur}
+                    errors={
+                      field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []
+                    }
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="cityId">
+                {(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>City</FieldLabel>
+                      <form.Subscribe selector={(state) => state.values.country}>
+                        {(country) => (
+                          <CitySelect
+                            id={field.name}
+                            country={country}
+                            value={findCity(field.state.value)}
+                            aria-invalid={isInvalid}
+                            aria-describedby={`${field.name}-description`}
+                            onChange={(next) => {
+                              if (next) setPickedCity(next);
+                              field.handleChange(next?.id ?? null);
+                              field.handleBlur();
+                            }}
+                          />
+                        )}
+                      </form.Subscribe>
+                      <FieldDescription id={`${field.name}-description`}>
+                        Required for in-person sessions.
+                      </FieldDescription>
+                      {isInvalid ? (
+                        <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                      ) : null}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+
+              <form.Field name="clientTypes">
+                {(field) => (
+                  <CheckboxGroup
+                    name={field.name}
+                    legend="Works with"
+                    options={clientTypeOptions}
+                    value={field.state.value}
+                    onChange={field.handleChange}
+                    onBlur={field.handleBlur}
+                    errors={
+                      field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []
+                    }
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="approaches">
+                {(field) => (
+                  <CheckboxGroup
+                    name={field.name}
+                    legend="Approaches"
+                    description={`Up to ${APPROACHES_MAX}.`}
+                    options={approachOptions}
+                    value={field.state.value}
+                    onChange={field.handleChange}
+                    onBlur={field.handleBlur}
+                    max={APPROACHES_MAX}
+                    className="sm:grid sm:grid-cols-2"
+                    errors={
+                      field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []
+                    }
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="languages">
+                {(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Languages</FieldLabel>
+                      <LanguagesSelect
+                        id={field.name}
+                        value={field.state.value}
+                        aria-invalid={isInvalid}
+                        aria-describedby={`${field.name}-description`}
+                        onChange={(languages) => {
+                          field.handleChange(languages);
+                          field.handleBlur();
+                        }}
+                      />
+                      <FieldDescription id={`${field.name}-description`}>
+                        Up to {LANGUAGES_MAX}.
+                      </FieldDescription>
+                      {isInvalid ? (
+                        <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                      ) : null}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+
+              <form.Field name="priceAmount">
+                {(amountField) => (
+                  <form.Field name="priceCurrency">
+                    {(currencyField) => {
+                      const amountMeta = amountField.state.meta;
+                      const currencyMeta = currencyField.state.meta;
+                      const isAmountInvalid = amountMeta.isTouched && !amountMeta.isValid;
+                      const isCurrencyInvalid = currencyMeta.isTouched && !currencyMeta.isValid;
+                      return (
+                        <Field data-invalid={isAmountInvalid || isCurrencyInvalid}>
+                          <FieldLabel htmlFor={amountField.name}>
+                            Starting price per session
+                          </FieldLabel>
+                          <div className="flex gap-2">
+                            <Input
+                              id={amountField.name}
+                              name={amountField.name}
+                              value={amountField.state.value}
+                              onBlur={amountField.handleBlur}
+                              onChange={(event) => amountField.handleChange(event.target.value)}
+                              aria-invalid={isAmountInvalid}
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              autoComplete="off"
+                              maxLength={PRICE_AMOUNT_MAX_LENGTH}
+                              className="w-28 shrink-0"
+                            />
+                            <FieldLabel htmlFor={currencyField.name} className="sr-only">
+                              Currency
+                            </FieldLabel>
+                            <CurrencySelect
+                              id={currencyField.name}
+                              value={currencyField.state.value}
+                              aria-invalid={isCurrencyInvalid}
+                              onChange={(currency) => {
+                                currencyField.handleChange(currency);
+                                currencyField.handleBlur();
+                              }}
+                              className="flex-1"
+                            />
+                          </div>
+                          {isAmountInvalid ? (
+                            <FieldError errors={toFieldErrors(amountMeta.errors)} />
+                          ) : null}
+                          {isCurrencyInvalid ? (
+                            <FieldError errors={toFieldErrors(currencyMeta.errors)} />
+                          ) : null}
+                        </Field>
+                      );
+                    }}
+                  </form.Field>
+                )}
+              </form.Field>
+            </FieldGroup>
+          </FieldSet>
         ) : null}
 
         <form.Subscribe selector={(state) => state.isSubmitting}>

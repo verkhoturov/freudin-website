@@ -29,38 +29,100 @@ export type Database = {
         };
         Relationships: [];
       };
+      cities: {
+        Row: {
+          country_code: string;
+          id: number;
+          name: string;
+          population: number;
+          region: string;
+          search_name: string;
+        };
+        Insert: {
+          country_code: string;
+          id: number;
+          name: string;
+          population?: number;
+          region?: string;
+          search_name: string;
+        };
+        Update: {
+          country_code?: string;
+          id?: number;
+          name?: string;
+          population?: number;
+          region?: string;
+          search_name?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
+          approaches: string[];
           avatar_path: string | null;
           bio: string;
+          city_id: number | null;
+          client_types: string[];
+          country: string | null;
           created_at: string;
           display_name: string;
+          documents: Json;
           id: string;
+          languages: string[];
+          price_amount: number | null;
+          price_currency: string | null;
           social_links: Json;
           updated_at: string;
           username: string;
+          work_formats: string[];
         };
         Insert: {
+          approaches?: string[];
           avatar_path?: string | null;
           bio?: string;
+          city_id?: number | null;
+          client_types?: string[];
+          country?: string | null;
           created_at?: string;
           display_name: string;
+          documents?: Json;
           id: string;
+          languages?: string[];
+          price_amount?: number | null;
+          price_currency?: string | null;
           social_links?: Json;
           updated_at?: string;
           username: string;
+          work_formats?: string[];
         };
         Update: {
+          approaches?: string[];
           avatar_path?: string | null;
           bio?: string;
+          city_id?: number | null;
+          client_types?: string[];
+          country?: string | null;
           created_at?: string;
           display_name?: string;
+          documents?: Json;
           id?: string;
+          languages?: string[];
+          price_amount?: number | null;
+          price_currency?: string | null;
           social_links?: Json;
           updated_at?: string;
           username?: string;
+          work_formats?: string[];
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "profiles_city_fkey";
+            columns: ["city_id", "country"];
+            isOneToOne: false;
+            referencedRelation: "cities";
+            referencedColumns: ["id", "country_code"];
+          },
+        ];
       };
     };
     Views: {

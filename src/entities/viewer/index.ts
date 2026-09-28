@@ -3,10 +3,13 @@ export { useLinkIdentityMutation, useUnlinkIdentityMutation } from "./api/use-id
 export {
   type CreateProfileResult,
   type CreateProfileVariables,
+  type UploadDocumentVariables,
   useCreateProfileMutation,
   useDeleteAvatarMutation,
+  useDeleteDocumentMutation,
   useSetAvatarMutation,
   useUpdateProfileMutation,
+  useUploadDocumentMutation,
 } from "./api/use-profile-mutations";
 export { useSignOutMutation } from "./api/use-sign-out-mutation";
 export { useViewerQuery, viewerQueries } from "./api/viewer-queries";

@@ -16,9 +16,18 @@ import {
 
 const USERNAME_TAKEN_MESSAGE = "This username is already taken.";
 
+const CITY_INVALID_MESSAGE = "Choose a city from the list";
+
 function usernameTakenError(): HttpError {
   return new HttpError(409, "conflict", USERNAME_TAKEN_MESSAGE, {
     username: USERNAME_TAKEN_MESSAGE,
+  });
+}
+
+// Города нет в справочнике или он из другой страны
+function cityInvalidError(): HttpError {
+  return new HttpError(400, "validation_error", `${CITY_INVALID_MESSAGE}.`, {
+    cityId: CITY_INVALID_MESSAGE,
   });
 }
 
@@ -30,6 +39,7 @@ export const POST = withErrorHandling(async (request) => {
 
   if (!result.ok) {
     if (result.reason === "username_taken") throw usernameTakenError();
+    if (result.reason === "city_invalid") throw cityInvalidError();
     throw new HttpError(409, "conflict", "Your page has already been created.");
   }
   return jsonOk<PublicProfile>(result.profile, { status: 201, headers: NO_STORE_HEADERS });
@@ -43,6 +53,7 @@ export const PATCH = withErrorHandling(async (request) => {
 
   if (!result.ok) {
     if (result.reason === "username_taken") throw usernameTakenError();
+    if (result.reason === "city_invalid") throw cityInvalidError();
     throw new HttpError(404, "not_found", "Create your page first.");
   }
   return jsonOk<PublicProfile>(result.profile, { headers: NO_STORE_HEADERS });

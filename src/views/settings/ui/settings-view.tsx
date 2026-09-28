@@ -19,6 +19,7 @@ import {
 } from "@/entities/viewer";
 import { Container } from "@/shared/ui/container";
 import { AccountSettings } from "@/widgets/account-settings";
+import { ProfileDocuments } from "@/widgets/profile-documents";
 import { type AvatarValue, getAvatarSource, ProfileForm } from "@/widgets/profile-form";
 
 export function SettingsView() {
@@ -45,6 +46,7 @@ function SettingsContent() {
         </h2>
         <ProfileSettingsForm viewer={viewer.data} profile={viewer.data.profile} />
       </section>
+      <ProfileDocuments documents={viewer.data.profile.documents} />
       <AccountSettings viewer={viewer.data} profile={viewer.data.profile} />
     </>
   );
@@ -88,6 +90,8 @@ function ProfileSettingsForm({ viewer, profile }: ProfileSettingsFormProps) {
       accountPhotos={getAccountPhotos(viewer.user.signInMethods)}
       currentUsername={profile.username}
       showContactEmail={!email || contactEmail !== null}
+      showPractice
+      currentCity={profile.city}
       submitLabel="Save"
       onSubmit={submit}
     />

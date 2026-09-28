@@ -61,3 +61,16 @@ export function transliterate(value: string): string {
   ).join("");
   return mapped.normalize("NFKD").replace(/\p{M}/gu, "");
 }
+
+/**
+ * Ключ поиска по началу строки: `transliterate` без апострофов, прочие знаки — одиночный пробел.
+ * «Ts’khinvali» → «tskhinvali», «Тбилиси» → «tbilisi», «Winston-Salem» → «winston salem».
+ * Им же собран `cities.search_name` (scripts/generate-cities-migration.mjs): меняя функцию,
+ * пересобери справочник городов новой миграцией.
+ */
+export function toSearchKey(value: string): string {
+  return transliterate(value)
+    .replace(/['’ʼ‘`]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}

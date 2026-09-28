@@ -43,9 +43,14 @@
   владелец видит на своей странице кнопку Edit;
 - минимальная главная;
 - схема БД в Supabase: таблица `profiles` с RLS, `account_contacts` (контактная почта, видна
-  только владельцу) и bucket `avatars` для фото;
+  только владельцу), справочник городов `cities`, bucket `avatars` для фото и `documents` для
+  документов психолога;
 - необязательная контактная почта в онбординге и настройках для аккаунтов без email
-  у провайдера (Telegram, Facebook по номеру телефона).
+  у провайдера (Telegram, Facebook по номеру телефона);
+- данные психолога в настройках (шаг 20): страна и город из справочника GeoNames, формат работы,
+  с кем работает, подходы, языки, цена сессии и изображения документов. Документ уменьшается
+  в браузере до 2048 px и сохраняется вместе с превью 480 px, EXIF удаляются. На странице
+  пользователя эти данные появятся на шаге 21.
 
 Провайдер появляется на странице входа, когда его добавляют в `enabledAuthProviders`
 (`src/entities/viewer/config/auth-providers.ts`). Интерфейс сайта, ошибки API и юридические
@@ -58,7 +63,7 @@
 |--------|-------|--------|
 | Фреймворк | Next.js 16 (App Router, React Compiler), React 19, TypeScript 5 | ✅ |
 | Стили | Tailwind CSS 4, `tw-animate-css` | ✅ |
-| UI-компоненты | shadcn/ui на Radix (`radix-ui`, `class-variance-authority`, `cn`), lucide-react | ✅ |
+| UI-компоненты | shadcn/ui на Radix (`radix-ui`, `class-variance-authority`, `cn`), lucide-react; `cmdk` — список с поиском (`command`) | ✅ |
 | Темы и уведомления | next-themes, sonner | ✅ |
 | Запросы к API | TanStack Query (+ Devtools в dev) | ✅ |
 | Валидация | zod | ✅ |
@@ -136,18 +141,19 @@ src/
 │  ├─ robots.ts, sitemap.ts, opengraph-image.jpg   # SEO-файлы
 │  └─ api/             # API-роуты; _lib — общие хелперы (ошибки, ответы, zod, защита от CSRF)
 ├─ views/              # страницы: home, login, onboarding, settings, profile, privacy, terms, not-found
-├─ widgets/            # header, footer, sign-in-panel, profile-card, profile-form, account-settings, legal-document
-├─ entities/           # viewer (вход), profile (профиль и username), social-link (ссылки на соцсети)
+├─ widgets/            # header, footer, sign-in-panel, profile-card, profile-form, profile-documents, account-settings, legal-document
+├─ entities/           # viewer (вход), profile (профиль, username, данные психолога), location (страны и города), social-link (ссылки на соцсети)
 └─ shared/
-   ├─ ui/              # компоненты shadcn/ui, Container, Logo, ThemeToggle, NotFoundState, SupportEmailLink
-   ├─ lib/             # утилиты: cn, безопасный редирект по ?next=, кроп фото, буфер обмена
+   ├─ ui/              # компоненты shadcn/ui, Container, Logo, ThemeToggle, NotFoundState, SupportEmailLink, Combobox
+   ├─ lib/             # утилиты: cn, безопасный редирект по ?next=, кроп и сжатие картинок, буфер обмена, ошибки форм
    ├─ api/             # apiClient, ApiError, QueryClient; на сервере — клиенты Supabase и типы БД
    └─ config/          # routes, apiRoutes, site, зарезервированные адреса, серверный env
 supabase/
 ├─ config.toml         # настройки Supabase CLI
 └─ migrations/         # SQL-миграции схемы БД и Storage
 scripts/
-└─ db-dump.sh          # резервная копия базы (npm run db:dump)
+├─ db-dump.sh          # резервная копия базы (npm run db:dump)
+└─ generate-cities-migration.mjs   # миграция со справочником городов из выгрузки GeoNames
 backups/               # резервные копии; не в git: в них персональные данные
 components.json        # настройки shadcn/ui (алиасы под FSD)
 .env.example           # шаблон переменных окружения
@@ -189,6 +195,9 @@ API:
 | PATCH | `/api/profile` | обновление профиля и контактной почты (только переданные поля) | готово |
 | POST | `/api/profile/avatar` | новое фото: файл (JPEG, PNG, WebP до 2 МБ и 1024×1024) или копия фото из аккаунта привязанного провайдера (`provider` — чьё) | готово |
 | DELETE | `/api/profile/avatar` | удаление фото | готово |
+| POST | `/api/profile/documents` | документ психолога: изображение (JPEG, PNG, WebP до 2 МБ и 2048×2048), превью (до 480×480) и подпись, до 5 документов | готово |
+| DELETE | `/api/profile/documents/[id]` | удаление документа | готово |
+| GET | `/api/cities?country=&q=` | поиск города в стране по справочнику GeoNames | готово |
 | GET | `/api/profiles/[username]` | публичный профиль | готово |
 | GET | `/api/usernames/[username]` | свободен ли адрес страницы | готово |
 
@@ -249,6 +258,15 @@ API:
   пулер, а для `psql` используй `aws-0-eu-central-1.pooler.supabase.com:5432` с пользователем
   `postgres.<ref>`.
 - Гость (роль `anon`) читает из `profiles` только колонки публичной страницы, без `id` и дат.
+- Справочник городов `cities` для профиля психолога (шаг 20) — данные
+  [GeoNames](https://www.geonames.org) (лицензия CC BY 4.0): города от 5000 жителей
+  и административные центры, около 64 тыс. строк. Их загружает миграция `*_seed_cities.sql`,
+  собранная скриптом, руками её не правим. Обновить справочник:
+  `npx supabase migration new update_cities`, затем
+  `node scripts/generate-cities-migration.mjs supabase/migrations/<новый файл>.sql`
+  (нужны Node 23.6+ и `unzip`) и `npm run db:push`. Миграция добавляет и обновляет города,
+  но не удаляет: на них могут ссылаться профили.
+  Атрибуцию GeoNames, которую требует лицензия, публикует `/terms` (раздел Intellectual property).
 
 #### Резервные копии
 
@@ -264,8 +282,9 @@ API:
 В копию не входят:
 
 - сессии и токены входа: после восстановления пользователи войдут заново;
-- сами файлы фото (Storage хранит их отдельно от базы);
-- политики Storage: они есть в миграции `*_create_avatars_bucket.sql`.
+- сами файлы фото и документов (Storage хранит их отдельно от базы);
+- политики Storage: они есть в миграциях `*_create_avatars_bucket.sql`
+  и `*_create_documents_bucket.sql`.
 
 В копиях персональные данные. Папка `backups/` не попадает в git, файлы доступны только
 владельцу. Старые копии удаляй вручную.
@@ -281,7 +300,8 @@ psql --single-transaction --variable ON_ERROR_STOP=1 \
   --file data.sql --dbname "<строка подключения>"
 ```
 
-После этого выполни блоки `create policy` из миграции `*_create_avatars_bucket.sql`. В рабочую
+После этого выполни блоки `create policy` из миграций `*_create_avatars_bucket.sql`
+и `*_create_documents_bucket.sql`. В рабочую
 базу копию целиком не накатывают: отдельные строки восстанавливай вручную по `data.sql`.
 
 ### Вход через Google

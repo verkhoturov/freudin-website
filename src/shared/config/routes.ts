@@ -27,6 +27,11 @@ export const apiRoutes = {
   /** Профиль текущего пользователя: создание и обновление. */
   profile: "/api/profile",
   profileAvatar: "/api/profile/avatar",
+  /** Документы психолога: загрузка (POST) и удаление (DELETE с id документа). */
+  profileDocuments: "/api/profile/documents",
+  profileDocument: (id: string) => `/api/profile/documents/${encodeURIComponent(id)}`,
+  /** Поиск города в стране: query `country` и `q`. */
+  cities: "/api/cities",
   publicProfile: (username: string) => `/api/profiles/${encodeURIComponent(username)}`,
   usernameAvailability: (username: string) => `/api/usernames/${encodeURIComponent(username)}`,
 } as const;
