@@ -5,6 +5,8 @@ import { ProfileAvatar, type PublicProfile } from "@/entities/profile";
 import { SocialLinkButton } from "@/entities/social-link";
 import { routes } from "@/shared/config";
 import { Button } from "@/shared/ui/button";
+import { DocumentGallery } from "./document-gallery";
+import { PracticeDetails } from "./practice-details";
 import { ShareProfileButton } from "./share-profile-button";
 
 type ProfileCardProps = {
@@ -22,6 +24,7 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
         <p className="text-muted-foreground text-sm">@{profile.username}</p>
       </header>
       {profile.bio ? <p className="whitespace-pre-line">{profile.bio}</p> : null}
+      <PracticeDetails profile={profile} />
       {profile.socialLinks.length > 0 ? (
         <ul aria-label="Links" className="flex w-full flex-col gap-3">
           {profile.socialLinks.map((link) => (
@@ -31,6 +34,7 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
           ))}
         </ul>
       ) : null}
+      <DocumentGallery documents={profile.documents} />
       <div className="flex flex-wrap justify-center gap-2">
         <ShareProfileButton username={profile.username} displayName={profile.displayName} />
         {isOwner ? (

@@ -35,7 +35,7 @@ export {
   DOCUMENT_THUMBNAIL_MAX_BYTES,
   DOCUMENT_THUMBNAIL_SIZE,
 } from "./config/storage";
-export { getCurrencyName, getLanguageName } from "./lib/display-names";
+export { formatPrice, getCurrencyName, getLanguageName } from "./lib/display-names";
 export { getEmptyPracticeInput, getProfileChanges, toProfileInput } from "./lib/profile-changes";
 export {
   bioSchema,

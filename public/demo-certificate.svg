@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1000" viewBox="0 0 1400 1000">
+  <rect width="1400" height="1000" fill="#fafafa"/>
+  <rect x="40" y="40" width="1320" height="920" fill="none" stroke="#a3a3a3" stroke-width="6"/>
+  <rect x="64" y="64" width="1272" height="872" fill="none" stroke="#d4d4d4" stroke-width="2"/>
+  <text x="700" y="300" text-anchor="middle" font-family="Georgia, serif" font-size="96" fill="#262626">Certificate</text>
+  <text x="700" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="#525252">Sample document for the demo page</text>
+  <rect x="400" y="520" width="600" height="4" fill="#d4d4d4"/>
+  <rect x="450" y="580" width="500" height="4" fill="#d4d4d4"/>
+  <circle cx="300" cy="790" r="80" fill="none" stroke="#a3a3a3" stroke-width="6"/>
+  <rect x="900" y="780" width="300" height="3" fill="#a3a3a3"/>
+</svg>
