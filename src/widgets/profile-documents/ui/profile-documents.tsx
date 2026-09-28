@@ -8,20 +8,16 @@ type ProfileDocumentsProps = { documents: ProfileDocument[] };
 
 /**
  * Документы психолога в настройках: список с превью, загрузка и удаление. Изменения
- * сохраняются сразу, без кнопки Save формы профиля.
+ * сохраняются сразу, без кнопки Save формы профиля. Заголовок даёт блок формы, внутри
+ * которого стоит виджет.
  */
 export function ProfileDocuments({ documents }: ProfileDocumentsProps) {
   return (
-    <section aria-labelledby="documents-settings-title" className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h2 id="documents-settings-title" className="font-semibold text-lg tracking-tight">
-          Documents
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          Diplomas and certificates, up to {DOCUMENTS_MAX} images. Everyone who visits your page can
-          see them.
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <p className="text-muted-foreground text-sm">
+        Diplomas and certificates, up to {DOCUMENTS_MAX} images. Everyone who visits your page can
+        see them. Uploads and deletions are saved right away.
+      </p>
       {documents.length > 0 ? (
         <ul className="flex flex-col gap-3">
           {documents.map((profileDocument) => (
@@ -43,6 +39,6 @@ export function ProfileDocuments({ documents }: ProfileDocumentsProps) {
         </ul>
       ) : null}
       {documents.length < DOCUMENTS_MAX ? <AddDocumentDialog /> : null}
-    </section>
+    </div>
   );
 }

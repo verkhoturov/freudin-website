@@ -16,6 +16,8 @@ type CheckboxGroupProps<T extends string> = {
   /** Имя поля формы: из него собираются id галочек. */
   name: string;
   legend: string;
+  /** Например, `sr-only`, когда группу уже называет заголовок вокруг. */
+  legendClassName?: string;
   options: readonly { value: T; label: string }[];
   value: readonly T[];
   onChange: (value: T[]) => void;
@@ -32,6 +34,7 @@ type CheckboxGroupProps<T extends string> = {
 export function CheckboxGroup<T extends string>({
   name,
   legend,
+  legendClassName,
   options,
   value,
   onChange,
@@ -47,7 +50,9 @@ export function CheckboxGroup<T extends string>({
 
   return (
     <FieldSet data-invalid={isInvalid} aria-describedby={description ? descriptionId : undefined}>
-      <FieldLegend variant="label">{legend}</FieldLegend>
+      <FieldLegend variant="label" className={legendClassName}>
+        {legend}
+      </FieldLegend>
       {description ? <FieldDescription id={descriptionId}>{description}</FieldDescription> : null}
       <FieldGroup className={cn("gap-3", className)}>
         {options.map((option) => {

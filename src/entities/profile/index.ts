@@ -28,6 +28,11 @@ export {
   workFormatLabels,
 } from "./config/practice";
 export {
+  type ProfileSection,
+  profileSectionIds,
+  profileSectionLabels,
+} from "./config/sections";
+export {
   AVATAR_MAX_BYTES,
   AVATAR_SIZE,
   DOCUMENT_MAX_BYTES,
@@ -36,7 +41,8 @@ export {
   DOCUMENT_THUMBNAIL_SIZE,
 } from "./config/storage";
 export { formatPrice, getCurrencyName, getLanguageName } from "./lib/display-names";
-export { getEmptyPracticeInput, getProfileChanges, toProfileInput } from "./lib/profile-changes";
+export { getEmptySettingsInput, getProfileChanges, toProfileInput } from "./lib/profile-changes";
+export { normalizeSectionOrder } from "./lib/section-order";
 export {
   bioSchema,
   contactEmailSchema,

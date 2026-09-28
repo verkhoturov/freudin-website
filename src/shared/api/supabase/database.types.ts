@@ -71,6 +71,7 @@ export type Database = {
           languages: string[];
           price_amount: number | null;
           price_currency: string | null;
+          section_order: string[];
           social_links: Json;
           updated_at: string;
           username: string;
@@ -90,6 +91,7 @@ export type Database = {
           languages?: string[];
           price_amount?: number | null;
           price_currency?: string | null;
+          section_order?: string[];
           social_links?: Json;
           updated_at?: string;
           username: string;
@@ -109,6 +111,7 @@ export type Database = {
           languages?: string[];
           price_amount?: number | null;
           price_currency?: string | null;
+          section_order?: string[];
           social_links?: Json;
           updated_at?: string;
           username?: string;

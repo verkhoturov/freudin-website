@@ -46,7 +46,6 @@ function SettingsContent() {
         </h2>
         <ProfileSettingsForm viewer={viewer.data} profile={viewer.data.profile} />
       </section>
-      <ProfileDocuments documents={viewer.data.profile.documents} />
       <AccountSettings viewer={viewer.data} profile={viewer.data.profile} />
     </>
   );
@@ -92,6 +91,8 @@ function ProfileSettingsForm({ viewer, profile }: ProfileSettingsFormProps) {
       showContactEmail={!email || contactEmail !== null}
       showPractice
       currentCity={profile.city}
+      showSectionOrder
+      documentsBlock={<ProfileDocuments documents={profile.documents} />}
       submitLabel="Save"
       onSubmit={submit}
     />

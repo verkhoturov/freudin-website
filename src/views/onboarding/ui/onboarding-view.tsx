@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { getEmptyPracticeInput, type ProfileInput } from "@/entities/profile";
+import { getEmptySettingsInput, type ProfileInput } from "@/entities/profile";
 import {
   getAccountPhotos,
   useCreateProfileMutation,
@@ -69,7 +69,7 @@ function OnboardingProfileForm({ viewer }: { viewer: Viewer }) {
       socialLinks: [],
       contactEmail: "",
       // Данные психолога заполняются в настройках (решение 20.2)
-      ...getEmptyPracticeInput(),
+      ...getEmptySettingsInput(),
     };
     const { draft } = useOnboardingDraftStore.getState();
     return draft?.userId === user.id ? { ...suggested, ...draft.values } : suggested;

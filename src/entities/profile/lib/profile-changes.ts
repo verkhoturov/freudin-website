@@ -1,7 +1,7 @@
 import { type ProfileInput, type ProfileUpdateInput, profileInputSchema } from "../model/schemas";
 import type { PublicProfile } from "../model/types";
 
-type PracticeInput = Pick<
+type SettingsInput = Pick<
   ProfileInput,
   | "country"
   | "cityId"
@@ -11,10 +11,14 @@ type PracticeInput = Pick<
   | "languages"
   | "priceAmount"
   | "priceCurrency"
+  | "sectionOrder"
 >;
 
-/** Незаполненные данные психолога в виде значений формы: для онбординга. */
-export function getEmptyPracticeInput(): PracticeInput {
+/**
+ * Поля, которые заполняются только в настройках (данные психолога, порядок блоков),
+ * незаполненными в виде значений формы: для онбординга.
+ */
+export function getEmptySettingsInput(): SettingsInput {
   return {
     country: "",
     cityId: null,
@@ -24,6 +28,7 @@ export function getEmptyPracticeInput(): PracticeInput {
     languages: [],
     priceAmount: "",
     priceCurrency: "",
+    sectionOrder: [],
   };
 }
 
@@ -43,6 +48,7 @@ export function toProfileInput(profile: PublicProfile, contactEmail: string | nu
     languages: profile.languages,
     priceAmount: profile.price ? String(profile.price.amount) : "",
     priceCurrency: profile.price?.currency ?? "",
+    sectionOrder: profile.sectionOrder,
   };
 }
 

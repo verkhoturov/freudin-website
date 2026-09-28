@@ -3,7 +3,7 @@
 import { type DeepKeys, useForm, useStore } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon, XIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { City } from "@/entities/location";
 import {
@@ -16,8 +16,10 @@ import {
   clientTypeLabels,
   DISPLAY_NAME_MAX_LENGTH,
   LANGUAGES_MAX,
+  normalizeSectionOrder,
   PRICE_AMOUNT_MAX,
   type ProfileInput,
+  type ProfileSection,
   profileInputSchema,
   SOCIAL_LINKS_MAX,
   USERNAME_MAX_LENGTH,
@@ -40,7 +42,6 @@ import {
   FieldGroup,
   FieldLabel,
   FieldLegend,
-  FieldSeparator,
   FieldSet,
 } from "@/shared/ui/field";
 import { Input } from "@/shared/ui/input";
@@ -50,6 +51,7 @@ import type { AvatarValue } from "../model/avatar-value";
 import { AvatarField } from "./avatar-field";
 import { CheckboxGroup } from "./checkbox-group";
 import { CitySelect, CountrySelect, CurrencySelect, LanguagesSelect } from "./practice-selects";
+import { SortableBlocks } from "./sortable-blocks";
 
 const USERNAME_CHECK_DEBOUNCE_MS = 400;
 const VALUES_CHANGE_DEBOUNCE_MS = 300;
@@ -59,6 +61,16 @@ const PRICE_AMOUNT_MAX_LENGTH = String(PRICE_AMOUNT_MAX).length;
 const workFormatOptions = workFormatIds.map((id) => ({ value: id, label: workFormatLabels[id] }));
 const clientTypeOptions = clientTypeIds.map((id) => ({ value: id, label: clientTypeLabels[id] }));
 const approachOptions = approachIds.map((id) => ({ value: id, label: approachLabels[id] }));
+
+// Блоки с данными психолога: в онбординге их нет
+const practiceSections = new Set<ProfileSection>([
+  "approaches",
+  "client-types",
+  "work-formats",
+  "location",
+  "languages",
+  "price",
+]);
 
 type ProfileFormProps = {
   /**
@@ -79,10 +91,20 @@ type ProfileFormProps = {
    * или контакт уже сохранён.
    */
   showContactEmail?: boolean;
-  /** Раздел с данными психолога: страна и город, формат работы, подходы, языки, цена. */
+  /** Блоки с данными психолога: подходы, с кем работает, формат, место, языки, цена. */
   showPractice?: boolean;
   /** Город из профиля: подпись для `cityId` из значений формы. */
   currentCity?: City | null;
+  /**
+   * Конструктор страницы: блоки в рамках, их порядок (как на личной странице) меняют
+   * перетаскиванием и стрелками. Без него блоки идут в порядке по умолчанию: онбординг.
+   */
+  showSectionOrder?: boolean;
+  /**
+   * Блок документов (`profile-documents`): сохраняется сам, без кнопки формы, а в форме
+   * занимает своё место в порядке блоков.
+   */
+  documentsBlock?: ReactNode;
   submitLabel: string;
   /** Сохранение. `ApiError` с `fields` показывается у полей формы, остальные ошибки — тостом. */
   onSubmit: (values: ProfileInput, avatar: AvatarValue) => Promise<void>;
@@ -126,6 +148,8 @@ export function ProfileForm({
   showContactEmail = false,
   showPractice = false,
   currentCity = null,
+  showSectionOrder = false,
+  documentsBlock,
   submitLabel,
   onSubmit,
   onValuesChange,
@@ -188,6 +212,349 @@ export function ProfileForm({
   const hasChanges = !isFormDefault || avatar !== initialAvatar;
   const isEditMode = mode === "edit";
   useUnsavedChangesWarning(isEditMode && hasChanges);
+
+  // Шапка блока в конструкторе уже называет его: совпадающую подпись поля оставляем только
+  // для скринридера
+  const titleClassName = showSectionOrder ? "sr-only" : undefined;
+
+  const isBlockShown = (section: ProfileSection) => {
+    if (practiceSections.has(section)) return showPractice;
+    return section === "documents" ? Boolean(documentsBlock) : true;
+  };
+
+  const renderBlock = (section: ProfileSection): ReactNode => {
+    switch (section) {
+      case "bio":
+        return (
+          <form.Field name="bio">
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name} className={titleClassName}>
+                    Bio
+                  </FieldLabel>
+                  <Textarea
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    aria-invalid={isInvalid}
+                    aria-describedby={`${field.name}-counter`}
+                    maxLength={BIO_MAX_LENGTH}
+                    rows={4}
+                  />
+                  <FieldDescription id={`${field.name}-counter`}>
+                    {field.state.value.length} / {BIO_MAX_LENGTH}
+                  </FieldDescription>
+                  {isInvalid ? (
+                    <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                  ) : null}
+                </Field>
+              );
+            }}
+          </form.Field>
+        );
+      case "links":
+        return (
+          <form.Field name="socialLinks" mode="array">
+            {(linksField) => (
+              <FieldSet>
+                <FieldLegend variant="label" className={titleClassName}>
+                  Social links
+                </FieldLegend>
+                {linksField.state.value.length > 0 ? (
+                  <ul className="flex flex-col gap-3">
+                    {linksField.state.value.map((link, index) => (
+                      // Поля массива в TanStack Form привязаны к индексу
+                      // biome-ignore lint/suspicious/noArrayIndexKey: ключ совпадает с именем поля
+                      <li key={index} className="flex items-start gap-2">
+                        <form.Field name={`socialLinks[${index}].platform`}>
+                          {(field) => (
+                            <Select
+                              value={field.state.value}
+                              onValueChange={(value) =>
+                                field.handleChange(value as SocialPlatform)
+                              }>
+                              <SelectTrigger
+                                aria-label={`Platform for link ${index + 1}`}
+                                className="w-32 shrink-0">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {socialPlatformIds.map((platform) => (
+                                  <SelectItem key={platform} value={platform}>
+                                    {socialPlatforms[platform].label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </form.Field>
+                        <form.Field name={`socialLinks[${index}].url`}>
+                          {(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched && !field.state.meta.isValid;
+                            return (
+                              <Field data-invalid={isInvalid} className="min-w-0 flex-1">
+                                <Input
+                                  name={field.name}
+                                  value={field.state.value}
+                                  onBlur={field.handleBlur}
+                                  onChange={(event) => field.handleChange(event.target.value)}
+                                  aria-invalid={isInvalid}
+                                  aria-label={`Link ${index + 1}`}
+                                  placeholder={socialPlatforms[link.platform].placeholder}
+                                  autoCapitalize="none"
+                                  autoCorrect="off"
+                                  spellCheck={false}
+                                />
+                                {isInvalid ? (
+                                  <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                                ) : null}
+                              </Field>
+                            );
+                          }}
+                        </form.Field>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Remove link ${index + 1}`}
+                          onClick={() => linksField.removeValue(index)}>
+                          <XIcon aria-hidden="true" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {linksField.state.meta.isTouched && !linksField.state.meta.isValid ? (
+                  <FieldError errors={toFieldErrors(linksField.state.meta.errors)} />
+                ) : null}
+                {linksField.state.value.length < SOCIAL_LINKS_MAX ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="self-start"
+                    onClick={() =>
+                      linksField.pushValue({
+                        platform: getNextPlatform(linksField.state.value),
+                        url: "",
+                      })
+                    }>
+                    <PlusIcon aria-hidden="true" />
+                    Add link
+                  </Button>
+                ) : null}
+              </FieldSet>
+            )}
+          </form.Field>
+        );
+      case "approaches":
+        return (
+          <form.Field name="approaches">
+            {(field) => (
+              <CheckboxGroup
+                name={field.name}
+                legend="Approaches"
+                description={`Up to ${APPROACHES_MAX}.`}
+                legendClassName={titleClassName}
+                options={approachOptions}
+                value={field.state.value}
+                onChange={field.handleChange}
+                onBlur={field.handleBlur}
+                max={APPROACHES_MAX}
+                className="sm:grid sm:grid-cols-2"
+                errors={field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []}
+              />
+            )}
+          </form.Field>
+        );
+      case "client-types":
+        return (
+          <form.Field name="clientTypes">
+            {(field) => (
+              <CheckboxGroup
+                name={field.name}
+                legend="Works with"
+                legendClassName={titleClassName}
+                options={clientTypeOptions}
+                value={field.state.value}
+                onChange={field.handleChange}
+                onBlur={field.handleBlur}
+                errors={field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []}
+              />
+            )}
+          </form.Field>
+        );
+      case "work-formats":
+        return (
+          <form.Field name="workFormats">
+            {(field) => (
+              <CheckboxGroup
+                name={field.name}
+                legend="Work format"
+                legendClassName={titleClassName}
+                options={workFormatOptions}
+                value={field.state.value}
+                onChange={field.handleChange}
+                onBlur={field.handleBlur}
+                errors={field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []}
+              />
+            )}
+          </form.Field>
+        );
+      case "location":
+        return (
+          <FieldGroup>
+            <form.Field name="country">
+              {(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Country</FieldLabel>
+                    <CountrySelect
+                      id={field.name}
+                      value={field.state.value}
+                      aria-invalid={isInvalid}
+                      onChange={(country) => {
+                        // Город выбирается внутри страны: при смене страны он сбрасывается
+                        if (country !== field.state.value) form.setFieldValue("cityId", null);
+                        field.handleChange(country);
+                        field.handleBlur();
+                      }}
+                    />
+                    {isInvalid ? (
+                      <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                    ) : null}
+                  </Field>
+                );
+              }}
+            </form.Field>
+            <form.Field name="cityId">
+              {(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>City</FieldLabel>
+                    <form.Subscribe selector={(state) => state.values.country}>
+                      {(country) => (
+                        <CitySelect
+                          id={field.name}
+                          country={country}
+                          value={findCity(field.state.value)}
+                          aria-invalid={isInvalid}
+                          aria-describedby={`${field.name}-description`}
+                          onChange={(next) => {
+                            if (next) setPickedCity(next);
+                            field.handleChange(next?.id ?? null);
+                            field.handleBlur();
+                          }}
+                        />
+                      )}
+                    </form.Subscribe>
+                    <FieldDescription id={`${field.name}-description`}>
+                      Required for in-person sessions.
+                    </FieldDescription>
+                    {isInvalid ? (
+                      <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                    ) : null}
+                  </Field>
+                );
+              }}
+            </form.Field>
+          </FieldGroup>
+        );
+      case "languages":
+        return (
+          <form.Field name="languages">
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name} className={titleClassName}>
+                    Languages
+                  </FieldLabel>
+                  <LanguagesSelect
+                    id={field.name}
+                    value={field.state.value}
+                    aria-invalid={isInvalid}
+                    aria-describedby={`${field.name}-description`}
+                    onChange={(languages) => {
+                      field.handleChange(languages);
+                      field.handleBlur();
+                    }}
+                  />
+                  <FieldDescription id={`${field.name}-description`}>
+                    Up to {LANGUAGES_MAX}.
+                  </FieldDescription>
+                  {isInvalid ? (
+                    <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                  ) : null}
+                </Field>
+              );
+            }}
+          </form.Field>
+        );
+      case "price":
+        return (
+          <form.Field name="priceAmount">
+            {(amountField) => (
+              <form.Field name="priceCurrency">
+                {(currencyField) => {
+                  const amountMeta = amountField.state.meta;
+                  const currencyMeta = currencyField.state.meta;
+                  const isAmountInvalid = amountMeta.isTouched && !amountMeta.isValid;
+                  const isCurrencyInvalid = currencyMeta.isTouched && !currencyMeta.isValid;
+                  return (
+                    <Field data-invalid={isAmountInvalid || isCurrencyInvalid}>
+                      <FieldLabel htmlFor={amountField.name}>Starting price per session</FieldLabel>
+                      <div className="flex gap-2">
+                        <Input
+                          id={amountField.name}
+                          name={amountField.name}
+                          value={amountField.state.value}
+                          onBlur={amountField.handleBlur}
+                          onChange={(event) => amountField.handleChange(event.target.value)}
+                          aria-invalid={isAmountInvalid}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          autoComplete="off"
+                          maxLength={PRICE_AMOUNT_MAX_LENGTH}
+                          className="w-28 shrink-0"
+                        />
+                        <FieldLabel htmlFor={currencyField.name} className="sr-only">
+                          Currency
+                        </FieldLabel>
+                        <CurrencySelect
+                          id={currencyField.name}
+                          value={currencyField.state.value}
+                          aria-invalid={isCurrencyInvalid}
+                          onChange={(currency) => {
+                            currencyField.handleChange(currency);
+                            currencyField.handleBlur();
+                          }}
+                          className="flex-1"
+                        />
+                      </div>
+                      {isAmountInvalid ? (
+                        <FieldError errors={toFieldErrors(amountMeta.errors)} />
+                      ) : null}
+                      {isCurrencyInvalid ? (
+                        <FieldError errors={toFieldErrors(currencyMeta.errors)} />
+                      ) : null}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+            )}
+          </form.Field>
+        );
+      case "documents":
+        return documentsBlock;
+    }
+  };
 
   return (
     <form
@@ -299,117 +666,13 @@ export function ProfileForm({
           }}
         </form.Field>
 
-        <form.Field name="bio">
-          {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-            return (
-              <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Bio</FieldLabel>
-                <Textarea
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  aria-invalid={isInvalid}
-                  aria-describedby={`${field.name}-counter`}
-                  maxLength={BIO_MAX_LENGTH}
-                  rows={4}
-                />
-                <FieldDescription id={`${field.name}-counter`}>
-                  {field.state.value.length} / {BIO_MAX_LENGTH}
-                </FieldDescription>
-                {isInvalid ? <FieldError errors={toFieldErrors(field.state.meta.errors)} /> : null}
-              </Field>
-            );
-          }}
-        </form.Field>
-
-        <form.Field name="socialLinks" mode="array">
-          {(linksField) => (
-            <FieldSet>
-              <FieldLegend variant="label">Social links</FieldLegend>
-              {linksField.state.value.length > 0 ? (
-                <ul className="flex flex-col gap-3">
-                  {linksField.state.value.map((link, index) => (
-                    // Поля массива в TanStack Form привязаны к индексу
-                    // biome-ignore lint/suspicious/noArrayIndexKey: ключ совпадает с именем поля
-                    <li key={index} className="flex items-start gap-2">
-                      <form.Field name={`socialLinks[${index}].platform`}>
-                        {(field) => (
-                          <Select
-                            value={field.state.value}
-                            onValueChange={(value) => field.handleChange(value as SocialPlatform)}>
-                            <SelectTrigger
-                              aria-label={`Platform for link ${index + 1}`}
-                              className="w-32 shrink-0">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {socialPlatformIds.map((platform) => (
-                                <SelectItem key={platform} value={platform}>
-                                  {socialPlatforms[platform].label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </form.Field>
-                      <form.Field name={`socialLinks[${index}].url`}>
-                        {(field) => {
-                          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                          return (
-                            <Field data-invalid={isInvalid} className="min-w-0 flex-1">
-                              <Input
-                                name={field.name}
-                                value={field.state.value}
-                                onBlur={field.handleBlur}
-                                onChange={(event) => field.handleChange(event.target.value)}
-                                aria-invalid={isInvalid}
-                                aria-label={`Link ${index + 1}`}
-                                placeholder={socialPlatforms[link.platform].placeholder}
-                                autoCapitalize="none"
-                                autoCorrect="off"
-                                spellCheck={false}
-                              />
-                              {isInvalid ? (
-                                <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                              ) : null}
-                            </Field>
-                          );
-                        }}
-                      </form.Field>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Remove link ${index + 1}`}
-                        onClick={() => linksField.removeValue(index)}>
-                        <XIcon aria-hidden="true" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              {linksField.state.meta.isTouched && !linksField.state.meta.isValid ? (
-                <FieldError errors={toFieldErrors(linksField.state.meta.errors)} />
-              ) : null}
-              {linksField.state.value.length < SOCIAL_LINKS_MAX ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="self-start"
-                  onClick={() =>
-                    linksField.pushValue({
-                      platform: getNextPlatform(linksField.state.value),
-                      url: "",
-                    })
-                  }>
-                  <PlusIcon aria-hidden="true" />
-                  Add link
-                </Button>
-              ) : null}
-            </FieldSet>
+        <form.Field name="sectionOrder">
+          {(field) => (
+            <SortableBlocks
+              order={normalizeSectionOrder(field.state.value).filter(isBlockShown)}
+              onChange={showSectionOrder ? field.handleChange : undefined}
+              renderBlock={renderBlock}
+            />
           )}
         </form.Field>
 
@@ -447,204 +710,6 @@ export function ProfileForm({
               );
             }}
           </form.Field>
-        ) : null}
-
-        {showPractice ? <FieldSeparator /> : null}
-        {showPractice ? (
-          <FieldSet>
-            <FieldLegend>Practice</FieldLegend>
-            <FieldGroup>
-              <form.Field name="country">
-                {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Country</FieldLabel>
-                      <CountrySelect
-                        id={field.name}
-                        value={field.state.value}
-                        aria-invalid={isInvalid}
-                        onChange={(country) => {
-                          // Город выбирается внутри страны: при смене страны он сбрасывается
-                          if (country !== field.state.value) form.setFieldValue("cityId", null);
-                          field.handleChange(country);
-                          field.handleBlur();
-                        }}
-                      />
-                      {isInvalid ? (
-                        <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                      ) : null}
-                    </Field>
-                  );
-                }}
-              </form.Field>
-
-              <form.Field name="workFormats">
-                {(field) => (
-                  <CheckboxGroup
-                    name={field.name}
-                    legend="Work format"
-                    options={workFormatOptions}
-                    value={field.state.value}
-                    onChange={field.handleChange}
-                    onBlur={field.handleBlur}
-                    errors={
-                      field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []
-                    }
-                  />
-                )}
-              </form.Field>
-
-              <form.Field name="cityId">
-                {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>City</FieldLabel>
-                      <form.Subscribe selector={(state) => state.values.country}>
-                        {(country) => (
-                          <CitySelect
-                            id={field.name}
-                            country={country}
-                            value={findCity(field.state.value)}
-                            aria-invalid={isInvalid}
-                            aria-describedby={`${field.name}-description`}
-                            onChange={(next) => {
-                              if (next) setPickedCity(next);
-                              field.handleChange(next?.id ?? null);
-                              field.handleBlur();
-                            }}
-                          />
-                        )}
-                      </form.Subscribe>
-                      <FieldDescription id={`${field.name}-description`}>
-                        Required for in-person sessions.
-                      </FieldDescription>
-                      {isInvalid ? (
-                        <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                      ) : null}
-                    </Field>
-                  );
-                }}
-              </form.Field>
-
-              <form.Field name="clientTypes">
-                {(field) => (
-                  <CheckboxGroup
-                    name={field.name}
-                    legend="Works with"
-                    options={clientTypeOptions}
-                    value={field.state.value}
-                    onChange={field.handleChange}
-                    onBlur={field.handleBlur}
-                    errors={
-                      field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []
-                    }
-                  />
-                )}
-              </form.Field>
-
-              <form.Field name="approaches">
-                {(field) => (
-                  <CheckboxGroup
-                    name={field.name}
-                    legend="Approaches"
-                    description={`Up to ${APPROACHES_MAX}.`}
-                    options={approachOptions}
-                    value={field.state.value}
-                    onChange={field.handleChange}
-                    onBlur={field.handleBlur}
-                    max={APPROACHES_MAX}
-                    className="sm:grid sm:grid-cols-2"
-                    errors={
-                      field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []
-                    }
-                  />
-                )}
-              </form.Field>
-
-              <form.Field name="languages">
-                {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Languages</FieldLabel>
-                      <LanguagesSelect
-                        id={field.name}
-                        value={field.state.value}
-                        aria-invalid={isInvalid}
-                        aria-describedby={`${field.name}-description`}
-                        onChange={(languages) => {
-                          field.handleChange(languages);
-                          field.handleBlur();
-                        }}
-                      />
-                      <FieldDescription id={`${field.name}-description`}>
-                        Up to {LANGUAGES_MAX}.
-                      </FieldDescription>
-                      {isInvalid ? (
-                        <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                      ) : null}
-                    </Field>
-                  );
-                }}
-              </form.Field>
-
-              <form.Field name="priceAmount">
-                {(amountField) => (
-                  <form.Field name="priceCurrency">
-                    {(currencyField) => {
-                      const amountMeta = amountField.state.meta;
-                      const currencyMeta = currencyField.state.meta;
-                      const isAmountInvalid = amountMeta.isTouched && !amountMeta.isValid;
-                      const isCurrencyInvalid = currencyMeta.isTouched && !currencyMeta.isValid;
-                      return (
-                        <Field data-invalid={isAmountInvalid || isCurrencyInvalid}>
-                          <FieldLabel htmlFor={amountField.name}>
-                            Starting price per session
-                          </FieldLabel>
-                          <div className="flex gap-2">
-                            <Input
-                              id={amountField.name}
-                              name={amountField.name}
-                              value={amountField.state.value}
-                              onBlur={amountField.handleBlur}
-                              onChange={(event) => amountField.handleChange(event.target.value)}
-                              aria-invalid={isAmountInvalid}
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              autoComplete="off"
-                              maxLength={PRICE_AMOUNT_MAX_LENGTH}
-                              className="w-28 shrink-0"
-                            />
-                            <FieldLabel htmlFor={currencyField.name} className="sr-only">
-                              Currency
-                            </FieldLabel>
-                            <CurrencySelect
-                              id={currencyField.name}
-                              value={currencyField.state.value}
-                              aria-invalid={isCurrencyInvalid}
-                              onChange={(currency) => {
-                                currencyField.handleChange(currency);
-                                currencyField.handleBlur();
-                              }}
-                              className="flex-1"
-                            />
-                          </div>
-                          {isAmountInvalid ? (
-                            <FieldError errors={toFieldErrors(amountMeta.errors)} />
-                          ) : null}
-                          {isCurrencyInvalid ? (
-                            <FieldError errors={toFieldErrors(currencyMeta.errors)} />
-                          ) : null}
-                        </Field>
-                      );
-                    }}
-                  </form.Field>
-                )}
-              </form.Field>
-            </FieldGroup>
-          </FieldSet>
         ) : null}
 
         <form.Subscribe selector={(state) => state.isSubmitting}>

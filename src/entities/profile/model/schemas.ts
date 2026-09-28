@@ -14,6 +14,7 @@ import {
   SOCIAL_LINKS_MAX,
 } from "../config/limits";
 import { approachIds, clientTypeIds, workFormatIds } from "../config/practice";
+import { profileSectionIds } from "../config/sections";
 import { usernameSchema } from "./username";
 
 export const displayNameSchema = z
@@ -113,6 +114,15 @@ export const priceCurrencySchema = z
   .string()
   .refine((value) => value === "" || currencyCodeSet.has(value), "Choose a currency from the list");
 
+/**
+ * Порядок блоков страницы после фото и имени; пустой массив — порядок по умолчанию. Форма
+ * настроек отправляет полный список.
+ */
+export const sectionOrderSchema = z
+  .array(z.enum(profileSectionIds, "Choose a block from the list"))
+  .max(profileSectionIds.length)
+  .refine(hasNoRepeats, "Blocks must not repeat");
+
 const profileFieldsSchema = z.object({
   username: usernameSchema,
   displayName: displayNameSchema,
@@ -127,6 +137,7 @@ const profileFieldsSchema = z.object({
   languages: languagesSchema,
   priceAmount: priceAmountSchema,
   priceCurrency: priceCurrencySchema,
+  sectionOrder: sectionOrderSchema,
 });
 
 type ProfileFields = z.output<typeof profileFieldsSchema>;

@@ -1,6 +1,7 @@
 import { siteConfig } from "@/shared/config";
 import type { PublicProfile } from "../model/types";
 import { DEMO_USERNAME } from "./limits";
+import { profileSectionIds } from "./sections";
 
 /** Демо-профиль для ссылки «Пример страницы»: отдаётся без базы данных. */
 export const demoProfile: PublicProfile = {
@@ -31,4 +32,5 @@ export const demoProfile: PublicProfile = {
       height: 1000,
     },
   ],
+  sectionOrder: [...profileSectionIds],
 };

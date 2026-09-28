@@ -127,6 +127,8 @@ export function AddDocumentDialog() {
           className="grid gap-4"
           onSubmit={(event) => {
             event.preventDefault();
+            // Диалог стоит внутри формы профиля: в React submit всплывает через портал до неё
+            event.stopPropagation();
             void form.handleSubmit();
           }}>
           <DialogHeader>

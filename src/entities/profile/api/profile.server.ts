@@ -7,6 +7,7 @@ import { languageCodes } from "../config/languages";
 import { DEMO_USERNAME, USERNAME_MAX_LENGTH } from "../config/limits";
 import { approachIds, clientTypeIds, workFormatIds } from "../config/practice";
 import { AVATARS_BUCKET, DOCUMENTS_BUCKET } from "../config/storage";
+import { normalizeSectionOrder } from "../lib/section-order";
 import {
   type ProfileData,
   type ProfileUpdateData,
@@ -18,7 +19,7 @@ import { setContactEmail } from "./contact-email.server";
 
 /** Колонки публичной страницы. Гостю (`anon`) миграциями открыты только они. */
 export const PUBLIC_PROFILE_COLUMNS =
-  `username, display_name, bio, avatar_path, social_links, country, work_formats, client_types, approaches, languages, price_amount, price_currency, documents, city:cities(${CITY_COLUMNS})` as const;
+  `username, display_name, bio, avatar_path, social_links, country, work_formats, client_types, approaches, languages, price_amount, price_currency, documents, section_order, city:cities(${CITY_COLUMNS})` as const;
 
 // Коды Postgres для нарушения уникальности и внешнего ключа и имена ограничений из миграций
 const UNIQUE_VIOLATION = "23505";
@@ -41,6 +42,7 @@ type PublicProfileRow = Pick<
   | "price_amount"
   | "price_currency"
   | "documents"
+  | "section_order"
 > & { city: CityRow | null };
 
 type PostgrestErrorLike = { code: string; message: string };
@@ -98,6 +100,7 @@ export function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow)
       width: document.width,
       height: document.height,
     })),
+    sectionOrder: normalizeSectionOrder(row.section_order),
   };
 }
 
@@ -121,6 +124,7 @@ function toProfileRow(data: ProfileUpdateData): TablesUpdate<"profiles"> {
           ? Number(data.priceAmount)
           : null,
     price_currency: data.priceCurrency === undefined ? undefined : data.priceCurrency || null,
+    section_order: data.sectionOrder,
   };
 }
 

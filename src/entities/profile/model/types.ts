@@ -1,6 +1,7 @@
 import type { City } from "@/entities/location/@x/profile";
 import type { SocialLink } from "@/entities/social-link/@x/profile";
 import type { Approach, ClientType, WorkFormat } from "../config/practice";
+import type { ProfileSection } from "../config/sections";
 
 /** Цена сессии «от»: целая сумма и код валюты ISO 4217. */
 export type ProfilePrice = { amount: number; currency: string };
@@ -35,6 +36,8 @@ export type PublicProfile = {
   languages: string[];
   price: ProfilePrice | null;
   documents: ProfileDocument[];
+  /** Порядок блоков после фото и имени: полный список, без повторов. */
+  sectionOrder: ProfileSection[];
 };
 
 /** Ответ `GET /api/usernames/[username]`: `username` приведён к нижнему регистру. */

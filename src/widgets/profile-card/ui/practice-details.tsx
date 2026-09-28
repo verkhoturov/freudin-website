@@ -5,9 +5,16 @@ import {
   clientTypeLabels,
   formatPrice,
   getLanguageName,
+  type ProfileSection,
   type PublicProfile,
+  profileSectionLabels,
   workFormatLabels,
 } from "@/entities/profile";
+
+/** Блоки с данными практики: на странице это пункты списка `dl`. */
+export type PracticeSection = Exclude<ProfileSection, "bio" | "links" | "documents">;
+
+export type PracticeItem = { section: PracticeSection; details: ReactNode };
 
 const listFormat = new Intl.ListFormat("en", { type: "conjunction" });
 
@@ -18,52 +25,43 @@ function toSentenceList(labels: string[]): string {
   );
 }
 
-function getLocation({ city, country }: PublicProfile): string | null {
-  if (city) return `${getCityLabel(city)}, ${getCountryName(city.countryCode)}`;
-  return country ? getCountryName(country) : null;
-}
-
-type PracticeDetailsProps = { profile: PublicProfile };
-
-/** Данные практики психолога. Незаполненные пункты не показываем, пустой профиль — без блока. */
-export function PracticeDetails({ profile }: PracticeDetailsProps) {
-  const { approaches, clientTypes, workFormats, languages, price } = profile;
-  const location = getLocation(profile);
-  const items: { term: string; details: ReactNode }[] = [];
-
-  if (approaches.length > 0) {
-    items.push({
-      term: "Approaches",
-      details: (
+/** Значение пункта практики или `null`, если он не заполнен. */
+export function getPracticeDetails(profile: PublicProfile, section: PracticeSection): ReactNode {
+  const { approaches, clientTypes, workFormats, city, country, languages, price } = profile;
+  switch (section) {
+    case "approaches":
+      return approaches.length > 0 ? (
         <ul>
           {approaches.map((approach) => (
             <li key={approach}>{approachLabels[approach]}</li>
           ))}
         </ul>
-      ),
-    });
+      ) : null;
+    case "client-types":
+      return clientTypes.length > 0
+        ? toSentenceList(clientTypes.map((type) => clientTypeLabels[type]))
+        : null;
+    case "work-formats":
+      return workFormats.length > 0
+        ? toSentenceList(workFormats.map((format) => workFormatLabels[format]))
+        : null;
+    case "location":
+      if (city) return `${getCityLabel(city)}, ${getCountryName(city.countryCode)}`;
+      return country ? getCountryName(country) : null;
+    case "languages":
+      return languages.length > 0 ? listFormat.format(languages.map(getLanguageName)) : null;
+    case "price":
+      return price ? `From ${formatPrice(price)} per session` : null;
   }
-  if (clientTypes.length > 0) {
-    const labels = clientTypes.map((type) => clientTypeLabels[type]);
-    items.push({ term: "Works with", details: toSentenceList(labels) });
-  }
-  if (workFormats.length > 0) {
-    const labels = workFormats.map((format) => workFormatLabels[format]);
-    items.push({ term: "Format", details: toSentenceList(labels) });
-  }
-  if (location) items.push({ term: "Location", details: location });
-  if (languages.length > 0) {
-    items.push({ term: "Languages", details: listFormat.format(languages.map(getLanguageName)) });
-  }
-  if (price) items.push({ term: "Price", details: `From ${formatPrice(price)} per session` });
+}
 
-  if (items.length === 0) return null;
-
+/** Идущие подряд пункты практики одним списком. */
+export function PracticeDetails({ items }: { items: PracticeItem[] }) {
   return (
     <dl className="flex w-full flex-col gap-4">
-      {items.map(({ term, details }) => (
-        <div key={term} className="flex flex-col gap-1">
-          <dt className="text-muted-foreground text-sm">{term}</dt>
+      {items.map(({ section, details }) => (
+        <div key={section} className="flex flex-col gap-1">
+          <dt className="text-muted-foreground text-sm">{profileSectionLabels[section]}</dt>
           <dd className="break-words">{details}</dd>
         </div>
       ))}
