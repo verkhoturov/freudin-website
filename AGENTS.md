@@ -73,6 +73,7 @@ Freudin — сайт, где пользователь входит через Go
 | Формы и валидация | TanStack Form + zod 4 |
 | Backend | Route Handlers в `src/app/api` |
 | БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI для миграций и типов |
+| UI kit | Storybook 10 (`@storybook/nextjs-vite`), только dev |
 | Линтер и форматтер | Biome |
 | Хостинг | Vercel: `main` сразу выкладывается в прод, превью не используем |
 
@@ -88,7 +89,7 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   файлы роутинга `page.tsx` и `not-found.tsx`. В них нет хуков, загрузки данных и логики:
   только реэкспорт view и статического `metadata`. Кроме них в `src/app` лежат статические
   metadata-файлы без загрузки данных: `robots.ts`, `sitemap.ts`, `opengraph-image.jpg`
-  (с `opengraph-image.alt.txt`).
+  (с `opengraph-image.alt.txt`), иконки `icon.svg`, `apple-icon.png` и `favicon.ico`.
 - Весь интерфейс состоит из клиентских компонентов. `"use client"` обязателен в UI-файлах
   слайсов `views` (это граница клиентского дерева) и в модулях, которые импортирует `src/app`
   (например, провайдеры).
@@ -238,7 +239,7 @@ export { LoginView as default, metadata } from "@/views/login";
 | `views` | `onboarding` | онбординг и удаление аккаунта без страницы; черновик формы — Zustand-стор `useOnboardingDraftStore` в `model` |
 | `widgets` | `profile-documents` | документы психолога в настройках (без своего заголовка: стоит блоком в конструкторе `profile-form`): список с превью, загрузка в диалоге (картинка уменьшается в браузере до 2048 px, превью — до 480 px, подпись обязательна) и удаление с подтверждением; сохраняются сразу, без формы профиля |
 | `views` | `settings` | настройки: `profile-form` в режиме редактирования — конструктор страницы с данными психолога и блоком `profile-documents` внутри, затем `account-settings` |
-| `shared/ui` | свои компоненты | `Container`, `Logo`, `ThemeToggle`, `NotFoundState`, `SupportEmailLink` (`mailto:` на почту поддержки), `Combobox` (выбор из длинного списка с поиском на `popover` и `command`: одиночный и мультивыбор, поиск на сервере через `search`, кнопка очистки `onClear`) |
+| `shared/ui` | свои компоненты | `Container`, `Logo` (адрес `freud.in` с розовой точкой `text-cta`, ссылка на главную), `ThemeToggle`, `NotFoundState`, `SupportEmailLink` (`mailto:` на почту поддержки), `Combobox` (выбор из длинного списка с поиском на `popover` и `command`: одиночный и мультивыбор, поиск на сервере через `search`, кнопка очистки `onClear`) |
 | `shared/lib` | `utils`, `safe-redirect`, `canvas-image`, `crop-image`, `clipboard`, `use-unsaved-changes-warning`, `use-debounced-value`, `field-errors`, `transliterate` | `cn`, `getSafeRedirectPath`, `loadImage`, `resizeImage` и `encodeCanvas` (уменьшение и перекодирование через canvas в WebP или JPEG, EXIF пропадают, качество снижается, пока файл не влезет в лимит), `cropImage` (кроп и сжатие через canvas), `useDebouncedValue`, `toFieldErrors` и `toFormFieldName` (ошибки TanStack Form для `FieldError` и пути полей из ответа API), `copyToClipboard`, `useUnsavedChangesWarning`, `transliterate` (кириллица и диакритика → латиница), `toSearchKey` (ключ поиска по началу строки, им собран `cities.search_name`) |
 | `shared/config` | `routes`, `site`, `legal`, `reserved-usernames`, `env.server` | пути, настройки сайта (в том числе `supportEmail`), реквизиты оператора `legalConfig`, зарезервированные адреса, серверный env |
 | `shared/api` | `index.ts`, `index.server.ts` | клиент: `apiClient`, `ApiError`, QueryClient; сервер: `createSupabaseServerClient`, `createSupabasePublicClient`, `createSupabaseAdminClient`, тип `SupabaseClient`, типы БД (`Database`, `Tables`) |
@@ -267,6 +268,11 @@ export { LoginView as default, metadata } from "@/views/login";
 | `/robots.txt` | `src/app/robots.ts` | правила для поисковиков и ссылка на sitemap |
 | `/sitemap.xml` | `src/app/sitemap.ts` | публичные страницы |
 | `/opengraph-image.jpg` | `src/app/opengraph-image.jpg` | картинка превью ссылок по умолчанию (1200×630) |
+| `/icon.svg` | `src/app/icon.svg` | фавиконка: розовая точка из логотипа на фиолетовой плитке, цвета `violet-700` и `pink-400` |
+| `/apple-icon.png` | `src/app/apple-icon.png` | та же иконка для iOS, 180×180, квадрат без скругления (углы срезает iOS) |
+| `/favicon.ico` | `src/app/favicon.ico` | та же иконка 32×32 (PNG внутри ICO) для тех, кто запрашивает `/favicon.ico` напрямую |
+
+Иконки рисуются одинаково: меняя цвета бренда, обнови `icon.svg` и пересобери PNG и ICO из него.
 
 `/<username>` — динамический роут верхнего уровня. Статические роуты имеют приоритет, поэтому
 занятые ими адреса нельзя отдавать пользователям. Список лежит в
@@ -373,8 +379,19 @@ export { LoginView as default, metadata } from "@/views/login";
   не добавляем.
 - Tailwind CSS 4. Токены темы — CSS-переменные в `src/app/globals.css`: светлая тема в `:root`,
   тёмная в `.dark`. Меняя цвета, проверяй контраст по WCAG AA (обычный текст — не меньше 4.5:1).
+- Палитра (решение пользователя 28.09.2026) лежит в токенах, свои цвета в классах не пишем.
+  Главная кнопка (`Button` без `variant`) — `bg-cta text-cta-foreground` (розовый), второстепенная —
+  `variant="secondary"` (фиолетовый). Активные элементы (чекбоксы, ползунок, обводка фокуса) —
+  `primary` и `ring`: розовый для них не годится, на фоне страницы он даёт 2.4:1. Выбранный
+  элемент — `accent`. Ссылку внутри текста красим `text-link`, ссылки навигации и подвала — нет.
+- В `globals.css` два слоя цвета. Примитивы — шкалы `--violet-*`, `--pink-*`, `--neutral-*`,
+  `--red-*` (50–950): их не используют ни компоненты, ни `@theme`. Семантические токены
+  (`--primary: var(--violet-700)`) ссылаются на примитивы, а `.dark` переопределяет только
+  семантику. Новый цвет берём из шкалы. Меняя пару, проверь контраст в обеих темах: текст не
+  ниже 4.5:1 (в том числе `muted-foreground` на `muted` и `accent`, `destructive` на своей
+  подсветке `/20`), `input`, `primary` и `ring` — не ниже 3:1. Рамки `border` декоративные.
 - shadcn/ui на базе **Radix** (композиция через `asChild`): стиль по умолчанию (nova),
-  нейтральная палитра, Geist, lucide — пресет `b2fA`. Компоненты живут в `src/shared/ui` и
+  Geist, lucide — пресет `b2fA` (его нейтральную палитру заменили наши токены). Компоненты живут в `src/shared/ui` и
   добавляются командой `npx shadcn add <component>` (алиасы в `components.json`). Файлы shadcn
   правим только при необходимости.
 - После `npx shadcn add` или `npx shadcn apply` проверь три вещи. Первое — пересобери lock-файл
@@ -386,6 +403,12 @@ export { LoginView as default, metadata } from "@/views/login";
   ли их, а без терминала ответить некому. Тогда ставь с `--overwrite` и верни задетые файлы:
   `git checkout -- src/shared/ui/<файл>.tsx` (в них правки форматирования и наши исправления).
 - Классы объединяем через `cn` из `@/shared/lib/utils`.
+- **UI kit в Storybook** (`npm run storybook`). Истории лежат рядом с компонентом:
+  `src/shared/ui/<компонент>.stories.tsx`, заголовки — `Components/…` для shadcn, `Freudin/…` для
+  своих, `Foundations/Tokens` — палитра, шрифт и радиусы (`tokens.stories.tsx`). **Новый компонент
+  в `shared/ui` добавляем вместе с историей**; новый токен цвета — в `tokens.stories.tsx`. Тексты
+  историй — как на сайте, на английском. Настройки — в `.storybook/`: `preview.tsx` подключает
+  `globals.css`, Geist (повторяет `layout.tsx`) и тему через next-themes (тулбар Storybook).
 - Тему переключает next-themes (класс `.dark` на `<html>`), переключатель — `ThemeToggle`
   из `@/shared/ui/theme-toggle`.
 - Корневой layout уже рендерит skip-link, шапку (`@/widgets/header`), единственный
@@ -441,6 +464,8 @@ export { LoginView as default, metadata } from "@/views/login";
 | `npm run lint` | Biome: линт, формат, порядок импортов, границы слоёв |
 | `npm run lint:fix` | то же с автоисправлением |
 | `npm run typecheck` | генерация типов роутов (`next typegen`) и `tsc --noEmit` |
+| `npm run storybook` | UI kit на http://localhost:6006 |
+| `npm run build-storybook` | статическая сборка кита в `storybook-static/` |
 | `npm run db:push` | применить миграции из `supabase/migrations` к базе проекта (запускает пользователь) |
 | `npm run db:types` | сгенерировать типы БД в `src/shared/api/supabase/database.types.ts` |
 | `npm run db:dump` | резервная копия базы в `backups/<дата-время>/` (запускает пользователь, нужен Docker) |

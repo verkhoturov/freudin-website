@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Точка из логотипа freud.in. Цвета — violet-700 и pink-400 из globals.css -->
+  <rect width="32" height="32" rx="8" fill="#4c429d"/>
+  <rect x="15.5" y="15.5" width="9" height="9" rx="1.6" fill="#cf87ce"/>
+</svg>

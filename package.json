@@ -9,6 +9,8 @@
     "lint": "biome check",
     "lint:fix": "biome check --write",
     "typecheck": "next typegen && tsc --noEmit",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked --schema public > src/shared/api/supabase/database.types.ts && biome format --write src/shared/api/supabase/database.types.ts",
     "db:dump": "bash scripts/db-dump.sh"
@@ -40,13 +42,16 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.2",
+    "@storybook/nextjs-vite": "^10.6.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "storybook": "^10.6.0",
     "supabase": "^2.118.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.3.1"
   }
 }

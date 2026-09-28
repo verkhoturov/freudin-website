@@ -35,6 +35,9 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-cta-foreground: var(--cta-foreground);
+  --color-cta: var(--cta);
+  --color-link: var(--link);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -48,23 +51,95 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * Палитра бренда: шкалы OKLCH по 11 шагов («Iris & Orchid», 28.09.2026), фон и текст — цвета
+ * бренда без изменений.
+ * Компоненты берут не их, а семантические токены ниже. Текст на фоне страницы — от шага 600.
+ */
 :root {
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* фиолетовый: активные элементы, второстепенная кнопка, выбранный элемент */
+  --violet-50: #f5f6ff;
+  --violet-100: #e7eafe;
+  --violet-200: #d1d4f7;
+  --violet-300: #b5b8f2;
+  --violet-400: #999aee;
+  --violet-500: #7975d5;
+  --violet-600: #6058bb;
+  --violet-700: #4c429d;
+  --violet-800: #3b327b;
+  --violet-900: #261f54;
+  --violet-950: #140f33;
+
+  /* розовый: главная кнопка, ссылки */
+  --pink-50: #fdf3fd;
+  --pink-100: #f6e5f6;
+  --pink-200: #eaccea;
+  --pink-300: #dcaadc;
+  --pink-400: #cf87ce;
+  --pink-500: #b25eb1;
+  --pink-600: #983f95;
+  --pink-700: #7e297a;
+  --pink-800: #631e5f;
+  --pink-900: #43103e;
+  --pink-950: #270624;
+
+  /* тёплый нейтральный: кремовая бумага (50) → чернила (900) */
+  --neutral-50: #faf7f2;
+  --neutral-100: #efeae5;
+  --neutral-200: #ddd6d1;
+  --neutral-300: #c5bbb7;
+  --neutral-400: #aea19f;
+  --neutral-500: #8e7f82;
+  --neutral-600: #73646c;
+  --neutral-700: #5a4e59;
+  --neutral-800: #453c4a;
+  --neutral-900: #292535;
+  --neutral-950: #171420;
+
+  /* красный: ошибки и удаление */
+  --red-50: #fff4f3;
+  --red-100: #fee4e3;
+  --red-200: #f8cbc9;
+  --red-300: #efa9a6;
+  --red-400: #e38783;
+  --red-500: #d05653;
+  --red-600: #be222a;
+  --red-700: #98181f;
+  --red-800: #781016;
+  --red-900: #51060a;
+  --red-950: #310103;
+}
+
+/* Семантические токены: светлая тема. Контраст пар проверен по WCAG AA в обеих темах */
+:root {
+  --background: var(--neutral-50);
+  --foreground: var(--neutral-900);
+  --card: #ffffff;
+  --card-foreground: var(--neutral-900);
+  --popover: #ffffff;
+  --popover-foreground: var(--neutral-900);
+  /* Активные элементы: чекбоксы, ползунок, фокус. Розовый на фоне страницы дал бы 2.4:1 */
+  --primary: var(--violet-700);
+  --primary-foreground: #ffffff;
+  /* Второстепенная кнопка */
+  --secondary: var(--violet-700);
+  --secondary-foreground: #ffffff;
+  /* Главная кнопка (Button без variant): текст на ней 5.6:1 */
+  --cta: var(--pink-400);
+  --cta-foreground: var(--neutral-900);
+  /* Ссылки в тексте */
+  --link: var(--pink-600);
+  --muted: var(--neutral-100);
+  --muted-foreground: var(--neutral-600);
+  /* Выбранный элемент: пункты меню и списков под курсором */
+  --accent: var(--violet-100);
+  --accent-foreground: var(--neutral-900);
+  /* Темнее обычного красного: на своей подсветке у кнопки удаления текст не ниже 4.5:1 */
+  --destructive: var(--red-700);
+  /* border — декоративные рамки и разделители, input — рамки полей и чекбоксов (не ниже 3:1) */
+  --border: var(--neutral-200);
+  --input: var(--neutral-500);
+  --ring: var(--violet-700);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -79,29 +154,32 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --background: var(--neutral-950);
+  --foreground: var(--neutral-50);
+  /* Поверхности выше страницы светлее, а не с тенью */
+  --card: var(--neutral-900);
+  --card-foreground: var(--neutral-50);
+  --popover: var(--neutral-900);
+  --popover-foreground: var(--neutral-50);
+  --primary: var(--violet-300);
+  --primary-foreground: var(--neutral-950);
+  --secondary: var(--violet-600);
+  --secondary-foreground: var(--neutral-50);
+  --cta: var(--pink-400);
+  --cta-foreground: var(--neutral-900);
+  /* pink-600 на тёмном фоне даёт меньше 4.5:1 */
+  --link: var(--pink-300);
+  --muted: var(--neutral-800);
+  --muted-foreground: var(--neutral-300);
+  --accent: var(--violet-800);
+  --accent-foreground: var(--neutral-50);
+  --destructive: var(--red-400);
+  --border: var(--neutral-800);
+  --input: var(--neutral-500);
+  --ring: var(--violet-300);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);

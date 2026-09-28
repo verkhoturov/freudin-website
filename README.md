@@ -76,6 +76,7 @@
 | Клиентское состояние | Zustand (черновик онбординга) | ✅ |
 | Кроп фото | react-easy-crop | ✅ |
 | БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI (миграции и типы) | ✅ БД, вход через Google, Facebook и Telegram |
+| UI kit | Storybook 10 (`storybook`, `@storybook/nextjs-vite`, `vite`), dev-зависимость | ✅ локально |
 | Линтер и форматтер | Biome | ✅ |
 | Хостинг | Vercel, прод на `www.freud.in` | ✅ |
 
@@ -129,6 +130,8 @@ npm run dev
 | `npm run lint` | Biome: линт, формат, порядок импортов, границы слоёв FSD |
 | `npm run lint:fix` | то же с автоисправлением |
 | `npm run typecheck` | генерация типов роутов (`next typegen`) и проверка типов (`tsc --noEmit`) |
+| `npm run storybook` | UI kit на http://localhost:6006: компоненты `shared/ui`, которые использует сайт, и токены темы; тема — в тулбаре |
+| `npm run build-storybook` | статическая сборка кита в `storybook-static/` (не в git) |
 | `npm run db:push` | применить новые миграции из `supabase/migrations` к базе проекта |
 | `npm run db:types` | сгенерировать типы БД в `src/shared/api/supabase/database.types.ts` |
 | `npm run db:dump` | резервная копия базы в `backups/<дата-время>/`, нужен запущенный Docker (см. «Резервные копии») |
@@ -144,12 +147,13 @@ src/
 │  ├─ layout.tsx       # html/body, шрифты, metadata, шапка, <main>, подвал
 │  ├─ _providers/      # темы, TanStack Query, тултипы, уведомления
 │  ├─ robots.ts, sitemap.ts, opengraph-image.jpg   # SEO-файлы
+│  ├─ icon.svg, apple-icon.png, favicon.ico       # иконки сайта (розовая точка из логотипа)
 │  └─ api/             # API-роуты; _lib — общие хелперы (ошибки, ответы, zod, защита от CSRF)
 ├─ views/              # страницы: home, login, onboarding, settings, profile, privacy, terms, not-found
 ├─ widgets/            # header, footer, sign-in-panel, profile-card, profile-form, profile-documents, account-settings, legal-document
 ├─ entities/           # viewer (вход), profile (профиль, username, данные психолога), location (страны и города), social-link (ссылки на соцсети)
 └─ shared/
-   ├─ ui/              # компоненты shadcn/ui, Container, Logo, ThemeToggle, NotFoundState, SupportEmailLink, Combobox
+   ├─ ui/              # компоненты shadcn/ui, Container, Logo, ThemeToggle, NotFoundState, SupportEmailLink, Combobox; истории *.stories.tsx и токены (tokens.stories.tsx)
    ├─ lib/             # утилиты: cn, безопасный редирект по ?next=, кроп и сжатие картинок, буфер обмена, ошибки форм
    ├─ api/             # apiClient, ApiError, QueryClient; на сервере — клиенты Supabase и типы БД
    └─ config/          # routes, apiRoutes, site, зарезервированные адреса, серверный env
@@ -163,6 +167,7 @@ public/
 └─ demo-certificate.svg   # документ демо-профиля
 backups/               # резервные копии; не в git: в них персональные данные
 components.json        # настройки shadcn/ui (алиасы под FSD)
+.storybook/            # настройки Storybook: истории из src/**/*.stories.tsx, globals.css, Geist, переключатель темы
 .env.example           # шаблон переменных окружения
 docs/
 ├─ PLAN.md             # пошаговый план
@@ -210,7 +215,8 @@ API:
 
 Полный список запланированных API-роутов со статусами — в [`AGENTS.md`](AGENTS.md#api).
 
-Служебные файлы: `/robots.txt`, `/sitemap.xml` и `/opengraph-image.jpg` (картинка превью ссылок).
+Служебные файлы: `/robots.txt`, `/sitemap.xml`, `/opengraph-image.jpg` (картинка превью ссылок)
+и иконки `/icon.svg`, `/apple-icon.png`, `/favicon.ico`.
 
 ## SEO
 
@@ -227,9 +233,21 @@ API:
 
 - Пока минималистичный дизайн: стандартные компоненты shadcn/ui и минимум контента — только
   навигация и поля ввода.
-- shadcn/ui на Radix, стиль по умолчанию (nova), нейтральная палитра, шрифт Geist (с кириллицей для
+- shadcn/ui на Radix, стиль по умолчанию (nova), шрифт Geist (с кириллицей для
   пользовательских имён и описаний),
   иконки lucide. Токены темы — в `src/app/globals.css`.
+- Палитра «Iris & Orchid» (28.09.2026) в `globals.css` двумя слоями. Примитивы — шкалы OKLCH
+  по 11 шагов `violet`, `pink`, `neutral` и `red`. Семантические токены shadcn ссылаются на
+  примитивы, а тёмная тема переопределяет только их. Светлая тема: текст `#292535`, фон
+  `#FAF7F2`, карточки `#FFFFFF`, активные элементы и второстепенная кнопка `#4C429D`
+  (`primary`, `secondary`), выбранный элемент `#E7EAFE` (`accent`), главная кнопка `#CF87CE`
+  с текстом `#292535` (`cta`), ссылки в тексте `#983F95` (`link`). Тёмная тема: фон
+  `neutral-950`, карточки `neutral-900` (`#292535`), активные элементы `violet-300`. Все пары
+  текста проходят WCAG AA, рамки полей (`input`) — не ниже 3:1 в обеих темах.
+- Логотип (28.09.2026) — адрес `freud.in`, точка розовая (`text-cta`). Фавиконка — та же точка
+  на фиолетовой плитке (`src/app/icon.svg`), из неё отрисованы `apple-icon.png` и `favicon.ico`.
+- UI kit — Storybook (`npm run storybook`): компоненты `shared/ui`, которые использует сайт, и страница токенов
+  в светлой и тёмной темах.
 - Светлая, тёмная и системная темы, переключатель в шапке.
 - Вёрстка mobile-first, есть ссылка Skip to content для навигации с клавиатуры.
 - Компоненты добавляются командой `npx shadcn add <component>` и попадают в `src/shared/ui`.

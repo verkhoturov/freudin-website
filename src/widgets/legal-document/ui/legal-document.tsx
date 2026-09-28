@@ -17,7 +17,7 @@ const proseClassName = cn(
   "[&_h2]:mt-6 [&_h2]:font-semibold [&_h2]:text-xl [&_h2]:tracking-tight",
   "[&_h3]:mt-2 [&_h3]:font-semibold [&_h3]:text-lg",
   "[&_ul]:flex [&_ul]:list-disc [&_ul]:flex-col [&_ul]:gap-1 [&_ul]:pl-6",
-  "[&_a]:underline [&_a]:underline-offset-4",
+  "[&_a]:text-link [&_a]:underline [&_a]:underline-offset-4",
   "[&_code]:break-words [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:text-sm",
 );
 

@@ -42,11 +42,11 @@ export function LoginView() {
       </Suspense>
       <p className="text-muted-foreground text-sm">
         By continuing, you agree to our{" "}
-        <Link href={routes.terms} className="underline underline-offset-4">
+        <Link href={routes.terms} className="text-link underline underline-offset-4">
           Terms of Service
         </Link>{" "}
         and acknowledge our{" "}
-        <Link href={routes.privacy} className="underline underline-offset-4">
+        <Link href={routes.privacy} className="text-link underline underline-offset-4">
           Privacy Policy
         </Link>
         .
