@@ -318,8 +318,10 @@ Google и создаёт сессию Supabase по ID-токену (`signInWith
 Подробная инструкция — в [`docs/PLAN.md`](docs/PLAN.md), шаг 9. Кратко:
 
 1. Meta for Developers → приложение `Freudin` с use case «Authenticate and request data from
-   users with Facebook Login», разрешения `public_profile` и `email` (App Review для них
-   не нужен).
+   users with Facebook Login», разрешения `public_profile` и `email`. `public_profile` Meta
+   выдаёт автоматически. Для `email` в режиме Development диалог входа показывает людям
+   с ролью «Submit for Login Review»; перед Live нужны подтверждение компании (Business
+   verification) и, возможно, App Review для `email`.
 2. Facebook Login → Settings → Valid OAuth Redirect URIs:
    `https://<ref>.supabase.co/auth/v1/callback`.
 3. App settings → Basic: App domains `freud.in`, ссылки на `/privacy` и `/terms`, Data deletion
