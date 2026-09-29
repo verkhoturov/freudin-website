@@ -418,7 +418,10 @@ export { LoginView as default, metadata } from "@/views/login";
   отдельный проект Vercel, пересобирается с каждым коммитом в `main`, открывается только под
   аккаунтом Vercel владельца). Истории лежат рядом с компонентом:
   `src/shared/ui/<компонент>.stories.tsx`, заголовки — `Components/…` для shadcn, `Freudin/…` для
-  своих, `Foundations/Tokens` — палитра, шрифт и радиусы (`tokens.stories.tsx`). **Новый компонент
+  своих, `Foundations/Tokens` — палитра, шрифт и радиусы (`tokens.stories.tsx`). Истории виджетов —
+  в сегменте `ui` виджета (`src/widgets/profile-card/ui/profile-card.stories.tsx`), заголовки
+  `Widgets/…`, данные — фикстуры в самой истории; виджету с TanStack Query история даёт свой
+  `QueryClientProvider`, запросы к API в ките не проходят. **Новый компонент
   в `shared/ui` добавляем вместе с историей**; новый токен цвета — в `tokens.stories.tsx`.
   **Новый визуальный элемент вне `shared/ui`** (в `widgets`, `entities`, `views`: новый вид блока,
   вариант, состояние) предлагаем пользователю показать в ките. Если сейчас не делаем, заносим
