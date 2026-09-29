@@ -60,7 +60,7 @@ function ProfileSettingsForm({ viewer, profile }: ProfileSettingsFormProps) {
   // После сохранения форма монтируется заново: начальные значения берутся из нового профиля
   const [formVersion, setFormVersion] = useState(0);
   const { email, contactEmail } = viewer.user;
-  const savedValues = toProfileInput(profile, contactEmail);
+  const savedValues = toProfileInput(profile, contactEmail, viewer.privateDetails);
 
   const submit = async (values: ProfileInput, avatar: AvatarValue) => {
     // Правки могли совпасть с сохранённым после нормализации: `@anna` и `t.me/anna`

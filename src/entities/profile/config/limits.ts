@@ -13,5 +13,16 @@ export const PRICE_AMOUNT_MAX = 100_000_000;
 export const DOCUMENTS_MAX = 5;
 export const DOCUMENT_TITLE_MAX_LENGTH = 100;
 
+// Совпадают с CHECK-ограничениями миграции add_psychologist_details
+export const EDUCATION_MAX = 5;
+export const EDUCATION_TEXT_MAX_LENGTH = 150;
+export const EDUCATION_YEAR_MIN = 1950;
+/** Номер телефона с кодом страны и разделителями: `+995 (555) 12-34-56`. */
+export const PHONE_MAX_LENGTH = 30;
+/** Психологу не меньше 18 лет. */
+export const MIN_AGE = 18;
+export const BIRTH_DATE_MIN = "1900-01-01";
+export const PRACTICE_START_MIN = "1950-01-01";
+
 /** Адрес демо-профиля: слово зарезервировано, настоящий пользователь его не займёт. */
 export const DEMO_USERNAME = "demo";

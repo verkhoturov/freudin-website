@@ -3,7 +3,12 @@ import { getCityLabel, getCountryName } from "@/entities/location";
 import {
   approachLabels,
   clientTypeLabels,
+  contactTypeIds,
+  contactTypeLabels,
+  formatExperience,
   formatPrice,
+  getContactCaption,
+  getContactHref,
   getLanguageName,
   type ProfileSection,
   type PublicProfile,
@@ -29,6 +34,8 @@ function toSentenceList(labels: string[]): string {
 export function getPracticeDetails(profile: PublicProfile, section: PracticeSection): ReactNode {
   const { approaches, clientTypes, workFormats, city, country, languages, price } = profile;
   switch (section) {
+    case "experience":
+      return profile.practiceStartedOn ? formatExperience(profile.practiceStartedOn) : null;
     case "approaches":
       return approaches.length > 0 ? (
         <ul>
@@ -52,6 +59,43 @@ export function getPracticeDetails(profile: PublicProfile, section: PracticeSect
       return languages.length > 0 ? listFormat.format(languages.map(getLanguageName)) : null;
     case "price":
       return price ? `From ${formatPrice(price)} per session` : null;
+    case "education":
+      return profile.education.length > 0 ? (
+        <ul className="flex flex-col gap-2">
+          {profile.education.map((entry, index) => (
+            // Записи не уникальны и не переставляются
+            // biome-ignore lint/suspicious/noArrayIndexKey: список только для чтения
+            <li key={index}>
+              {entry.qualification}
+              <br />
+              <span className="text-muted-foreground">
+                {entry.institution}
+                {entry.year ? `, ${entry.year}` : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null;
+    case "contacts": {
+      const contacts = contactTypeIds.flatMap((type) => {
+        const value = profile.contacts[type];
+        return value ? [{ type, value }] : [];
+      });
+      return contacts.length > 0 ? (
+        <ul>
+          {contacts.map(({ type, value }) => (
+            <li key={type}>
+              {contactTypeLabels[type]}:{" "}
+              <a
+                href={getContactHref(type, value)}
+                className="text-link underline underline-offset-4">
+                {getContactCaption(type, value)}
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : null;
+    }
   }
 }
 

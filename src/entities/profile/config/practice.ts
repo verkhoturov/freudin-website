@@ -34,13 +34,14 @@ export const approachLabels: Record<Approach, string> = {
 };
 
 /** С кем работает психолог. */
-export const clientTypeIds = ["individuals", "couples", "teens", "groups"] as const;
+export const clientTypeIds = ["individuals", "couples", "children", "teens", "groups"] as const;
 
 export type ClientType = (typeof clientTypeIds)[number];
 
 export const clientTypeLabels: Record<ClientType, string> = {
   individuals: "Individuals",
   couples: "Couples",
+  children: "Children",
   teens: "Teens",
   groups: "Groups",
 };

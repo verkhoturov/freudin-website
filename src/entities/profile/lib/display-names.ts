@@ -22,3 +22,14 @@ export function formatPrice({ amount, currency }: ProfilePrice): string {
     maximumFractionDigits: 0,
   }).format(amount);
 }
+
+/** Стаж по дате начала практики `YYYY-MM-DD`: `Less than a year`, `1 year`, `8 years`. */
+export function formatExperience(startedOn: string): string {
+  const today = new Date().toISOString().slice(0, 10);
+  const years =
+    Number(today.slice(0, 4)) -
+    Number(startedOn.slice(0, 4)) -
+    (today.slice(5) < startedOn.slice(5) ? 1 : 0);
+  if (years < 1) return "Less than a year";
+  return years === 1 ? "1 year" : `${years} years`;
+}

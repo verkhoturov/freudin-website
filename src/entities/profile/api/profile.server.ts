@@ -2,24 +2,28 @@ import "server-only";
 import { CITY_COLUMNS, type CityRow, toCity } from "@/entities/location/@x/profile";
 import { type SocialLink, socialLinkSchema } from "@/entities/social-link/@x/profile";
 import type { Json, SupabaseClient, Tables, TablesUpdate } from "@/shared/api/index.server";
+import { contactTypeIds, isContactType } from "../config/contacts";
 import { demoProfile } from "../config/demo-profile";
 import { languageCodes } from "../config/languages";
 import { DEMO_USERNAME, USERNAME_MAX_LENGTH } from "../config/limits";
 import { approachIds, clientTypeIds, workFormatIds } from "../config/practice";
 import { AVATARS_BUCKET, DOCUMENTS_BUCKET } from "../config/storage";
+import { pickKnown } from "../lib/pick-known";
 import { normalizeSectionOrder } from "../lib/section-order";
 import {
   type ProfileData,
   type ProfileUpdateData,
   type StoredDocument,
   storedDocumentSchema,
+  storedEducationSchema,
 } from "../model/schemas";
-import type { PublicProfile } from "../model/types";
+import type { ProfileContacts, ProfileEducation, PublicProfile } from "../model/types";
 import { setContactEmail } from "./contact-email.server";
+import { setPrivateDetails } from "./private-details.server";
 
 /** Колонки публичной страницы. Гостю (`anon`) миграциями открыты только они. */
 export const PUBLIC_PROFILE_COLUMNS =
-  `username, display_name, bio, avatar_path, social_links, country, work_formats, client_types, approaches, languages, price_amount, price_currency, documents, section_order, city:cities(${CITY_COLUMNS})` as const;
+  `username, display_name, bio, avatar_path, social_links, country, work_formats, client_types, approaches, languages, price_amount, price_currency, documents, section_order, practice_started_on, education, contacts, preferred_contact, city:cities(${CITY_COLUMNS})` as const;
 
 // Коды Postgres для нарушения уникальности и внешнего ключа и имена ограничений из миграций
 const UNIQUE_VIOLATION = "23505";
@@ -43,6 +47,10 @@ type PublicProfileRow = Pick<
   | "price_currency"
   | "documents"
   | "section_order"
+  | "practice_started_on"
+  | "education"
+  | "contacts"
+  | "preferred_contact"
 > & { city: CityRow | null };
 
 type PostgrestErrorLike = { code: string; message: string };
@@ -58,9 +66,36 @@ function parseSocialLinks(value: Json): SocialLink[] {
   });
 }
 
-// Значение, которое убрали из справочника, со страницы пропадает
-function pickKnown<T extends string>(values: string[], ids: readonly T[]): T[] {
-  return values.filter((value): value is T => (ids as readonly string[]).includes(value));
+function parseEducation(value: Json): ProfileEducation[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const entry = storedEducationSchema.safeParse(item);
+    return entry.success ? [entry.data] : [];
+  });
+}
+
+// Тип, которого нет в справочнике, пропускаем
+function parseContacts(value: Json): ProfileContacts {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const contacts: ProfileContacts = {};
+  for (const type of contactTypeIds) {
+    const contact = value[type];
+    if (typeof contact === "string" && contact) contacts[type] = contact;
+  }
+  return contacts;
+}
+
+// Способ связи, которого нет среди контактов и ссылок, не показываем
+function parsePreferredContact(
+  value: string | null,
+  contacts: ProfileContacts,
+  socialLinks: SocialLink[],
+): string | null {
+  if (!value) return null;
+  const exists = isContactType(value)
+    ? Boolean(contacts[value])
+    : socialLinks.some((link) => link.url === value);
+  return exists ? value : null;
 }
 
 /** Документы из jsonb-колонки `profiles.documents`; повреждённые записи пропускаем. */
@@ -74,6 +109,8 @@ export function parseStoredDocuments(value: Json): StoredDocument[] {
 
 export function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow): PublicProfile {
   const documentsBucket = supabase.storage.from(DOCUMENTS_BUCKET);
+  const socialLinks = parseSocialLinks(row.social_links);
+  const contacts = parseContacts(row.contacts);
   return {
     username: row.username,
     displayName: row.display_name,
@@ -81,7 +118,7 @@ export function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow)
     avatarUrl: row.avatar_path
       ? supabase.storage.from(AVATARS_BUCKET).getPublicUrl(row.avatar_path).data.publicUrl
       : null,
-    socialLinks: parseSocialLinks(row.social_links),
+    socialLinks,
     country: row.country,
     city: row.city ? toCity(row.city) : null,
     workFormats: pickKnown(row.work_formats, workFormatIds),
@@ -101,6 +138,10 @@ export function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow)
       height: document.height,
     })),
     sectionOrder: normalizeSectionOrder(row.section_order),
+    practiceStartedOn: row.practice_started_on,
+    education: parseEducation(row.education),
+    contacts,
+    preferredContact: parsePreferredContact(row.preferred_contact, contacts, socialLinks),
   };
 }
 
@@ -125,6 +166,20 @@ function toProfileRow(data: ProfileUpdateData): TablesUpdate<"profiles"> {
           : null,
     price_currency: data.priceCurrency === undefined ? undefined : data.priceCurrency || null,
     section_order: data.sectionOrder,
+    practice_started_on:
+      data.practiceStartedOn === undefined ? undefined : data.practiceStartedOn || null,
+    education: data.education?.map((entry) => ({
+      qualification: entry.qualification,
+      institution: entry.institution,
+      year: entry.year ? Number(entry.year) : null,
+    })),
+    // В БД — только заполненные контакты
+    contacts:
+      data.contacts === undefined
+        ? undefined
+        : Object.fromEntries(Object.entries(data.contacts).filter(([, value]) => value)),
+    preferred_contact:
+      data.preferredContact === undefined ? undefined : data.preferredContact || null,
   };
 }
 
@@ -188,8 +243,9 @@ export type CreateProfileResult =
   | { ok: false; reason: "username_taken" | "profile_exists" | "city_invalid" };
 
 /**
- * Создаёт профиль пользователя (онбординг). Контактную почту сохраняем первой: повторная
- * запись безопасна, поэтому сбой на любом шаге лечится повторной отправкой формы.
+ * Создаёт профиль пользователя (онбординг). Контактную почту и закрытые данные сохраняем
+ * первыми: повторная запись безопасна, поэтому сбой на любом шаге лечится повторной отправкой
+ * формы.
  */
 export async function createProfile(
   supabase: SupabaseClient,
@@ -197,6 +253,10 @@ export async function createProfile(
   data: ProfileData,
 ): Promise<CreateProfileResult> {
   if (data.contactEmail) await setContactEmail(supabase, userId, data.contactEmail);
+  // На онбординге этих полей нет: строку profile_private заводим, только если что-то заполнено
+  if (data.birthDate || data.gender || data.concerns.length > 0) {
+    await setPrivateDetails(supabase, userId, data);
+  }
 
   const { data: row, error } = await supabase
     .from("profiles")
@@ -227,13 +287,17 @@ export type UpdateProfileResult =
   | { ok: true; profile: PublicProfile }
   | { ok: false; reason: "username_taken" | "profile_missing" | "city_invalid" };
 
-/** Обновляет переданные поля профиля пользователя и контактную почту, если она передана. */
+/**
+ * Обновляет переданные поля профиля пользователя, а также контактную почту и закрытые данные
+ * (`profile_private`), если они переданы.
+ */
 export async function updateProfile(
   supabase: SupabaseClient,
   userId: string,
   data: ProfileUpdateData,
 ): Promise<UpdateProfileResult> {
   if (data.contactEmail !== undefined) await setContactEmail(supabase, userId, data.contactEmail);
+  await setPrivateDetails(supabase, userId, data);
 
   const changes = toProfileRow(data);
   const hasChanges = Object.values(changes).some((value) => value !== undefined);

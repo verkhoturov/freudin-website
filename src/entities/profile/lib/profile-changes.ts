@@ -1,5 +1,10 @@
-import { type ProfileInput, type ProfileUpdateInput, profileInputSchema } from "../model/schemas";
-import type { PublicProfile } from "../model/types";
+import {
+  linkedFieldGroups,
+  type ProfileInput,
+  type ProfileUpdateInput,
+  profileInputSchema,
+} from "../model/schemas";
+import type { PrivateProfileDetails, PublicProfile } from "../model/types";
 
 type SettingsInput = Pick<
   ProfileInput,
@@ -12,6 +17,13 @@ type SettingsInput = Pick<
   | "priceAmount"
   | "priceCurrency"
   | "sectionOrder"
+  | "practiceStartedOn"
+  | "education"
+  | "contacts"
+  | "preferredContact"
+  | "birthDate"
+  | "gender"
+  | "concerns"
 >;
 
 /**
@@ -29,11 +41,26 @@ export function getEmptySettingsInput(): SettingsInput {
     priceAmount: "",
     priceCurrency: "",
     sectionOrder: [],
+    practiceStartedOn: "",
+    education: [],
+    contacts: { email: "", phone: "", whatsapp: "", telegram: "" },
+    preferredContact: "",
+    birthDate: "",
+    gender: "",
+    concerns: [],
   };
 }
 
-/** Сохранённый профиль и контактная почта (`null` — её нет) в виде значений формы. */
-export function toProfileInput(profile: PublicProfile, contactEmail: string | null): ProfileInput {
+/**
+ * Сохранённый профиль, контактная почта (`null` — её нет) и закрытые данные в виде значений
+ * формы. Порядок ключей вложенных объектов — как в схемах: `getProfileChanges` сравнивает JSON.
+ */
+export function toProfileInput(
+  profile: PublicProfile,
+  contactEmail: string | null,
+  privateDetails: PrivateProfileDetails,
+): ProfileInput {
+  const { contacts } = profile;
   return {
     username: profile.username,
     displayName: profile.displayName,
@@ -49,14 +76,24 @@ export function toProfileInput(profile: PublicProfile, contactEmail: string | nu
     priceAmount: profile.price ? String(profile.price.amount) : "",
     priceCurrency: profile.price?.currency ?? "",
     sectionOrder: profile.sectionOrder,
+    practiceStartedOn: profile.practiceStartedOn ?? "",
+    education: profile.education.map((entry) => ({
+      qualification: entry.qualification,
+      institution: entry.institution,
+      year: entry.year === null ? "" : String(entry.year),
+    })),
+    contacts: {
+      email: contacts.email ?? "",
+      phone: contacts.phone ?? "",
+      whatsapp: contacts.whatsapp ?? "",
+      telegram: contacts.telegram ?? "",
+    },
+    preferredContact: profile.preferredContact ?? "",
+    birthDate: privateDetails.birthDate ?? "",
+    gender: privateDetails.gender ?? "",
+    concerns: privateDetails.concerns,
   };
 }
-
-// Связанные поля сервер проверяет вместе, поэтому отправляем группу целиком
-const linkedFieldGroups: (keyof ProfileUpdateInput)[][] = [
-  ["country", "cityId", "workFormats"],
-  ["priceAmount", "priceCurrency"],
-];
 
 /**
  * Изменённые поля для `PATCH /api/profile` или `null`, если менять нечего. `saved` — значения
@@ -76,6 +113,7 @@ export function getProfileChanges(
   for (const key of Object.keys(next) as (keyof typeof next)[]) {
     if (JSON.stringify(next[key]) !== JSON.stringify(saved[key])) changes[key] = next[key];
   }
+  // Связанные поля сервер проверяет вместе, поэтому отправляем группу целиком
   for (const group of linkedFieldGroups) {
     if (!group.some((key) => key in changes)) continue;
     for (const key of group) changes[key] = next[key];

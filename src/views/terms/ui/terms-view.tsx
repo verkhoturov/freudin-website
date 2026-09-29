@@ -25,7 +25,7 @@ function SettingsLink() {
 
 export function TermsView() {
   return (
-    <LegalDocument title="Terms of Service" lastUpdated="September 28, 2026">
+    <LegalDocument title="Terms of Service" lastUpdated="September 29, 2026">
       <p>
         These Terms of Service (“Terms”) govern your access to and use of the Freudin website,
         applications, features, and related services available through <strong>{SITE_HOST}</strong>{" "}
@@ -49,8 +49,9 @@ export function TermsView() {
       <p>
         Psychologists can use the Service to publish a page about their practice. Freudin does not
         provide psychological, medical, or other professional services, is not a party to any
-        arrangement between users, and does not process payments for sessions. Prices on user pages
-        are set by the users who publish them.
+        arrangement between users, does not take part in communications between psychologists and
+        their clients, and does not process payments for sessions. Prices on user pages are set by
+        the users who publish them.
       </p>
       <p>
         We may add, modify, suspend, or discontinue any part of the Service. Where reasonably
@@ -169,7 +170,8 @@ export function TermsView() {
       </p>
       <p>
         Your profile — display name, page address (username), bio, profile photo, links, details
-        about your practice, and documents — is public. Anyone can view it at {SITE_HOST}
+        about your practice, education, contact details, and documents — is public. Anyone can view
+        it at {SITE_HOST}
         /&lt;username&gt; without signing in, and search engines may index it. You decide what to
         publish and can change or remove it at any time in <SettingsLink />.
       </p>
@@ -178,7 +180,11 @@ export function TermsView() {
         <li>you own it or have the necessary rights to use it;</li>
         <li>it does not violate applicable law or third-party rights;</li>
         <li>it is not unlawful, harmful, deceptive, defamatory, or malicious;</li>
-        <li>the information about your qualifications and practice is accurate and up to date;</li>
+        <li>
+          the information about your qualifications, education, experience, and practice is accurate
+          and up to date;
+        </li>
+        <li>the contact details you publish belong to you;</li>
         <li>
           the documents you upload, such as diplomas, certificates, or licenses, were issued to you,
           are genuine, and have not been altered, except for covering details you do not want to

@@ -1,6 +1,20 @@
 export { profileQueries } from "./api/profile-queries";
 export { usernameQueries } from "./api/username-queries";
+export {
+  type Concern,
+  concernGroups,
+  concernIds,
+  concernLabels,
+  isConcernGroupAvailable,
+} from "./config/concerns";
+export {
+  type ContactType,
+  contactTypeIds,
+  contactTypeLabels,
+  isContactType,
+} from "./config/contacts";
 export { currencyCodes } from "./config/currencies";
+export { type Gender, genderIds, genderLabels } from "./config/gender";
 export { languageCodes } from "./config/languages";
 export {
   APPROACHES_MAX,
@@ -10,7 +24,11 @@ export {
   DISPLAY_NAME_MAX_LENGTH,
   DOCUMENT_TITLE_MAX_LENGTH,
   DOCUMENTS_MAX,
+  EDUCATION_MAX,
+  EDUCATION_TEXT_MAX_LENGTH,
   LANGUAGES_MAX,
+  MIN_AGE,
+  PHONE_MAX_LENGTH,
   PRICE_AMOUNT_MAX,
   SOCIAL_LINKS_MAX,
   USERNAME_MAX_LENGTH,
@@ -40,12 +58,19 @@ export {
   DOCUMENT_THUMBNAIL_MAX_BYTES,
   DOCUMENT_THUMBNAIL_SIZE,
 } from "./config/storage";
-export { formatPrice, getCurrencyName, getLanguageName } from "./lib/display-names";
+export { getContactCaption, getContactHref } from "./lib/contacts";
+export {
+  formatExperience,
+  formatPrice,
+  getCurrencyName,
+  getLanguageName,
+} from "./lib/display-names";
 export { getEmptySettingsInput, getProfileChanges, toProfileInput } from "./lib/profile-changes";
 export { normalizeSectionOrder } from "./lib/section-order";
 export {
   bioSchema,
   contactEmailSchema,
+  contactsSchema,
   displayNameSchema,
   documentTitleSchema,
   type ProfileData,
@@ -57,7 +82,10 @@ export {
 } from "./model/schemas";
 export type {
   AvatarSource,
+  PrivateProfileDetails,
+  ProfileContacts,
   ProfileDocument,
+  ProfileEducation,
   ProfilePrice,
   PublicProfile,
   UsernameAvailability,

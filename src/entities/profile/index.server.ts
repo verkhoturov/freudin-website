@@ -15,6 +15,7 @@ export {
   removeProfileDocument,
   removeUserDocumentFiles,
 } from "./api/document.server";
+export { getPrivateDetails } from "./api/private-details.server";
 export {
   type CreateProfileResult,
   createProfile,
@@ -43,5 +44,9 @@ export {
   profileUpdateSchema,
   providerAvatarRequestSchema,
 } from "./model/schemas";
-export type { PublicProfile, UsernameAvailability } from "./model/types";
+export type {
+  PrivateProfileDetails,
+  PublicProfile,
+  UsernameAvailability,
+} from "./model/types";
 export { usernameSchema } from "./model/username";

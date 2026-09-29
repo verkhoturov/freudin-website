@@ -7,4 +7,4 @@ export type {
   ProfileUpdateInput,
   ProviderAvatarRequest,
 } from "../model/schemas";
-export type { AvatarSource, PublicProfile } from "../model/types";
+export type { AvatarSource, PrivateProfileDetails, PublicProfile } from "../model/types";

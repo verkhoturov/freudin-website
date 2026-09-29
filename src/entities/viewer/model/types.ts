@@ -1,4 +1,8 @@
-import type { ProfileSuggestions, PublicProfile } from "@/entities/profile/@x/viewer";
+import type {
+  PrivateProfileDetails,
+  ProfileSuggestions,
+  PublicProfile,
+} from "@/entities/profile/@x/viewer";
 import type { AuthProvider } from "../config/auth-providers";
 
 /** Способ входа, привязанный к аккаунту. */
@@ -32,6 +36,8 @@ export type Viewer = {
   };
   /** `null` — профиль ещё не создан: пользователь не прошёл онбординг. */
   profile: PublicProfile | null;
+  /** Данные психолога, которые не показываются на странице: дата рождения, пол, запросы. */
+  privateDetails: PrivateProfileDetails;
   /** Подсказки для онбординга из данных провайдера входа. */
   suggestions: ProfileSuggestions;
 };

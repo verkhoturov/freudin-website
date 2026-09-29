@@ -33,7 +33,7 @@ function SettingsLink() {
 
 export function PrivacyView() {
   return (
-    <LegalDocument title="Privacy Policy" lastUpdated="September 28, 2026">
+    <LegalDocument title="Privacy Policy" lastUpdated="September 29, 2026">
       <p>
         This Privacy Policy explains how Freudin collects, uses, stores, and shares personal data
         when you access or use the Freudin website, applications, features, and related services
@@ -179,7 +179,13 @@ export function PrivacyView() {
         <li>
           details about your practice, if you add them: your country and the city where you see
           clients in person, whether you work online or in person, who you work with, your therapy
-          approaches, the languages you work in, and your starting price per session;
+          approaches, the languages you work in, your starting price per session, and the date you
+          started practicing, which your page shows as years of experience;
+        </li>
+        <li>your education: degrees or qualifications, institutions, and graduation years;</li>
+        <li>
+          contact details you add for clients: an email address, a phone number, a WhatsApp number,
+          or a Telegram username, and the way you prefer to be contacted;
         </li>
         <li>
           documents you upload, such as diplomas, certificates, or licenses, together with their
@@ -199,16 +205,33 @@ export function PrivacyView() {
         you delete a document in <SettingsLink />, we delete both from our storage.
       </p>
       <p>
+        Contact details you add to your profile are public, and anyone who views your page can use
+        them to contact you directly. Freudin does not take part in these communications. Add only
+        contact details you are willing to share publicly.
+      </p>
+      <p>
         The list of cities is based on data from GeoNames. Choosing a city does not send any
         information to GeoNames.
       </p>
       <p>
-        Your email address and sign-in account identifiers are not shown on your public profile. You
-        can change or remove your public profile information at any time in <SettingsLink />. If you
-        change your page address, your previous address stops working.
+        The email address of your sign-in account, your contact email address, and your sign-in
+        account identifiers are not shown on your public profile. An email address appears there
+        only if you add it to your contact details. You can change or remove your public profile
+        information at any time in <SettingsLink />. If you change your page address, your previous
+        address stops working.
       </p>
 
-      <h3>1.6. Technical and usage information</h3>
+      <h3 id="search-details">1.6. Details used for search</h3>
+      <p>
+        If you add them in <SettingsLink />, we store your date of birth, your gender, and the
+        client concerns you work with, such as stress, burnout, or relationship difficulties. These
+        details are optional and are not shown on your public profile. We will use them to help
+        clients find a suitable psychologist, for example through search. Until such features are
+        available, we only store them. You can add a date of birth only if you are at least 18 years
+        old. You can change or remove these details at any time in <SettingsLink />.
+      </p>
+
+      <h3>1.7. Technical and usage information</h3>
       <p>
         When you use the Service, we may automatically receive technical and usage information,
         including:
@@ -227,7 +250,7 @@ export function PrivacyView() {
         <li>error reports, security logs, and diagnostic information.</li>
       </ul>
 
-      <h3>1.7. Communications</h3>
+      <h3>1.8. Communications</h3>
       <p>If you contact us, we may collect:</p>
       <ul>
         <li>your name and email address;</li>
@@ -293,6 +316,7 @@ export function PrivacyView() {
         <li>authenticate you through Google Sign-In, Facebook Login, or Telegram Login;</li>
         <li>display your account profile;</li>
         <li>publish your public profile page;</li>
+        <li>help clients find psychologists that match their needs;</li>
         <li>provide and operate the Service;</li>
         <li>remember your preferences;</li>
         <li>respond to support requests and communications;</li>
@@ -478,8 +502,8 @@ export function PrivacyView() {
         You can delete your Freudin account at any time in <SettingsLink /> → Delete account. If you
         have not created your page yet, you can delete your account on the page creation screen.
         Deletion takes effect immediately: your account, all connected sign-in methods, public
-        profile, profile photos, and documents are deleted, and your public page stops being
-        available.
+        profile, profile photos, documents, and details used for search are deleted, and your public
+        page stops being available.
       </p>
       <p>
         You may also request deletion of your Freudin account and associated personal data by

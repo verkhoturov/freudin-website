@@ -8,6 +8,7 @@ import { routes } from "@/shared/config";
 import { Button } from "@/shared/ui/button";
 import { DocumentGallery } from "./document-gallery";
 import { getPracticeDetails, PracticeDetails, type PracticeItem } from "./practice-details";
+import { PreferredContactButton } from "./preferred-contact-button";
 import { ShareProfileButton } from "./share-profile-button";
 
 type ProfileCardProps = {
@@ -24,6 +25,7 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
         <h1 className="font-semibold text-2xl tracking-tight">{profile.displayName}</h1>
         <p className="text-muted-foreground text-sm">@{profile.username}</p>
       </header>
+      <PreferredContactButton profile={profile} />
       {renderSections(profile)}
       <div className="flex flex-wrap justify-center gap-2">
         <ShareProfileButton username={profile.username} displayName={profile.displayName} />

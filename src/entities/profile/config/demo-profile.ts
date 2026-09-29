@@ -7,7 +7,7 @@ import { profileSectionIds } from "./sections";
 export const demoProfile: PublicProfile = {
   username: DEMO_USERNAME,
   displayName: "Demo profile",
-  bio: "This is what a psychologist’s page looks like: a photo, name, bio, practice details, links, and documents.",
+  bio: "This is what a psychologist’s page looks like: a photo, name, bio, practice details, education, contacts, links, and documents.",
   avatarUrl: null,
   socialLinks: [
     { platform: "telegram", url: "https://t.me/telegram" },
@@ -33,4 +33,15 @@ export const demoProfile: PublicProfile = {
     },
   ],
   sectionOrder: [...profileSectionIds],
+  practiceStartedOn: "2016-09-01",
+  education: [
+    {
+      qualification: "MA in Clinical Psychology",
+      institution: "Sample University",
+      year: 2015,
+    },
+  ],
+  // Адрес из зарезервированного домена example.com: письмо никому не уйдёт
+  contacts: { email: "hello@example.com", telegram: "https://t.me/telegram" },
+  preferredContact: "telegram",
 };

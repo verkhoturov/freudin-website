@@ -1,6 +1,7 @@
 import { type QueryClient, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   type AvatarSource,
+  type PrivateProfileDetails,
   type ProfileInput,
   type ProfileUpdateInput,
   type ProviderAvatarRequest,
@@ -32,6 +33,22 @@ function syncContactEmailCache(queryClient: QueryClient, contactEmail: string | 
   const value = contactEmail.trim() || null;
   queryClient.setQueryData(viewerQueries.me().queryKey, (viewer) =>
     viewer ? { ...viewer, user: { ...viewer.user, contactEmail: value } } : viewer,
+  );
+}
+
+// Закрытые данные сервер хранит отдельно от профиля. Мутации получают значения после схем
+// (`getProfileChanges`), поэтому кладём их в кеш как есть
+function syncPrivateDetailsCache(
+  queryClient: QueryClient,
+  input: Pick<ProfileUpdateInput, "birthDate" | "gender" | "concerns">,
+) {
+  const changes: Partial<PrivateProfileDetails> = {};
+  if (input.birthDate !== undefined) changes.birthDate = input.birthDate.trim() || null;
+  if (input.gender !== undefined) changes.gender = input.gender || null;
+  if (input.concerns !== undefined) changes.concerns = input.concerns;
+  if (Object.keys(changes).length === 0) return;
+  queryClient.setQueryData(viewerQueries.me().queryKey, (viewer) =>
+    viewer ? { ...viewer, privateDetails: { ...viewer.privateDetails, ...changes } } : viewer,
   );
 }
 
@@ -76,6 +93,7 @@ export function useCreateProfileMutation() {
     },
     onSuccess: ({ profile }, variables) => {
       syncContactEmailCache(queryClient, variables.profile.contactEmail || undefined);
+      syncPrivateDetailsCache(queryClient, variables.profile);
       syncProfileCache(queryClient, profile);
     },
     onError: (error) => {
@@ -98,6 +116,7 @@ export function useUpdateProfileMutation() {
       apiClient.patch<PublicProfile>(apiRoutes.profile, input),
     onSuccess: (profile, input) => {
       syncContactEmailCache(queryClient, input.contactEmail);
+      syncPrivateDetailsCache(queryClient, input);
       syncProfileCache(queryClient, profile);
     },
   });

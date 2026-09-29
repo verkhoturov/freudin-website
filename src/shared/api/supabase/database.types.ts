@@ -56,6 +56,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      profile_private: {
+        Row: {
+          birth_date: string | null;
+          concerns: string[];
+          created_at: string;
+          gender: string | null;
+          id: string;
+          updated_at: string;
+        };
+        Insert: {
+          birth_date?: string | null;
+          concerns?: string[];
+          created_at?: string;
+          gender?: string | null;
+          id: string;
+          updated_at?: string;
+        };
+        Update: {
+          birth_date?: string | null;
+          concerns?: string[];
+          created_at?: string;
+          gender?: string | null;
+          id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           approaches: string[];
@@ -63,12 +90,16 @@ export type Database = {
           bio: string;
           city_id: number | null;
           client_types: string[];
+          contacts: Json;
           country: string | null;
           created_at: string;
           display_name: string;
           documents: Json;
+          education: Json;
           id: string;
           languages: string[];
+          practice_started_on: string | null;
+          preferred_contact: string | null;
           price_amount: number | null;
           price_currency: string | null;
           section_order: string[];
@@ -83,12 +114,16 @@ export type Database = {
           bio?: string;
           city_id?: number | null;
           client_types?: string[];
+          contacts?: Json;
           country?: string | null;
           created_at?: string;
           display_name: string;
           documents?: Json;
+          education?: Json;
           id: string;
           languages?: string[];
+          practice_started_on?: string | null;
+          preferred_contact?: string | null;
           price_amount?: number | null;
           price_currency?: string | null;
           section_order?: string[];
@@ -103,12 +138,16 @@ export type Database = {
           bio?: string;
           city_id?: number | null;
           client_types?: string[];
+          contacts?: Json;
           country?: string | null;
           created_at?: string;
           display_name?: string;
           documents?: Json;
+          education?: Json;
           id?: string;
           languages?: string[];
+          practice_started_on?: string | null;
+          preferred_contact?: string | null;
           price_amount?: number | null;
           price_currency?: string | null;
           section_order?: string[];

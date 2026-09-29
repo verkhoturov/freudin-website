@@ -12,11 +12,24 @@ import {
   approachLabels,
   BIO_MAX_LENGTH,
   CONTACT_EMAIL_MAX_LENGTH,
+  type ContactType,
   clientTypeIds,
   clientTypeLabels,
+  concernGroups,
+  concernIds,
+  contactTypeIds,
+  contactTypeLabels,
   DISPLAY_NAME_MAX_LENGTH,
+  EDUCATION_MAX,
+  EDUCATION_TEXT_MAX_LENGTH,
+  type Gender,
+  genderIds,
+  genderLabels,
+  isConcernGroupAvailable,
   LANGUAGES_MAX,
+  MIN_AGE,
   normalizeSectionOrder,
+  PHONE_MAX_LENGTH,
   PRICE_AMOUNT_MAX,
   type ProfileInput,
   type ProfileSection,
@@ -47,6 +60,7 @@ import {
 import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Textarea } from "@/shared/ui/textarea";
+import { getPreferredContactOptions } from "../lib/preferred-contact-options";
 import type { AvatarValue } from "../model/avatar-value";
 import { AvatarField } from "./avatar-field";
 import { CheckboxGroup } from "./checkbox-group";
@@ -61,15 +75,58 @@ const PRICE_AMOUNT_MAX_LENGTH = String(PRICE_AMOUNT_MAX).length;
 const workFormatOptions = workFormatIds.map((id) => ({ value: id, label: workFormatLabels[id] }));
 const clientTypeOptions = clientTypeIds.map((id) => ({ value: id, label: clientTypeLabels[id] }));
 const approachOptions = approachIds.map((id) => ({ value: id, label: approachLabels[id] }));
+const concernGroupOptions = concernGroups.map((group) => ({
+  ...group,
+  options: Object.entries(group.concerns).map(([value, label]) => ({
+    value: value as (typeof concernIds)[number],
+    label,
+  })),
+}));
+
+// Пустое значение в Select нельзя: «не выбрано» — отдельный пункт
+const NOT_SELECTED = "none";
+
+const contactInputProps: Record<ContactType, React.ComponentProps<typeof Input>> = {
+  email: {
+    type: "email",
+    inputMode: "email",
+    autoComplete: "email",
+    maxLength: CONTACT_EMAIL_MAX_LENGTH,
+  },
+  phone: {
+    type: "tel",
+    inputMode: "tel",
+    autoComplete: "tel",
+    placeholder: "+995 555 123 456",
+    maxLength: PHONE_MAX_LENGTH,
+  },
+  whatsapp: {
+    type: "tel",
+    inputMode: "tel",
+    autoComplete: "tel",
+    placeholder: "+995 555 123 456",
+    maxLength: PHONE_MAX_LENGTH,
+  },
+  telegram: { placeholder: "@username or t.me link", autoComplete: "off" },
+};
+
+/** Сегодня и дата `years` лет назад по UTC, `YYYY-MM-DD`: границы полей дат, как в схемах. */
+function utcDateYearsAgo(years: number): string {
+  const today = new Date().toISOString().slice(0, 10);
+  return `${Number(today.slice(0, 4)) - years}${today.slice(4)}`;
+}
 
 // Блоки с данными психолога: в онбординге их нет
 const practiceSections = new Set<ProfileSection>([
+  "experience",
   "approaches",
   "client-types",
   "work-formats",
   "location",
   "languages",
   "price",
+  "education",
+  "contacts",
 ]);
 
 type ProfileFormProps = {
@@ -551,6 +608,244 @@ export function ProfileForm({
             )}
           </form.Field>
         );
+      case "experience":
+        return (
+          <form.Field name="practiceStartedOn">
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Practicing since</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="date"
+                    max={utcDateYearsAgo(0)}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    aria-invalid={isInvalid}
+                    aria-describedby={`${field.name}-description`}
+                    className="w-auto"
+                  />
+                  <FieldDescription id={`${field.name}-description`}>
+                    Your page shows your years of experience.
+                  </FieldDescription>
+                  {isInvalid ? (
+                    <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                  ) : null}
+                </Field>
+              );
+            }}
+          </form.Field>
+        );
+      case "education":
+        return (
+          <form.Field name="education" mode="array">
+            {(educationField) => (
+              <FieldSet>
+                <FieldLegend variant="label" className={titleClassName}>
+                  Education
+                </FieldLegend>
+                {educationField.state.value.length > 0 ? (
+                  <ul className="flex flex-col gap-4">
+                    {educationField.state.value.map((_, index) => (
+                      // Поля массива в TanStack Form привязаны к индексу
+                      // biome-ignore lint/suspicious/noArrayIndexKey: ключ совпадает с именем поля
+                      <li key={index} className="flex items-start gap-2">
+                        <div className="flex min-w-0 flex-1 flex-col gap-2">
+                          <form.Field name={`education[${index}].qualification`}>
+                            {(field) => {
+                              const isInvalid =
+                                field.state.meta.isTouched && !field.state.meta.isValid;
+                              return (
+                                <Field data-invalid={isInvalid}>
+                                  <Input
+                                    name={field.name}
+                                    value={field.state.value}
+                                    onBlur={field.handleBlur}
+                                    onChange={(event) => field.handleChange(event.target.value)}
+                                    aria-invalid={isInvalid}
+                                    aria-label={`Degree or qualification ${index + 1}`}
+                                    placeholder="Degree or qualification"
+                                    maxLength={EDUCATION_TEXT_MAX_LENGTH}
+                                  />
+                                  {isInvalid ? (
+                                    <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                                  ) : null}
+                                </Field>
+                              );
+                            }}
+                          </form.Field>
+                          <div className="flex items-start gap-2">
+                            <form.Field name={`education[${index}].institution`}>
+                              {(field) => {
+                                const isInvalid =
+                                  field.state.meta.isTouched && !field.state.meta.isValid;
+                                return (
+                                  <Field data-invalid={isInvalid} className="min-w-0 flex-1">
+                                    <Input
+                                      name={field.name}
+                                      value={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onChange={(event) => field.handleChange(event.target.value)}
+                                      aria-invalid={isInvalid}
+                                      aria-label={`School or institution ${index + 1}`}
+                                      placeholder="School or institution"
+                                      maxLength={EDUCATION_TEXT_MAX_LENGTH}
+                                    />
+                                    {isInvalid ? (
+                                      <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                                    ) : null}
+                                  </Field>
+                                );
+                              }}
+                            </form.Field>
+                            <form.Field name={`education[${index}].year`}>
+                              {(field) => {
+                                const isInvalid =
+                                  field.state.meta.isTouched && !field.state.meta.isValid;
+                                return (
+                                  <Field data-invalid={isInvalid} className="w-20 shrink-0">
+                                    <Input
+                                      name={field.name}
+                                      value={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onChange={(event) => field.handleChange(event.target.value)}
+                                      aria-invalid={isInvalid}
+                                      aria-label={`Year ${index + 1}`}
+                                      placeholder="Year"
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
+                                      autoComplete="off"
+                                      maxLength={4}
+                                    />
+                                  </Field>
+                                );
+                              }}
+                            </form.Field>
+                          </div>
+                          {/* Ошибку года показываем под строкой: в узком поле она не поместится */}
+                          <form.Subscribe
+                            selector={(state) =>
+                              state.fieldMeta[`education[${index}].year`] ?? null
+                            }>
+                            {(meta) =>
+                              meta?.isTouched && !meta.isValid ? (
+                                <FieldError errors={toFieldErrors(meta.errors)} />
+                              ) : null
+                            }
+                          </form.Subscribe>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Remove education ${index + 1}`}
+                          onClick={() => educationField.removeValue(index)}>
+                          <XIcon aria-hidden="true" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {educationField.state.meta.isTouched && !educationField.state.meta.isValid ? (
+                  <FieldError errors={toFieldErrors(educationField.state.meta.errors)} />
+                ) : null}
+                {educationField.state.value.length < EDUCATION_MAX ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="self-start"
+                    onClick={() =>
+                      educationField.pushValue({ qualification: "", institution: "", year: "" })
+                    }>
+                    <PlusIcon aria-hidden="true" />
+                    Add education
+                  </Button>
+                ) : null}
+              </FieldSet>
+            )}
+          </form.Field>
+        );
+      case "contacts":
+        return (
+          <FieldGroup>
+            {contactTypeIds.map((type) => (
+              <form.Field key={type} name={`contacts.${type}`}>
+                {(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>{contactTypeLabels[type]}</FieldLabel>
+                      <Input
+                        {...contactInputProps[type]}
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        aria-invalid={isInvalid}
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                      />
+                      {isInvalid ? (
+                        <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                      ) : null}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+            ))}
+            <form.Field name="preferredContact">
+              {(field) => (
+                <form.Subscribe
+                  selector={(state) => [state.values.contacts, state.values.socialLinks] as const}>
+                  {([contacts, socialLinks]) => {
+                    const options = getPreferredContactOptions(contacts, socialLinks);
+                    // Способ, которого больше нет, схема сбросит при сохранении
+                    const value = options.some((option) => option.value === field.state.value)
+                      ? field.state.value
+                      : NOT_SELECTED;
+                    return (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>Preferred way to contact</FieldLabel>
+                        <Select
+                          value={value}
+                          onValueChange={(next) => {
+                            // Пустую строку присылает скрытый <select> Radix, а не выбор
+                            // пользователя: «не выбрано» — это NOT_SELECTED
+                            if (!next) return;
+                            field.handleChange(next === NOT_SELECTED ? "" : next);
+                            field.handleBlur();
+                          }}>
+                          <SelectTrigger
+                            id={field.name}
+                            aria-describedby={`${field.name}-description`}
+                            className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NOT_SELECTED}>Not selected</SelectItem>
+                            {options.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FieldDescription id={`${field.name}-description`}>
+                          The main button on your page. Choose from your contacts and links.
+                        </FieldDescription>
+                      </Field>
+                    );
+                  }}
+                </form.Subscribe>
+              )}
+            </form.Field>
+          </FieldGroup>
+        );
       case "documents":
         return documentsBlock;
     }
@@ -675,6 +970,119 @@ export function ProfileForm({
             />
           )}
         </form.Field>
+
+        {showPractice ? (
+          <section
+            aria-labelledby="search-details-title"
+            aria-describedby="search-details-description"
+            className="flex flex-col gap-4 rounded-xl border p-3">
+            <div className="flex flex-col gap-1">
+              <h3 id="search-details-title" className="font-medium text-sm">
+                Search details
+              </h3>
+              <p id="search-details-description" className="text-muted-foreground text-sm">
+                Not shown on your page. Used to match you with clients.
+              </p>
+            </div>
+            <form.Field name="birthDate">
+              {(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Date of birth</FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="date"
+                      max={utcDateYearsAgo(MIN_AGE)}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(event) => field.handleChange(event.target.value)}
+                      aria-invalid={isInvalid}
+                      autoComplete="bday"
+                      className="w-auto"
+                    />
+                    {isInvalid ? (
+                      <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                    ) : null}
+                  </Field>
+                );
+              }}
+            </form.Field>
+            <form.Field name="gender">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Gender</FieldLabel>
+                  <Select
+                    value={field.state.value || NOT_SELECTED}
+                    onValueChange={(next) => {
+                      if (!next) return;
+                      field.handleChange(next === NOT_SELECTED ? "" : (next as Gender));
+                      field.handleBlur();
+                    }}>
+                    <SelectTrigger id={field.name} className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NOT_SELECTED}>Not specified</SelectItem>
+                      {genderIds.map((gender) => (
+                        <SelectItem key={gender} value={gender}>
+                          {genderLabels[gender]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            </form.Field>
+            <form.Field name="concerns">
+              {(field) => (
+                <FieldSet>
+                  <FieldLegend variant="label">Client concerns you work with</FieldLegend>
+                  <form.Subscribe selector={(state) => state.values.clientTypes}>
+                    {(clientTypes) =>
+                      concernGroupOptions
+                        // Запросы пар — только если отмечено «Couples»: остальные схема отбросит
+                        .filter((group) => isConcernGroupAvailable(group, clientTypes))
+                        .map((group) => {
+                          const groupIds = new Set<string>(
+                            group.options.map((option) => option.value),
+                          );
+                          return (
+                            <CheckboxGroup
+                              key={group.id}
+                              name={`concerns-${group.id}`}
+                              legend={group.label}
+                              legendClassName="font-normal text-muted-foreground"
+                              options={group.options}
+                              value={field.state.value.filter((id) => groupIds.has(id))}
+                              // Храним в порядке справочника: иначе снятая и снова отмеченная галочка
+                              // считалась бы изменением
+                              onChange={(groupValue) =>
+                                field.handleChange(
+                                  concernIds.filter((id) =>
+                                    groupIds.has(id)
+                                      ? (groupValue as string[]).includes(id)
+                                      : field.state.value.includes(id),
+                                  ),
+                                )
+                              }
+                              onBlur={field.handleBlur}
+                              className="sm:grid sm:grid-cols-2"
+                              errors={[]}
+                            />
+                          );
+                        })
+                    }
+                  </form.Subscribe>
+                  {field.state.meta.isTouched && !field.state.meta.isValid ? (
+                    <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                  ) : null}
+                </FieldSet>
+              )}
+            </form.Field>
+          </section>
+        ) : null}
 
         {showContactEmail ? (
           <form.Field name="contactEmail">
