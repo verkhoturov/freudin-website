@@ -15,7 +15,9 @@ type Story = StoryObj<typeof meta>;
 const colorPairs = [
   { name: "background", fg: "foreground", note: "Фон страницы и основной текст" },
   { name: "card", fg: "card-foreground", note: "Карточки" },
-  { name: "popover", fg: "popover-foreground", note: "Меню, списки, тосты" },
+  { name: "popover", fg: "popover-foreground", note: "Меню, списки, тосты с информацией" },
+  { name: "success", fg: "success-foreground", note: "Тост об успехе" },
+  { name: "error", fg: "error-foreground", note: "Тост об ошибке" },
   { name: "cta", fg: "cta-foreground", note: "Главная кнопка" },
   { name: "secondary", fg: "secondary-foreground", note: "Второстепенная кнопка" },
   { name: "primary", fg: "primary-foreground", note: "Активные элементы: чекбоксы, ползунок" },

@@ -73,7 +73,7 @@ Freudin — сайт, где пользователь входит через Go
 | Формы и валидация | TanStack Form + zod 4 |
 | Backend | Route Handlers в `src/app/api` |
 | БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI для миграций и типов |
-| UI kit | Storybook 10 (`@storybook/nextjs-vite`), только dev |
+| UI kit | Storybook 10 (`@storybook/nextjs-vite`), только dev; опубликован отдельным проектом Vercel |
 | Линтер и форматтер | Biome |
 | Хостинг | Vercel: `main` сразу выкладывается в прод, превью не используем |
 
@@ -384,6 +384,8 @@ export { LoginView as default, metadata } from "@/views/login";
   `variant="secondary"` (фиолетовый). Активные элементы (чекбоксы, ползунок, обводка фокуса) —
   `primary` и `ring`: розовый для них не годится, на фоне страницы он даёт 2.4:1. Выбранный
   элемент — `accent`. Ссылку внутри текста красим `text-link`, ссылки навигации и подвала — нет.
+  Тип тоста виден по цвету: `toast.success` — `success`, `toast.error` — `error` (их подключает
+  `Toaster` через `richColors`), `toast.info` — как обычный тост.
 - В `globals.css` два слоя цвета. Примитивы — шкалы `--violet-*`, `--pink-*`, `--neutral-*`,
   `--red-*` (50–950): их не используют ни компоненты, ни `@theme`. Семантические токены
   (`--primary: var(--violet-700)`) ссылаются на примитивы, а `.dark` переопределяет только
@@ -403,10 +405,15 @@ export { LoginView as default, metadata } from "@/views/login";
   ли их, а без терминала ответить некому. Тогда ставь с `--overwrite` и верни задетые файлы:
   `git checkout -- src/shared/ui/<файл>.tsx` (в них правки форматирования и наши исправления).
 - Классы объединяем через `cn` из `@/shared/lib/utils`.
-- **UI kit в Storybook** (`npm run storybook`). Истории лежат рядом с компонентом:
+- **UI kit в Storybook** (`npm run storybook`, опубликован на `freudin-storybook.vercel.app`:
+  отдельный проект Vercel, пересобирается с каждым коммитом в `main`, открывается только под
+  аккаунтом Vercel владельца). Истории лежат рядом с компонентом:
   `src/shared/ui/<компонент>.stories.tsx`, заголовки — `Components/…` для shadcn, `Freudin/…` для
   своих, `Foundations/Tokens` — палитра, шрифт и радиусы (`tokens.stories.tsx`). **Новый компонент
-  в `shared/ui` добавляем вместе с историей**; новый токен цвета — в `tokens.stories.tsx`. Тексты
+  в `shared/ui` добавляем вместе с историей**; новый токен цвета — в `tokens.stories.tsx`.
+  **Новый визуальный элемент вне `shared/ui`** (в `widgets`, `entities`, `views`: новый вид блока,
+  вариант, состояние) предлагаем пользователю показать в ките. Если сейчас не делаем, заносим
+  в `docs/PLAN.md` пункт «показать в Storybook» с названием элемента. Тексты
   историй — как на сайте, на английском. Настройки — в `.storybook/`: `preview.tsx` подключает
   `globals.css`, Geist (повторяет `layout.tsx`) и тему через next-themes (тулбар Storybook).
 - Тему переключает next-themes (класс `.dark` на `<html>`), переключатель — `ThemeToggle`

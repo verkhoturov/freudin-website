@@ -136,6 +136,11 @@
   --accent-foreground: var(--neutral-900);
   /* Темнее обычного красного: на своей подсветке у кнопки удаления текст не ниже 4.5:1 */
   --destructive: var(--red-700);
+  /* Тосты об успехе и об ошибке. Успех не розовый: розовый рядом с красным ошибки не различить */
+  --success: var(--violet-200);
+  --success-foreground: var(--violet-900);
+  --error: var(--red-200);
+  --error-foreground: var(--red-900);
   /* border — декоративные рамки и разделители, input — рамки полей и чекбоксов (не ниже 3:1) */
   --border: var(--neutral-200);
   --input: var(--neutral-500);
@@ -177,6 +182,11 @@
   --accent: var(--violet-800);
   --accent-foreground: var(--neutral-50);
   --destructive: var(--red-400);
+  /* Шаг 800, а не 900: на фоне страницы тост заметнее */
+  --success: var(--violet-800);
+  --success-foreground: var(--violet-50);
+  --error: var(--red-800);
+  --error-foreground: var(--red-50);
   --border: var(--neutral-800);
   --input: var(--neutral-500);
   --ring: var(--violet-300);

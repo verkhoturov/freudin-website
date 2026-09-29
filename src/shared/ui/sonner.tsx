@@ -17,6 +17,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      richColors
       icons={{
         success: <CircleCheckIcon className="size-4" />,
         info: <InfoIcon className="size-4" />,
@@ -29,6 +30,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
+          // richColors красит тосты по типу: успех и ошибка — своими токенами, остальные — как обычные
+          "--success-bg": "var(--success)",
+          "--success-text": "var(--success-foreground)",
+          "--success-border": "var(--success)",
+          "--error-bg": "var(--error)",
+          "--error-text": "var(--error-foreground)",
+          "--error-border": "var(--error)",
+          "--info-bg": "var(--popover)",
+          "--info-text": "var(--popover-foreground)",
+          "--info-border": "var(--border)",
+          "--warning-bg": "var(--popover)",
+          "--warning-text": "var(--popover-foreground)",
+          "--warning-border": "var(--border)",
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }

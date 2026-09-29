@@ -76,7 +76,7 @@
 | Клиентское состояние | Zustand (черновик онбординга) | ✅ |
 | Кроп фото | react-easy-crop | ✅ |
 | БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI (миграции и типы) | ✅ БД, вход через Google, Facebook и Telegram |
-| UI kit | Storybook 10 (`storybook`, `@storybook/nextjs-vite`, `vite`), dev-зависимость | ✅ локально |
+| UI kit | Storybook 10 (`storybook`, `@storybook/nextjs-vite`, `vite`), dev-зависимость | ✅ локально и на `freudin-storybook.vercel.app` |
 | Линтер и форматтер | Biome | ✅ |
 | Хостинг | Vercel, прод на `www.freud.in` | ✅ |
 
@@ -244,11 +244,13 @@ API:
   (`primary`, `secondary`), выбранный элемент `#E7EAFE` (`accent`), главная кнопка `#CF87CE`
   с текстом `#292535` (`cta`), ссылки в тексте `#983F95` (`link`). Тёмная тема: фон
   `neutral-950`, карточки `neutral-900` (`#292535`), активные элементы `violet-300`. Все пары
-  текста проходят WCAG AA, рамки полей (`input`) — не ниже 3:1 в обеих темах.
+  текста проходят WCAG AA, рамки полей (`input`) — не ниже 3:1 в обеих темах. Тосты по типу
+  (29.09.2026): успех — `violet-200` (`success`), ошибка — `red-200` (`error`), информация —
+  как меню (`popover`); в тёмной теме — шаги 800 тех же шкал.
 - Логотип (28.09.2026) — адрес `freud.in`, точка розовая (`text-cta`). Фавиконка — та же точка
   на фиолетовой плитке (`src/app/icon.svg`), из неё отрисованы `apple-icon.png` и `favicon.ico`.
 - UI kit — Storybook (`npm run storybook`): компоненты `shared/ui`, которые использует сайт, и страница токенов
-  в светлой и тёмной темах.
+  в светлой и тёмной темах. Опубликован на https://freudin-storybook.vercel.app (см. «Деплой»).
 - Светлая, тёмная и системная темы, переключатель в шапке.
 - Вёрстка mobile-first, есть ссылка Skip to content для навигации с клавиатуры.
 - Компоненты добавляются командой `npx shadcn add <component>` и попадают в `src/shared/ui`.
@@ -261,7 +263,7 @@ API:
 - вход через Google: см. ниже;
 - вход через Facebook: см. ниже;
 - вход через Telegram: см. ниже;
-- Vercel: подключён, см. «Деплой»;
+- Vercel: сайт и UI kit — два проекта, см. «Деплой»;
 - почта поддержки `freudin.support@gmail.com` (Gmail): где прописать адрес и как позже перейти
   на `support@freud.in` — в [`docs/PLAN.md`](docs/PLAN.md), этап H. Адрес задан
   в `siteConfig.supportEmail` и показан в подвале и юридических текстах.
@@ -441,6 +443,12 @@ Facebook хранится в `user_metadata.facebook_avatar_url`, чтобы в�
 Хостинг — Vercel. Каждый коммит в `main` сразу выкладывается в прод на `https://www.freud.in`,
 `freud.in` редиректит туда. Отдельного стенда нет, превью-деплои не используем: вход и интеграции
 проверяем локально, а после мержа — на проде.
+
+UI kit — отдельный проект Vercel `freudin-storybook` из того же репозитория, адрес
+https://freudin-storybook.vercel.app. Он тоже пересобирается при каждом коммите в `main`:
+Framework Preset — Other, Build Command — `npm run build-storybook`, Output Directory —
+`storybook-static`, переменных окружения нет. Deployment Protection — Vercel Authentication для
+All Deployments: кит открывается только под аккаунтом Vercel владельца и не индексируется.
 
 Переменные окружения прода задаются в Vercel → Settings → Environment Variables (окружение
 Production). Приложению они нужны с шага 7, и задать их надо до того, как код, который их читает,
