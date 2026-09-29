@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { userEvent, within } from "storybook/test";
 import { type PublicProfile, profileSectionIds } from "@/entities/profile";
 import { PreferredContactButton } from "./preferred-contact-button";
 import { ProfileCard } from "./profile-card";
@@ -79,6 +80,13 @@ export const Full: Story = {};
 export const Owner: Story = { args: { isOwner: true } };
 
 export const Minimal: Story = { args: { profile: minimalProfile } };
+
+/** Диалог Share: QR-код страницы. */
+export const ShareDialog: Story = {
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "Share" }));
+  },
+};
 
 // Подпись главной кнопки зависит от выбранного способа связи
 const preferredContacts = [
