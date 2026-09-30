@@ -225,6 +225,44 @@
       }
     },
     {
+      "includes": ["src/views/**/*.server.ts", "src/views/**/*.server.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/app/**"],
+                    "message": "FSD: импортировать можно только нижележащие слои (app → views → widgets → entities → shared)."
+                  },
+                  {
+                    "group": ["@/views/**"],
+                    "message": "FSD: слайсы одного слоя не импортируют друг друга. Общий код вынеси в нижележащий слой."
+                  },
+                  {
+                    "group": ["@/widgets/*/**", "@/entities/*/**", "!@/entities/*/index.server"],
+                    "message": "FSD: импортируй слайс через его public API (@/<layer>/<slice>), без путей внутрь слайса."
+                  },
+                  {
+                    "group": ["@supabase/**"],
+                    "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
+                  }
+                ],
+                "paths": {
+                  "sonner": {
+                    "message": "Тосты берём из @/shared/ui/sonner: там длительность по типу и защита от дублей.",
+                    "importNames": ["toast"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["src/app/**"],
       "linter": {
         "rules": {
@@ -234,11 +272,16 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@/views/*/**", "@/widgets/*/**", "@/entities/*/**"],
+                    "group": [
+                      "@/views/*/**",
+                      "@/widgets/*/**",
+                      "@/entities/*/**",
+                      "!@/views/*/index.server"
+                    ],
                     "message": "FSD: импортируй слайс через его public API (@/<layer>/<slice>), без путей внутрь слайса."
                   },
                   {
-                    "group": ["**/index.server"],
+                    "group": ["**/index.server", "!@/views/*/index.server"],
                     "message": "Серверный public API (index.server) нельзя импортировать в клиентский код. Данные клиент получает через /api."
                   },
                   {

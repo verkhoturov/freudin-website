@@ -102,14 +102,23 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   `robots.ts`, `sitemap.ts`, `manifest.ts`, `opengraph-image.jpg` (с `opengraph-image.alt.txt`),
   иконки `icon.svg`, `apple-icon.png` и `favicon.ico`, а также тема `globals.css` и модуль
   шрифтов `fonts.ts`.
-- Весь интерфейс состоит из клиентских компонентов. `"use client"` обязателен в UI-файлах
+- **Исключения — серверный рендер (решение пользователя 30.09.2026).** Личная страница
+  `/<username>` загружает профиль на сервере: `ProfilePage` и `generateMetadata` из
+  `@/views/profile/index.server` (`ui/profile-page.server.tsx`). Он читает профиль серверной
+  функцией сущности через `createSupabasePublicClient()`, на несуществующий адрес отвечает
+  `notFound()` (настоящий 404), адрес с заглавными буквами — редиректом 308 на нижний регистр,
+  а данные передаёт клиентской `ProfileView`. Юридические страницы `/privacy` и `/terms`
+  (view и виджет `legal-document`) — серверные компоненты без `"use client"`: в них только
+  статический текст, и клиентский JS им не нужен. Новые исключения — только по согласованию.
+- В остальном интерфейс состоит из клиентских компонентов. `"use client"` обязателен в UI-файлах
   слайсов `views` (это граница клиентского дерева) и в модулях, которые импортирует `src/app`
   (например, провайдеры).
-- **Вся серверная логика живёт только в Route Handlers `src/app/api/**/route.ts`.** Клиент получает
-  данные только из них: через `apiClient` и TanStack Query.
+- **Вся серверная логика живёт только в Route Handlers `src/app/api/**/route.ts`** (кроме
+  серверного рендера выше). Клиент получает данные только из них: через `apiClient`
+  и TanStack Query.
 - Не используем Server Actions, загрузку данных в серверных компонентах, `proxy.ts`
-  (бывший `middleware.ts`) и `generateMetadata`. Исключения только по согласованию
-  с пользователем (см. этап G в `docs/PLAN.md`).
+  (бывший `middleware.ts`) и `generateMetadata`, кроме исключений выше. Новые — только
+  по согласованию с пользователем (см. этап G в `docs/PLAN.md`).
 - Клиент никогда не обращается к Supabase напрямую. `@supabase/*` импортируется только
   в `src/shared/api/supabase/`, остальной серверный код берёт клиенты и типы из
   `@/shared/api/index.server`. Ключи Supabase лежат только в серверных env, без `NEXT_PUBLIC_`.
@@ -206,6 +215,8 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
   через index: `@/shared/config`, `@/shared/config/index.server`, `@/shared/api`,
   `@/shared/api/index.server`.
 - Клиентский код (`views`, `widgets`, `src/app` вне `api`) не импортирует `index.server`.
+  Исключения для серверного рендера: `page.tsx` берёт `@/views/<slice>/index.server`, а серверные
+  модули view (`*.server.ts(x)`) — `@/entities/<slice>/index.server` и `@/shared/api/index.server`.
 - `src/app/api` не импортирует UI (`views`, `widgets`, `shared/ui`) и клиентский public API
   сущностей.
 
@@ -235,6 +246,9 @@ export { LoginView as default, metadata } from "@/views/login";
   иначе Next.js его не примет);
 - `src/views/login/index.ts`: public API, реэкспортирует оба.
 
+Страница с серверным рендером (сейчас только `/<username>`) реэкспортирует серверный public API
+view: `export { generateMetadata, ProfilePage as default } from "@/views/profile/index.server";`.
+
 Текущие слайсы (переиспользуй, прежде чем создавать новые):
 
 | Слой | Слайс или модуль | Что внутри |
@@ -245,11 +259,12 @@ export { LoginView as default, metadata } from "@/views/login";
 | `entities` | `social-link` | справочник платформ, `socialLinkSchema` (нормализует адрес), `SocialLinkButton` (подпись с ником или доменом: `Telegram · @anna`, `example.com`); для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка сайта; подвал: ссылки на Privacy и Terms, почта поддержки, строка © с годами (`useCopyrightYears`: `2026`, затем `2026–<текущий год>`) и реквизиты ИП из `legalConfig` (по ним Meta сверяет компанию с сайтом) |
 | `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров (`AuthProviderIcon` из `viewer`) |
-| `widgets` | `profile-card` | карточка личной страницы: главная кнопка связи под именем (`PreferredContactButton`: предпочтительный способ связи), блоки после фото и имени в порядке `profile.sectionOrder` (незаполненные скрыты, пункты практики подряд — один `dl`, `PracticeDetails`), документы (`DocumentGallery`: превью, полное изображение в диалоге), скелетон, Share (диалог: QR-код прод-адреса страницы из `siteConfig.url` на `qrcode.react`, скачивание PNG, копирование ссылки, системное меню, где есть `navigator.share`), Edit для владельца (`isOwner`) |
+| `widgets` | `profile-card` | карточка личной страницы: главная кнопка связи под именем (`PreferredContactButton`: предпочтительный способ связи), блоки после фото и имени в порядке `profile.sectionOrder` (незаполненные скрыты, пункты практики подряд — один `dl`, `PracticeDetails`), документы (`DocumentGallery`: превью, полное изображение в диалоге), Share (диалог: QR-код прод-адреса страницы из `siteConfig.url` на `qrcode.react`, скачивание PNG, копирование ссылки, системное меню, где есть `navigator.share`), Edit для владельца (`isOwner`) |
 | `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом и фото из аккаунтов (`accountPhotos`; если их несколько — меню выбора), имя, адрес с проверкой (`— available` по ответу сервера), описание, соцсети, необязательная почта (`showContactEmail`: у аккаунта нет email от провайдера или контакт уже сохранён), блоки с данными психолога (`showPractice`, `currentCity` — только в настройках): с кем работает, подходы, формат, страна и город из справочника, языки, цена, стаж, образование, контакты для связи и выбор предпочтительного способа связи (`getPreferredContactOptions`: заполненные контакты и ссылки); раздел Search details после блоков (дата рождения, пол, запросы клиентов, только в настройках); конструктор страницы (`showSectionOrder`, только в настройках): блоки после фото, имени и адреса в рамках и в порядке `sectionOrder`, их переставляют перетаскиванием за ручку (`@dnd-kit`) и стрелками ↑↓ (`SortableBlocks`); блок документов приходит слотом `documentsBlock`; контактная почта — после блоков, на странице её нет; `mode="edit"` — кнопка активна только при изменениях и предупреждение об уходе с несохранёнными изменениями; `AvatarValue`, `getAvatarSource` |
 | `widgets` | `account-settings` | способы входа (Connect, Disconnect, тост итога привязки), Sign out, Delete account с подтверждением вводом username; `DeleteAccountDialog` (с `username={null}` — для аккаунта без страницы) |
 | `widgets` | `legal-document` | обёртка юридической страницы `LegalDocument` (заголовок, дата редакции, типографика), `OperatorDetails` (реквизиты из `legalConfig`), `CodeList` |
 | `views` | `error` | страница ошибки рендера: `ErrorState` с `retry` из Next (для `error.tsx` и `global-error.tsx`) |
+| `views` | `profile` | личная страница с серверным рендером: `ProfilePage` и `generateMetadata` (имя в `title`, начало «О себе» в `description`, в превью ссылки — фото, без фото — картинка сайта) в `index.server`; клиентская `ProfileView` берёт профиль из кеша запроса с `initialData` с сервера, чтобы правки владельца из мутаций были видны и после «Назад» |
 | `views` | `onboarding` | онбординг и удаление аккаунта без страницы; черновик формы — Zustand-стор `useOnboardingDraftStore` в `model` |
 | `widgets` | `profile-documents` | документы психолога в настройках (без своего заголовка: стоит блоком в конструкторе `profile-form`): список с превью, загрузка в диалоге (картинка уменьшается в браузере до 2048 px, превью — до 480 px, подпись обязательна) и удаление с подтверждением; сохраняются сразу, без формы профиля |
 | `views` | `settings` | настройки: `profile-form` в режиме редактирования — конструктор страницы с данными психолога и блоком `profile-documents` внутри, затем `account-settings` |
@@ -272,7 +287,7 @@ export { LoginView as default, metadata } from "@/views/login";
 | `/settings` | `src/app/settings/page.tsx` | `settings` | авторизованные с профилем | готово: профиль и аккаунт |
 | `/privacy` | `src/app/privacy/page.tsx` | `privacy` | все | готово: Privacy Policy на английском, у разделов якоря (`#account-and-data-deletion`) |
 | `/terms` | `src/app/terms/page.tsx` | `terms` | все | готово: Terms of Service на английском |
-| `/<username>` | `src/app/[username]/page.tsx` | `profile` | все | готово: данные из БД, `/demo` — демо-профиль; регистр не важен, адрес приводится к нижнему |
+| `/<username>` | `src/app/[username]/page.tsx` | `profile` | все | готово: серверный рендер (данные из БД, `/demo` — демо-профиль), нет профиля — 404, адрес с заглавными — редирект 308 на нижний регистр |
 | 404 | `src/app/not-found.tsx` | `not-found` | все | готово |
 | Ошибка | `src/app/error.tsx`, `src/app/global-error.tsx` | `error` | все | готово: Try again (`retry`) и почта поддержки |
 
@@ -494,7 +509,8 @@ export { LoginView as default, metadata } from "@/views/login";
   редиректит на `www`). Корневой layout задаёт `metadataBase`, Open Graph по умолчанию и карточку
   Twitter.
 - Страница, которая задаёт свой `openGraph`, заменяет объект из layout целиком (слияние
-  поверхностное), поэтому повторяй в нём нужные поля по умолчанию.
+  поверхностное), поэтому повторяй в нём нужные поля по умолчанию. Вместе с ним пропадает
+  и картинка `opengraph-image.jpg`: в `generateMetadata` бери её из `(await parent).openGraph?.images`.
 - `opengraph-image.jpg` нарисована в цветах бренда: логотип `freud.in` и подзаголовок по центру.
   Центр важен: мессенджеры в маленьком превью обрезают картинку до квадрата, X — до 2:1. Меняя
   палитру, логотип или `siteConfig.description`, перерисуй картинку и обнови alt.
@@ -505,9 +521,9 @@ export { LoginView as default, metadata } from "@/views/login";
 - Служебные и приватные страницы не индексируются: в их `metadata` стоит
   `robots: { index: false, follow: true }` (сейчас это `/login`, `/onboarding` и `/settings`).
   В `robots.txt` их не закрываем, иначе поисковик не увидит `noindex`.
-- Контент, важный для поиска и превью ссылок, должен попадать в серверный HTML. Данные сейчас
-  грузятся на клиенте, поэтому для публичных страниц это ограничение нужно учитывать и обсуждать
-  с пользователем (этап G в `docs/PLAN.md`).
+- Контент, важный для поиска и превью ссылок, должен попадать в серверный HTML. Личные страницы
+  и юридические тексты рендерятся на сервере, остальные данные грузятся на клиенте: новую
+  публичную страницу с данными обсуждай с пользователем (этап G в `docs/PLAN.md`).
 
 ## Код-стайл
 
@@ -552,8 +568,9 @@ export { LoginView as default, metadata } from "@/views/login";
 - Строку адреса без навигации меняем через `window.history.replaceState(window.history.state, "", url)`.
   С `null` вместо состояния Next теряет своё дерево роутов, и «Назад» показывает не ту страницу.
   `router.replace` для этого не подходит: он заново выставляет заголовок вкладки из `metadata`.
-- `notFound()` работает только в серверном коде. В клиентских view состояние 404 рисуем сами
-  (`NotFoundState` из `@/shared/ui/not-found-state`). Ошибку загрузки данных — `ErrorState`
+- `notFound()` работает только в серверном коде (сейчас — в `ProfilePage`). Вызывай его до
+  первого `Suspense` и без `loading.tsx` в сегменте: после начала стриминга статус останется 200.
+  В клиентских view состояние 404 рисуем сами (`NotFoundState` из `@/shared/ui/not-found-state`). Ошибку загрузки данных — `ErrorState`
   из `@/shared/ui/error-state`, ошибку рендера ловит `error.tsx`.
 - `error.tsx` и `global-error.tsx` получают `retry()` (перезапросить и перерисовать сегмент),
   а не только `reset()`: повтор делаем через `retry`.

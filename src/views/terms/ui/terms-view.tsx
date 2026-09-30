@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { legalConfig, routes, siteConfig } from "@/shared/config";
 import { SupportEmailLink } from "@/shared/ui/support-email-link";

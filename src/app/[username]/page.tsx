@@ -1,1 +1,1 @@
-export { ProfileView as default } from "@/views/profile";
+export { generateMetadata, ProfilePage as default } from "@/views/profile/index.server";
