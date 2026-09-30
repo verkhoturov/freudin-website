@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { toast } from "sonner";
 import { ProfileAvatar } from "@/entities/profile";
 import { useSignOutMutation, type Viewer } from "@/entities/viewer";
 import { routes } from "@/shared/config";
@@ -14,6 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
+import { toast } from "@/shared/ui/sonner";
+
+const SIGN_OUT_TOAST_ID = "sign-out";
 
 export function UserMenu({ viewer }: { viewer: Viewer }) {
   const signOut = useSignOutMutation();
@@ -22,10 +24,12 @@ export function UserMenu({ viewer }: { viewer: Viewer }) {
   const avatarUrl = profile ? profile.avatarUrl : suggestions.avatarUrl;
 
   const handleSignOut = () => {
+    // Меню закрывается сразу, поэтому ожидание показывает тост; ошибка заменит его тем же id
+    toast.loading("Signing out…", { id: SIGN_OUT_TOAST_ID });
     signOut.mutate(undefined, {
       // Полная перезагрузка сбрасывает кеш запросов и всё состояние пользователя
       onSuccess: () => window.location.assign(routes.home),
-      onError: () => toast.error("Couldn’t sign out. Please try again."),
+      onError: () => toast.error("Couldn’t sign out. Please try again.", { id: SIGN_OUT_TOAST_ID }),
     });
   };
 

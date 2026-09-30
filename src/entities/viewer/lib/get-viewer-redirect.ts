@@ -9,7 +9,7 @@ import { getLoginHref } from "./get-login-href";
 export type ViewerAccess = "guest" | "without-profile" | "with-profile";
 
 /** Главная страница пользователя: его личная страница или онбординг, если профиля ещё нет. */
-export function getViewerHomePath(viewer: Viewer): string {
+function getViewerHomePath(viewer: Viewer): string {
   return viewer.profile ? routes.profile(viewer.profile.username) : routes.onboarding;
 }
 

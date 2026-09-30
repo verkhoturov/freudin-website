@@ -4,7 +4,6 @@ export {
   type Concern,
   concernGroups,
   concernIds,
-  concernLabels,
   isConcernGroupAvailable,
 } from "./config/concerns";
 export {
@@ -32,7 +31,6 @@ export {
   PRICE_AMOUNT_MAX,
   SOCIAL_LINKS_MAX,
   USERNAME_MAX_LENGTH,
-  USERNAME_MIN_LENGTH,
 } from "./config/limits";
 export {
   type Approach,
@@ -51,7 +49,6 @@ export {
   profileSectionLabels,
 } from "./config/sections";
 export {
-  AVATAR_MAX_BYTES,
   AVATAR_SIZE,
   DOCUMENT_MAX_BYTES,
   DOCUMENT_MAX_DIMENSION,
@@ -68,17 +65,12 @@ export {
 export { getEmptySettingsInput, getProfileChanges, toProfileInput } from "./lib/profile-changes";
 export { normalizeSectionOrder } from "./lib/section-order";
 export {
-  bioSchema,
-  contactEmailSchema,
   contactsSchema,
-  displayNameSchema,
   documentTitleSchema,
   type ProfileData,
   type ProfileInput,
   type ProfileUpdateInput,
   profileInputSchema,
-  profileUpdateSchema,
-  socialLinksSchema,
 } from "./model/schemas";
 export type {
   AvatarSource,

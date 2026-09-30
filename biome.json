@@ -22,7 +22,20 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "sonner": {
+                "message": "Тосты берём из @/shared/ui/sonner: там длительность по типу и защита от дублей.",
+                "importNames": ["toast"]
+              }
+            }
+          }
+        }
+      }
     },
     "domains": {
       "next": "recommended",
@@ -54,7 +67,13 @@
                     "group": ["@supabase/**"],
                     "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
                   }
-                ]
+                ],
+                "paths": {
+                  "sonner": {
+                    "message": "Тосты берём из @/shared/ui/sonner: там длительность по типу и защита от дублей.",
+                    "importNames": ["toast"]
+                  }
+                }
               }
             }
           }
@@ -74,7 +93,13 @@
                     "group": ["@/app/**", "@/views/**", "@/widgets/**", "@/entities/**"],
                     "message": "FSD: импортировать можно только нижележащие слои (app → views → widgets → entities → shared)."
                   }
-                ]
+                ],
+                "paths": {
+                  "sonner": {
+                    "message": "Тосты берём из @/shared/ui/sonner: там длительность по типу и защита от дублей.",
+                    "importNames": ["toast"]
+                  }
+                }
               }
             }
           }
@@ -102,7 +127,13 @@
                     "group": ["@supabase/**"],
                     "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
                   }
-                ]
+                ],
+                "paths": {
+                  "sonner": {
+                    "message": "Тосты берём из @/shared/ui/sonner: там длительность по типу и защита от дублей.",
+                    "importNames": ["toast"]
+                  }
+                }
               }
             }
           }
@@ -138,7 +169,13 @@
                     "group": ["@supabase/**"],
                     "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
                   }
-                ]
+                ],
+                "paths": {
+                  "sonner": {
+                    "message": "Тосты берём из @/shared/ui/sonner: там длительность по типу и защита от дублей.",
+                    "importNames": ["toast"]
+                  }
+                }
               }
             }
           }
@@ -174,7 +211,13 @@
                     "group": ["@supabase/**"],
                     "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
                   }
-                ]
+                ],
+                "paths": {
+                  "sonner": {
+                    "message": "Тосты берём из @/shared/ui/sonner: там длительность по типу и защита от дублей.",
+                    "importNames": ["toast"]
+                  }
+                }
               }
             }
           }
@@ -202,7 +245,13 @@
                     "group": ["@supabase/**"],
                     "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
                   }
-                ]
+                ],
+                "paths": {
+                  "sonner": {
+                    "message": "Тосты берём из @/shared/ui/sonner: там длительность по типу и защита от дублей.",
+                    "importNames": ["toast"]
+                  }
+                }
               }
             }
           }
@@ -230,7 +279,13 @@
                     "group": ["@supabase/**"],
                     "message": "Supabase SDK подключается только в src/shared/api/supabase. Серверный код берёт клиенты из @/shared/api/index.server, клиентский ходит в /api."
                   }
-                ]
+                ],
+                "paths": {
+                  "sonner": {
+                    "message": "Тосты берём из @/shared/ui/sonner: там длительность по типу и защита от дублей.",
+                    "importNames": ["toast"]
+                  }
+                }
               }
             }
           }

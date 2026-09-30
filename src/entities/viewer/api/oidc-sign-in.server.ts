@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
-import { z } from "zod";
+import * as z from "zod";
 import { isIdentityAlreadyExistsError, type SupabaseServerClient } from "@/shared/api/index.server";
 import { apiRoutes } from "@/shared/config";
 import { getServerEnv } from "@/shared/config/index.server";

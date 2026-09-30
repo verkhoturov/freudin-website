@@ -7,8 +7,8 @@ import { profileQueries } from "@/entities/profile";
 import { useViewerQuery } from "@/entities/viewer";
 import { ApiError } from "@/shared/api";
 import { routes, siteConfig } from "@/shared/config";
-import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
+import { ErrorState } from "@/shared/ui/error-state";
 import { NotFoundState } from "@/shared/ui/not-found-state";
 import { ProfileCard, ProfileCardSkeleton } from "@/widgets/profile-card";
 
@@ -47,7 +47,7 @@ export function ProfileView() {
 
   if (profile.isPending) {
     return (
-      <Container className="py-10">
+      <Container className="py-page">
         <ProfileCardSkeleton />
       </Container>
     );
@@ -56,23 +56,18 @@ export function ProfileView() {
   if (profile.isError) {
     const isNotFound = profile.error instanceof ApiError && profile.error.status === 404;
     return (
-      <Container className="py-10">
+      <Container className="py-page">
         {isNotFound ? (
           <NotFoundState />
         ) : (
-          <div className="flex flex-col items-start gap-6">
-            <h1 className="font-semibold text-2xl tracking-tight">Couldn’t load the page</h1>
-            <Button variant="outline" onClick={() => profile.refetch()}>
-              Try again
-            </Button>
-          </div>
+          <ErrorState title="Couldn’t load the page" onRetry={() => profile.refetch()} />
         )}
       </Container>
     );
   }
 
   return (
-    <Container className="py-10">
+    <Container className="py-page">
       <ProfileCard
         profile={profile.data}
         isOwner={viewer.data?.profile?.username === profile.data.username}

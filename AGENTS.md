@@ -95,9 +95,13 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
 - **Server Components избегаем.** Серверными остаются только файлы, без которых Next.js не
   работает: корневой `src/app/layout.tsx` (html/body, шрифты, metadata, провайдеры) и тонкие
   файлы роутинга `page.tsx` и `not-found.tsx`. В них нет хуков, загрузки данных и логики:
-  только реэкспорт view и статического `metadata`. Кроме них в `src/app` лежат статические
-  metadata-файлы без загрузки данных: `robots.ts`, `sitemap.ts`, `opengraph-image.jpg`
-  (с `opengraph-image.alt.txt`), иконки `icon.svg`, `apple-icon.png` и `favicon.ico`.
+  только реэкспорт view и статического `metadata`. Границы ошибок клиентские: `error.tsx`
+  (`"use client"` и реэкспорт view `error`) и `global-error.tsx` — он заменяет упавший корневой
+  layout, поэтому сам рисует html и body, подключает `globals.css`, шрифты и тему (без шапки
+  и данных). Кроме них в `src/app` лежат статические metadata-файлы без загрузки данных:
+  `robots.ts`, `sitemap.ts`, `manifest.ts`, `opengraph-image.jpg` (с `opengraph-image.alt.txt`),
+  иконки `icon.svg`, `apple-icon.png` и `favicon.ico`, а также тема `globals.css` и модуль
+  шрифтов `fonts.ts`.
 - Весь интерфейс состоит из клиентских компонентов. `"use client"` обязателен в UI-файлах
   слайсов `views` (это граница клиентского дерева) и в модулях, которые импортирует `src/app`
   (например, провайдеры).
@@ -160,8 +164,9 @@ ESLint, Prettier и т. п.). Новую зависимость добавляй
 - Формат ошибки API: `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }`
   плюс корректный HTTP-статус. Коды: `bad_request` и `validation_error` (400), `unauthorized` (401),
   `forbidden` (403), `not_found` (404), `conflict` (409), `payload_too_large` (413),
-  `internal_error` (500). На клиенте у `ApiError` бывают ещё `network_error` (status 0) и
-  `unexpected_response`. Поле `message` пишем для пользователя, на английском.
+  `internal_error` (500). На клиенте у `ApiError` бывают ещё `network_error` (status 0: нет
+  сети или ответа нет дольше 30 с, загрузки файлов — 120 с) и `unexpected_response`. Поле
+  `message` пишем для пользователя, на английском.
 - В серверном коде из `@/shared/api` импортируем только типы (`import type`): модуль клиентский
   и тянет за собой TanStack Query.
 - Путь для редиректа из `?next=` пропускаем только через `getSafeRedirectPath` из
@@ -234,22 +239,23 @@ export { LoginView as default, metadata } from "@/views/login";
 
 | Слой | Слайс или модуль | Что внутри |
 |------|------------------|------------|
-| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (привязанные способы входа `user.signInMethods`: провайдер, email или `@username`, фото), `SignInMethod`, `getAccountPhotos`, `AuthProviderIcon` (логотипы провайдеров), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation` (с подтверждением username, без профиля — без него), `isAccountDeletionConfirmed`, `useLinkIdentityMutation`, `useUnlinkIdentityMutation`, `identityLinkParams`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation`, `useUploadDocumentMutation` (изображение, превью и подпись), `useDeleteDocumentMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard`, `useViewerRedirect`, `getViewerHomePath`; на сервере `authProviderSchema`, `identityLinkInputSchema`, `deleteAccountInputSchema`, `isAccountDeletionConfirmed`, `getOAuthSignInUrl`, `getOAuthErrorCode`, `exchangeAuthCode`, `signOut`, `deleteUser`, способы входа: `getLinkedIdentities`, `toSignInMethod`, `getOAuthLinkUrl`, `getOAuthLinkError`, `unlinkIdentity`; вход и привязка Google и Telegram без OAuth Supabase: `getOidcProvider`, `oidcProviderSchema`, `startOidcSignIn`, `takeOidcSignInState`, `completeOidcSignIn`, `completeOidcLink` |
-| `entities` | `profile` | правила username, zod-схемы профиля (`profileInputSchema`, `profileUpdateSchema`, `contactEmailSchema` — необязательная контактная почта, пустая строка — нет почты), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_MAX_BYTES`, `AVATAR_SIZE`, `AVATAR_MAX_DIMENSION`), `profileQueries`, `usernameQueries`, `toProfileInput(profile, contactEmail)`, `getProfileChanges(saved, input)` (связанные поля — группой), `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; данные психолога: справочники `approachIds`/`approachLabels`, `clientTypeIds`/`clientTypeLabels`, `workFormatIds`/`workFormatLabels`, `languageCodes`, `currencyCodes`, `getLanguageName`, `getCurrencyName`, `formatPrice` (`$60`, без копеек), `getEmptySettingsInput` (поля, которые есть только в настройках), стаж `formatExperience`, образование `ProfileEducation` (`EDUCATION_MAX`), контакты для связи `contactTypeIds`/`contactTypeLabels`, `contactsSchema`, `getContactHref`, `getContactCaption`, предпочтительный способ связи `preferredContact` (тип контакта или адрес ссылки; пропавший сбрасывается схемой); закрытые данные (`PrivateProfileDetails`, на странице их нет): дата рождения (`MIN_AGE`), пол `genderIds`/`genderLabels`, запросы клиентов `concernGroups`/`concernIds`/`concernLabels` (группы пар — при «Couples», детские — при «Children» или «Teens» в `clientTypes`, `isConcernGroupAvailable`; недоступные схема отбрасывает); группы полей, которые `PATCH` принимает только вместе, — `linkedFieldGroups`; порядок блоков страницы: `profileSectionIds` (порядок по умолчанию), `profileSectionLabels`, `normalizeSectionOrder`, тип `ProfileSection`, лимиты (`APPROACHES_MAX`, `LANGUAGES_MAX`, `PRICE_AMOUNT_MAX`, `DOCUMENTS_MAX`, `DOCUMENT_MAX_BYTES`, `DOCUMENT_MAX_DIMENSION`), `documentTitleSchema`, типы `ProfilePrice`, `ProfileDocument`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile` и `updateProfile` (контактную почту сохраняют первой; город не из справочника — `city_invalid`), `getContactEmail`, `getPrivateDetails` (из `profile_private`), `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles` (сначала обнуляет `avatar_path`), `fetchProviderAvatar`, `detectImage` (формат и размеры по заголовку файла), документы: `addProfileDocument`, `removeProfileDocument` (список пишется целиком с проверкой `updated_at`), `removeUserDocumentFiles`, `getProfileSuggestions` (адрес: username провайдера → имя латиницей → часть email до «@»); для `viewer` — типы и фабрики запросов через `@x` |
-| `entities` | `location` | коды стран `countryCodes` (ISO 3166-1 и `XK`), `getCountryName`, `countryCodeSchema`, тип `City`, `cityQueries.search(country, query)`; на сервере `searchCities` (по `cities.search_name`, до 10 городов по населению), `citySearchParamsSchema`; для `profile` — `City`, `toCity`, `CITY_COLUMNS` через `@x` |
-| `entities` | `social-link` | справочник платформ, `normalizeSocialLinkUrl`, `socialLinkSchema`, `SocialLinkButton` (подпись с ником или доменом: `Telegram · @anna`, `example.com`); для `profile` — через `@x` |
+| `entities` | `viewer` | провайдеры входа и подключённые из них (`enabledAuthProviders`), коды и тексты ошибок входа, `getSignInHref`, `getLoginHref`, тип `Viewer` (привязанные способы входа `user.signInMethods`: провайдер, email или `@username`, фото), `SignInMethod`, `getAccountPhotos`, `AuthProviderIcon` (логотипы провайдеров), `useViewerQuery`, `useSignOutMutation`, `useDeleteAccountMutation` (с подтверждением username, без профиля — без него), `isAccountDeletionConfirmed`, `useLinkIdentityMutation`, `useUnlinkIdentityMutation`, `identityLinkParams`, `useCreateProfileMutation` (профиль и фото одной мутацией), `useUpdateProfileMutation`, `useSetAvatarMutation`, `useDeleteAvatarMutation`, `useUploadDocumentMutation` (изображение, превью и подпись), `useDeleteDocumentMutation` (все обновляют кеш `/api/me` и публичной страницы), `ViewerGuard` (скелетон, ошибка через `ErrorState`), `useViewerRedirect`; на сервере `authProviderSchema`, `identityLinkInputSchema`, `deleteAccountInputSchema`, `isAccountDeletionConfirmed`, `getOAuthSignInUrl`, `getOAuthErrorCode`, `exchangeAuthCode`, `signOut`, `deleteUser`, способы входа: `getLinkedIdentities`, `toSignInMethod`, `getOAuthLinkUrl`, `getOAuthLinkError`, `unlinkIdentity`; вход и привязка Google и Telegram без OAuth Supabase: `getOidcProvider`, `oidcProviderSchema`, `startOidcSignIn`, `takeOidcSignInState`, `completeOidcSignIn`, `completeOidcLink` |
+| `entities` | `profile` | правила username, zod-схема профиля `profileInputSchema` (контактная почта необязательна, пустая строка — нет почты; `profileUpdateSchema` — на сервере), лимиты, `PublicProfile`, `UsernameAvailability`, `AvatarSource`, лимиты фото (`AVATAR_SIZE`, `AVATAR_MAX_DIMENSION`; `AVATAR_MAX_BYTES` — на сервере), `profileQueries`, `usernameQueries`, `toProfileInput(profile, contactEmail)`, `getProfileChanges(saved, input)` (связанные поля — группой), `ProfileAvatar` (`sm`, `lg`), `DEMO_USERNAME`; данные психолога: справочники `approachIds`/`approachLabels`, `clientTypeIds`/`clientTypeLabels`, `workFormatIds`/`workFormatLabels`, `languageCodes`, `currencyCodes`, `getLanguageName`, `getCurrencyName`, `formatPrice` (`$60`, без копеек), `getEmptySettingsInput` (поля, которые есть только в настройках), стаж `formatExperience`, образование `ProfileEducation` (`EDUCATION_MAX`), контакты для связи `contactTypeIds`/`contactTypeLabels`, `contactsSchema`, `getContactHref`, `getContactCaption`, предпочтительный способ связи `preferredContact` (тип контакта или адрес ссылки; пропавший сбрасывается схемой); закрытые данные (`PrivateProfileDetails`, на странице их нет): дата рождения (`MIN_AGE`), пол `genderIds`/`genderLabels`, запросы клиентов `concernGroups`/`concernIds` (группы пар — при «Couples», детские — при «Children» или «Teens» в `clientTypes`, `isConcernGroupAvailable`; недоступные схема отбрасывает); группы полей, которые `PATCH` принимает только вместе, — `linkedFieldGroups`; порядок блоков страницы: `profileSectionIds` (порядок по умолчанию), `profileSectionLabels`, `normalizeSectionOrder`, тип `ProfileSection`, лимиты (`APPROACHES_MAX`, `LANGUAGES_MAX`, `PRICE_AMOUNT_MAX`, `DOCUMENTS_MAX`, `DOCUMENT_MAX_BYTES`, `DOCUMENT_MAX_DIMENSION`), `documentTitleSchema`, типы `ProfilePrice`, `ProfileDocument`; на сервере `getProfileByUserId`, `getProfileByUsername` (с демо-профилем), `isUsernameAvailable`, `createProfile` и `updateProfile` (контактную почту сохраняют первой; город не из справочника — `city_invalid`), `getContactEmail`, `getPrivateDetails` (из `profile_private`), `setProfileAvatar`, `removeProfileAvatar`, `removeUserAvatarFiles` (сначала обнуляет `avatar_path`), `fetchProviderAvatar`, `detectImage` (формат и размеры по заголовку файла), документы: `addProfileDocument`, `removeProfileDocument` (список пишется целиком с проверкой `updated_at`), `removeUserDocumentFiles`, `getProfileSuggestions` (адрес: username провайдера → имя латиницей → часть email до «@»); для `viewer` — типы и фабрики запросов через `@x` |
+| `entities` | `location` | коды стран `countryCodes` (ISO 3166-1 и `XK`), `getCountryName`, тип `City`, `cityQueries.search(country, query)`; на сервере `searchCities` (по `cities.search_name`, до 10 городов по населению), `citySearchParamsSchema`; для `profile` — `City`, `toCity`, `CITY_COLUMNS` через `@x` |
+| `entities` | `social-link` | справочник платформ, `socialLinkSchema` (нормализует адрес), `SocialLinkButton` (подпись с ником или доменом: `Telegram · @anna`, `example.com`); для `profile` — через `@x` |
 | `widgets` | `header`, `footer` | шапка сайта; подвал: ссылки на Privacy и Terms, почта поддержки, строка © с годами (`useCopyrightYears`: `2026`, затем `2026–<текущий год>`) и реквизиты ИП из `legalConfig` (по ним Meta сверяет компанию с сайтом) |
 | `widgets` | `sign-in-panel` | кнопки входа с логотипами провайдеров (`AuthProviderIcon` из `viewer`) |
 | `widgets` | `profile-card` | карточка личной страницы: главная кнопка связи под именем (`PreferredContactButton`: предпочтительный способ связи), блоки после фото и имени в порядке `profile.sectionOrder` (незаполненные скрыты, пункты практики подряд — один `dl`, `PracticeDetails`), документы (`DocumentGallery`: превью, полное изображение в диалоге), скелетон, Share (диалог: QR-код прод-адреса страницы из `siteConfig.url` на `qrcode.react`, скачивание PNG, копирование ссылки, системное меню, где есть `navigator.share`), Edit для владельца (`isOwner`) |
 | `widgets` | `profile-form` | форма профиля для онбординга и настроек: фото с кропом и фото из аккаунтов (`accountPhotos`; если их несколько — меню выбора), имя, адрес с проверкой (`— available` по ответу сервера), описание, соцсети, необязательная почта (`showContactEmail`: у аккаунта нет email от провайдера или контакт уже сохранён), блоки с данными психолога (`showPractice`, `currentCity` — только в настройках): с кем работает, подходы, формат, страна и город из справочника, языки, цена, стаж, образование, контакты для связи и выбор предпочтительного способа связи (`getPreferredContactOptions`: заполненные контакты и ссылки); раздел Search details после блоков (дата рождения, пол, запросы клиентов, только в настройках); конструктор страницы (`showSectionOrder`, только в настройках): блоки после фото, имени и адреса в рамках и в порядке `sectionOrder`, их переставляют перетаскиванием за ручку (`@dnd-kit`) и стрелками ↑↓ (`SortableBlocks`); блок документов приходит слотом `documentsBlock`; контактная почта — после блоков, на странице её нет; `mode="edit"` — кнопка активна только при изменениях и предупреждение об уходе с несохранёнными изменениями; `AvatarValue`, `getAvatarSource` |
 | `widgets` | `account-settings` | способы входа (Connect, Disconnect, тост итога привязки), Sign out, Delete account с подтверждением вводом username; `DeleteAccountDialog` (с `username={null}` — для аккаунта без страницы) |
 | `widgets` | `legal-document` | обёртка юридической страницы `LegalDocument` (заголовок, дата редакции, типографика), `OperatorDetails` (реквизиты из `legalConfig`), `CodeList` |
+| `views` | `error` | страница ошибки рендера: `ErrorState` с `retry` из Next (для `error.tsx` и `global-error.tsx`) |
 | `views` | `onboarding` | онбординг и удаление аккаунта без страницы; черновик формы — Zustand-стор `useOnboardingDraftStore` в `model` |
 | `widgets` | `profile-documents` | документы психолога в настройках (без своего заголовка: стоит блоком в конструкторе `profile-form`): список с превью, загрузка в диалоге (картинка уменьшается в браузере до 2048 px, превью — до 480 px, подпись обязательна) и удаление с подтверждением; сохраняются сразу, без формы профиля |
 | `views` | `settings` | настройки: `profile-form` в режиме редактирования — конструктор страницы с данными психолога и блоком `profile-documents` внутри, затем `account-settings` |
-| `shared/ui` | свои компоненты | `Container`, `Logo` (адрес `freud.in` с розовой точкой `text-cta`, ссылка на главную), `ThemeToggle`, `NotFoundState`, `SupportEmailLink` (`mailto:` на почту поддержки), `Combobox` (выбор из длинного списка с поиском на `popover` и `command`: одиночный и мультивыбор, поиск на сервере через `search`, кнопка очистки `onClear`) |
-| `shared/lib` | `utils`, `safe-redirect`, `canvas-image`, `crop-image`, `clipboard`, `use-unsaved-changes-warning`, `use-debounced-value`, `field-errors`, `transliterate` | `cn`, `getSafeRedirectPath`, `loadImage`, `resizeImage` и `encodeCanvas` (уменьшение и перекодирование через canvas в WebP или JPEG, EXIF пропадают, качество снижается, пока файл не влезет в лимит), `cropImage` (кроп и сжатие через canvas), `useDebouncedValue`, `toFieldErrors` и `toFormFieldName` (ошибки TanStack Form для `FieldError` и пути полей из ответа API), `copyToClipboard`, `useUnsavedChangesWarning`, `transliterate` (кириллица и диакритика → латиница), `toSearchKey` (ключ поиска по началу строки, им собран `cities.search_name`) |
-| `shared/config` | `routes`, `site`, `legal`, `reserved-usernames`, `env.server` | пути, настройки сайта (в том числе `supportEmail`), реквизиты оператора `legalConfig`, зарезервированные адреса, серверный env |
+| `shared/ui` | свои компоненты | `Container`, `Logo` (адрес `freud.in` с розовой точкой `text-cta`, ссылка на главную), `ThemeToggle`, `NotFoundState`, `ErrorState` (ошибка вместо страницы: Try again и почта поддержки), `Spinner` (в кнопках ожидания, скрыт от скринридеров), `toast` в `sonner` (обёртка sonner), `SupportEmailLink` (`mailto:` на почту поддержки), `Combobox` (выбор из длинного списка с поиском на `popover` и `command`: одиночный и мультивыбор, поиск на сервере через `search`, кнопка очистки `onClear`) |
+| `shared/lib` | `utils`, `cva`, `safe-redirect`, `canvas-image`, `crop-image`, `clipboard`, `use-unsaved-changes-warning`, `use-debounced-value`, `field-errors`, `transliterate` | `cn`, `cva` и `VariantProps` (варианты классов компонента, замена `class-variance-authority`), `getSafeRedirectPath`, `loadImage`, `resizeImage` и `encodeCanvas` (уменьшение и перекодирование через canvas в WebP или JPEG, EXIF пропадают, качество снижается, пока файл не влезет в лимит), `cropImage` (кроп и сжатие через canvas), `useDebouncedValue`, `toFieldErrors` и `toFormFieldName` (ошибки TanStack Form для `FieldError` и пути полей из ответа API), `copyToClipboard`, `useUnsavedChangesWarning`, `transliterate` (кириллица и диакритика → латиница), `toSearchKey` (ключ поиска по началу строки, им собран `cities.search_name`) |
+| `shared/config` | `routes`, `site`, `legal`, `theme`, `reserved-usernames`, `env.server` | пути, настройки сайта (в том числе `supportEmail`), реквизиты оператора `legalConfig`, цвета темы для `themeColor` (`themeColors`, повторяют токены `globals.css`), зарезервированные адреса, серверный env |
 | `shared/api` | `index.ts`, `index.server.ts` | клиент: `apiClient`, `ApiError`, QueryClient; сервер: `createSupabaseServerClient`, `createSupabasePublicClient`, `createSupabaseAdminClient`, тип `SupabaseClient`, типы БД (`Database`, `Tables`) |
 
 ## Роуты
@@ -268,6 +274,7 @@ export { LoginView as default, metadata } from "@/views/login";
 | `/terms` | `src/app/terms/page.tsx` | `terms` | все | готово: Terms of Service на английском |
 | `/<username>` | `src/app/[username]/page.tsx` | `profile` | все | готово: данные из БД, `/demo` — демо-профиль; регистр не важен, адрес приводится к нижнему |
 | 404 | `src/app/not-found.tsx` | `not-found` | все | готово |
+| Ошибка | `src/app/error.tsx`, `src/app/global-error.tsx` | `error` | все | готово: Try again (`retry`) и почта поддержки |
 
 Служебные файлы:
 
@@ -279,8 +286,10 @@ export { LoginView as default, metadata } from "@/views/login";
 | `/icon.svg` | `src/app/icon.svg` | фавиконка: розовая точка из логотипа на фиолетовой плитке, цвета `violet-700` и `pink-400` |
 | `/apple-icon.png` | `src/app/apple-icon.png` | та же иконка для iOS, 180×180, квадрат без скругления (углы срезает iOS) |
 | `/favicon.ico` | `src/app/favicon.ico` | та же иконка 32×32 (PNG внутри ICO) для тех, кто запрашивает `/favicon.ico` напрямую |
+| `/manifest.webmanifest` | `src/app/manifest.ts` | название, цвета (`themeColors`) и иконки для «На экран Домой»: `public/icon-192.png`, `icon-512.png` и `icon-maskable-512.png` (квадрат без скругления, точка в безопасной зоне) |
 
-Иконки рисуются одинаково: меняя цвета бренда, обнови `icon.svg` и пересобери PNG и ICO из него.
+Иконки рисуются одинаково: меняя цвета бренда, обнови `icon.svg` и пересобери PNG и ICO из него
+(в том числе иконки манифеста в `public`).
 
 `/<username>` — динамический роут верхнего уровня. Статические роуты имеют приоритет, поэтому
 занятые ими адреса нельзя отдавать пользователям. Список лежит в
@@ -395,6 +404,29 @@ export { LoginView as default, metadata } from "@/views/login";
   элемент — `accent`. Ссылку внутри текста красим `text-link`, ссылки навигации и подвала — нет.
   Тип тоста виден по цвету: `toast.success` — `success`, `toast.error` — `error` (их подключает
   `Toaster` через `richColors`), `toast.info` — как обычный тост.
+- **Тосты** берём из `@/shared/ui/sonner`, а не из `sonner` (правило Biome): там обычный тост
+  держится 4 с, ошибка и предупреждение — 8 с (решение 28.09.2026), а тост с тем же текстом
+  заменяет прежний, а не встаёт в стопку. Текст ошибки — «Couldn’t … Please try again.» или
+  совет, что сделать; у успеха точки нет («Changes saved»).
+- **Ожидание** (шаг 17.9): кнопка с запросом неактивна, в ней `Spinner` и текст с многоточием
+  («Saving…», «Deleting…»). Переход к провайдеру показывает «Redirecting…» и сбрасывается на
+  `pageshow` с `persisted` (иначе «Назад» достанет из bfcache крутящийся спиннер). Действие из
+  меню, которое закрывается сразу (выход), показывает `toast.loading`. Загрузку данных страницы
+  закрывают скелетоны, ошибку — `ErrorState`.
+- **Тема — только токенами** (решение 18, шаг 17.8). `globals.css` разбит на разделы: палитра
+  (примитивы, светлая и тёмная тема), шрифты, типографика, размеры и отступы, радиусы.
+  Заголовок страницы — `font-heading text-page-title`, раздела — `font-heading
+  text-section-title`, юридического документа — `text-document-*`. Отступ контента страницы —
+  `py-page`, ширина — проп `width` у `Container` (`site` по умолчанию, `form`, `document`,
+  `sign-in`), карточка личной страницы — `max-w-profile`. Новый токен добавляй в `@theme`
+  и на страницу токенов в ките. Имена `--spacing-*` не повторяй в `--container-*`: `max-w-*`
+  возьмёт значение из `--spacing-*`. Сырые цвета (`bg-white`, `text-red-500`, hex) допустимы
+  только в `globals.css`, в логотипах брендов (`auth-provider-icon.tsx`) и в содержимом картинок
+  (фон при сжатии фото, QR-код). Biome классы Tailwind не проверяет, поэтому при ревью ищи их
+  поиском по коду.
+- Шрифты подключаются только в `src/app/fonts.ts` (его же берёт Storybook). Значения, которым
+  CSS-переменные недоступны (`themeColor`, в будущем `manifest.ts`), лежат
+  в `shared/config/theme.ts` с пометкой, от какого токена они взяты.
 - В `globals.css` два слоя цвета. Примитивы — шкалы `--violet-*`, `--pink-*`, `--neutral-*`,
   `--red-*` (50–950): их не используют ни компоненты, ни `@theme`. Семантические токены
   (`--primary: var(--violet-700)`) ссылаются на примитивы, а `.dark` переопределяет только
@@ -408,18 +440,27 @@ export { LoginView as default, metadata } from "@/views/login";
 - После `npx shadcn add` или `npx shadcn apply` проверь три вещи. Первое — пересобери lock-файл
   через npm 11 (см. «Процесс работы»). Второе — CLI перезаписывает компоненты: если `npm run lint:fix`
   находит в них ошибки, исправь точечно (так уже сделано в `field.tsx` и `input-group.tsx`).
-  Третье — `apply` умеет переписать шрифты в `src/app/layout.tsx`: у Geist должны остаться
-  `subsets: ["latin", "cyrillic"]`.
+  Варианты классов CLI пишет на `class-variance-authority`: меняй импорт `cva`
+  и `VariantProps` на `@/shared/lib/cva` (тот же API) и удаляй эту зависимость из `package.json`.
+  Третье — `apply` умеет дописать шрифты в `src/app/layout.tsx`: переноси их в
+  `src/app/fonts.ts`, у Geist должны остаться `subsets: ["latin", "cyrillic"]`.
 - Если новый компонент тянет уже установленные (`button`, `input`, `dialog`), CLI спрашивает, перезаписать
   ли их, а без терминала ответить некому. Тогда ставь с `--overwrite` и верни задетые файлы:
   `git checkout -- src/shared/ui/<файл>.tsx` (в них правки форматирования и наши исправления).
-- Классы объединяем через `cn` из `@/shared/lib/utils`.
+- Классы объединяем через `cn` из `@/shared/lib/utils` (файлы shadcn берут его прямо из пакета
+  `cn`, как пишет CLI). `cn` убирает конфликтующие классы Tailwind, но наших токенов не знает.
+  Поэтому ширину колонки задаёт проп `width` у `Container`, а не класс `max-w-*` в `className`.
+  Токен заголовка (`text-page-title`) не смешиваем в одном `cn` с цветом текста
+  (`text-muted-foreground`): `cn` примет токен за цвет и выбросит его. Собирать имя класса
+  из частей (`max-w-${x}`) нельзя: Tailwind его не увидит.
+- Варианты оформления компонента (`variant`, `size`) описываем `cva` из `@/shared/lib/cva`:
+  своя замена `class-variance-authority` с тем же API.
 - **UI kit в Storybook** (`npm run storybook`, опубликован на `freudin-storybook.vercel.app`:
   отдельный проект Vercel, пересобирается с каждым коммитом в `main`, открывается только под
   аккаунтом Vercel владельца). Истории лежат рядом с компонентом:
   `src/shared/ui/<компонент>.stories.tsx`, заголовки — `Components/…` для shadcn, `Freudin/…` для
-  своих, `Foundations/Tokens` — палитра, шрифт и радиусы (`tokens.stories.tsx`). Истории виджетов —
-  в сегменте `ui` виджета (`src/widgets/profile-card/ui/profile-card.stories.tsx`), заголовки
+  своих, `Foundations/Tokens` — палитра, типографика, ширины и отступы, радиусы
+  (`tokens.stories.tsx`). Истории виджетов — в сегменте `ui` виджета (`src/widgets/profile-card/ui/profile-card.stories.tsx`), заголовки
   `Widgets/…`, данные — фикстуры в самой истории; виджету с TanStack Query история даёт свой
   `QueryClientProvider`, запросы к API в ките не проходят. **Новый компонент
   в `shared/ui` добавляем вместе с историей**; новый токен цвета — в `tokens.stories.tsx`.
@@ -427,12 +468,12 @@ export { LoginView as default, metadata } from "@/views/login";
   вариант, состояние) предлагаем пользователю показать в ките. Если сейчас не делаем, заносим
   в `docs/PLAN.md` пункт «показать в Storybook» с названием элемента. Тексты
   историй — как на сайте, на английском. Настройки — в `.storybook/`: `preview.tsx` подключает
-  `globals.css`, Geist (повторяет `layout.tsx`) и тему через next-themes (тулбар Storybook).
+  `globals.css`, шрифты из `src/app/fonts.ts` и тему через next-themes (тулбар Storybook).
 - Тему переключает next-themes (класс `.dark` на `<html>`), переключатель — `ThemeToggle`
   из `@/shared/ui/theme-toggle`.
 - Корневой layout уже рендерит skip-link, шапку (`@/widgets/header`), единственный
   `<main id="content">` и подвал (`@/widgets/footer`). View не создаёт свой `<main>`, а контент
-  выравнивает по `Container` из `@/shared/ui/container`.
+  выравнивает по `Container` из `@/shared/ui/container` с отступом `py-page`.
 - Иконки интерфейса — lucide-react, логотипы брендов — отдельные SVG.
 - Вёрстка mobile-first, светлая и тёмная темы, доступность (семантика, aria, фокус).
 
@@ -475,6 +516,13 @@ export { LoginView as default, metadata } from "@/views/login";
 - Имена файлов и папок — kebab-case, компоненты — PascalCase. Экспорты именованные
   (`export function LoginView`), default-экспорт только там, где его требует Next.js.
 - Комментарии пишем, только когда код неочевиден.
+- **Вес JS** (шаг 17.6). zod импортируем как `import * as z from "zod"`: `import { z }` тянет
+  на каждую страницу все локали (около 60 КБ gzip). В `package.json` стоит
+  `"sideEffects": ["*.css"]`: сборщик выбрасывает неиспользуемые реэкспорты из `index.ts`
+  слайсов, поэтому модули при импорте ничего не делают, а импорт ради побочного эффекта
+  (кроме CSS) не пишем. Тяжёлое и редкое (кроп фото, QR-код) грузим через `next/dynamic`
+  по действию пользователя, с заглушкой того же размера. На каждой странице есть `apiClient`,
+  поэтому в нём нет zod.
 
 ## Команды
 
@@ -505,5 +553,8 @@ export { LoginView as default, metadata } from "@/views/login";
   С `null` вместо состояния Next теряет своё дерево роутов, и «Назад» показывает не ту страницу.
   `router.replace` для этого не подходит: он заново выставляет заголовок вкладки из `metadata`.
 - `notFound()` работает только в серверном коде. В клиентских view состояние 404 рисуем сами
-  (`NotFoundState` из `@/shared/ui/not-found-state`).
+  (`NotFoundState` из `@/shared/ui/not-found-state`). Ошибку загрузки данных — `ErrorState`
+  из `@/shared/ui/error-state`, ошибку рендера ловит `error.tsx`.
+- `error.tsx` и `global-error.tsx` получают `retry()` (перезапросить и перерисовать сегмент),
+  а не только `reset()`: повтор делаем через `retry`.
 - `next lint` удалён, линтим через Biome.

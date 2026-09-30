@@ -2,6 +2,9 @@
   "name": "freudin-website",
   "version": "0.1.0",
   "private": true,
+  "sideEffects": [
+    "*.css"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -23,7 +26,6 @@
     "@tanstack/react-form": "^1.33.5",
     "@tanstack/react-query": "^5.103.2",
     "@tanstack/react-query-devtools": "^5.103.2",
-    "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "cn": "^0.4.0",
     "lucide-react": "^1.48.0",

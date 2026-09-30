@@ -3,8 +3,7 @@
 import { useForm, useStore } from "@tanstack/react-form";
 import { PlusIcon } from "lucide-react";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { z } from "zod";
+import * as z from "zod";
 import { DOCUMENT_TITLE_MAX_LENGTH, documentTitleSchema } from "@/entities/profile";
 import { useUploadDocumentMutation } from "@/entities/viewer";
 import { ApiError } from "@/shared/api";
@@ -21,6 +20,8 @@ import {
 } from "@/shared/ui/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/shared/ui/field";
 import { Input } from "@/shared/ui/input";
+import { toast } from "@/shared/ui/sonner";
+import { Spinner } from "@/shared/ui/spinner";
 import { type DocumentImages, prepareDocumentImages } from "../lib/prepare-document-images";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -155,6 +156,7 @@ export function AddDocumentDialog() {
                 variant="outline"
                 disabled={isPreparing || isSubmitting}
                 onClick={() => inputRef.current?.click()}>
+                {isPreparing ? <Spinner /> : null}
                 {isPreparing ? "Preparing…" : prepared ? "Choose another image" : "Choose image"}
               </Button>
               <input
@@ -201,6 +203,7 @@ export function AddDocumentDialog() {
               Cancel
             </Button>
             <Button type="submit" disabled={!prepared || isPreparing || isSubmitting}>
+              {isSubmitting ? <Spinner /> : null}
               {isSubmitting ? "Uploading…" : "Upload"}
             </Button>
           </DialogFooter>

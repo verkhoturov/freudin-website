@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 
 /**
  * Тело `DELETE /api/me`: username, который пользователь ввёл для подтверждения удаления.

@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
+import { ErrorState } from "@/shared/ui/error-state";
 import { Skeleton } from "@/shared/ui/skeleton";
 import type { ViewerAccess } from "../lib/get-viewer-redirect";
 import { useViewerRedirect } from "../lib/use-viewer-redirect";
@@ -21,18 +21,15 @@ export function ViewerGuard({ access, children }: ViewerGuardProps) {
 
   if (viewer.isError) {
     return (
-      <Container className="flex flex-col items-start gap-6 py-10">
-        <h1 className="font-semibold text-2xl tracking-tight">Couldn’t load the page</h1>
-        <Button variant="outline" onClick={() => viewer.refetch()}>
-          Try again
-        </Button>
+      <Container className="py-page">
+        <ErrorState title="Couldn’t load the page" onRetry={() => viewer.refetch()} />
       </Container>
     );
   }
 
   if (viewer.isPending || isRedirecting) {
     return (
-      <Container aria-busy="true" className="flex flex-col gap-6 py-10">
+      <Container aria-busy="true" className="flex flex-col gap-6 py-page">
         <span className="sr-only">Loading…</span>
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-full max-w-md" />

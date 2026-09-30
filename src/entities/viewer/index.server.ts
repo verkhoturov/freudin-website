@@ -26,7 +26,7 @@ export {
   takeOidcSignInState,
 } from "./api/oidc-sign-in.server";
 export type { AuthErrorCode } from "./config/auth-errors";
-export { type AuthProvider, authProviders, enabledAuthProviders } from "./config/auth-providers";
+export { type AuthProvider, enabledAuthProviders } from "./config/auth-providers";
 export { identityLinkParams } from "./config/identity-link";
 export { isAccountDeletionConfirmed } from "./lib/is-account-deletion-confirmed";
 export { authProviderSchema, identityLinkInputSchema } from "./model/auth-provider-schema";

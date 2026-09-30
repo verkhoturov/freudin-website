@@ -172,10 +172,10 @@ export type Concern = (typeof concernGroups)[number] extends infer Group
     : never
   : never;
 
-export const concernLabels = Object.assign(
-  {},
-  ...concernGroups.map((group) => group.concerns),
-) as Record<Concern, string>;
+const concernLabels = Object.assign({}, ...concernGroups.map((group) => group.concerns)) as Record<
+  Concern,
+  string
+>;
 
 /** Все запросы в порядке справочника. */
 export const concernIds = Object.keys(concernLabels) as [Concern, ...Concern[]];

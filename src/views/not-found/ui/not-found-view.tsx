@@ -5,7 +5,7 @@ import { NotFoundState } from "@/shared/ui/not-found-state";
 
 export function NotFoundView() {
   return (
-    <Container className="py-10">
+    <Container className="py-page">
       <NotFoundState />
     </Container>
   );

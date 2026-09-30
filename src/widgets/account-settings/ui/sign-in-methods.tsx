@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { toast } from "sonner";
 import {
   type AuthProvider,
   AuthProviderIcon,
@@ -13,6 +12,8 @@ import {
 } from "@/entities/viewer";
 import { ApiError } from "@/shared/api";
 import { Button } from "@/shared/ui/button";
+import { toast } from "@/shared/ui/sonner";
+import { Spinner } from "@/shared/ui/spinner";
 
 function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError ? error.message : fallback;
@@ -99,9 +100,14 @@ export function SignInMethods({ signInMethods }: { signInMethods: SignInMethod[]
                   size="sm"
                   disabled={isOnlyMethod || isBusy}
                   onClick={() => disconnect(provider)}>
-                  {unlink.isPending && unlink.variables === provider
-                    ? "Disconnecting…"
-                    : "Disconnect"}
+                  {unlink.isPending && unlink.variables === provider ? (
+                    <>
+                      <Spinner />
+                      Disconnecting…
+                    </>
+                  ) : (
+                    "Disconnect"
+                  )}
                   <span className="sr-only"> {label}</span>
                 </Button>
               ) : (
@@ -110,9 +116,14 @@ export function SignInMethods({ signInMethods }: { signInMethods: SignInMethod[]
                   size="sm"
                   disabled={isBusy}
                   onClick={() => connect(provider)}>
-                  {isRedirecting && link.variables?.provider === provider
-                    ? "Redirecting…"
-                    : "Connect"}
+                  {isRedirecting && link.variables?.provider === provider ? (
+                    <>
+                      <Spinner />
+                      Redirecting…
+                    </>
+                  ) : (
+                    "Connect"
+                  )}
                   <span className="sr-only"> {label}</span>
                 </Button>
               )}

@@ -1,15 +1,27 @@
-import { z } from "zod";
-
 /** Тело ответа API с ошибкой — общий контракт route handlers и apiClient. */
-export const apiErrorBodySchema = z.object({
-  error: z.object({
-    code: z.string(),
-    message: z.string(),
-    fields: z.record(z.string(), z.string()).optional(),
-  }),
-});
+export type ApiErrorBody = {
+  error: {
+    code: string;
+    message: string;
+    fields?: Record<string, string>;
+  };
+};
 
-export type ApiErrorBody = z.infer<typeof apiErrorBodySchema>;
+/** Проверка тела ошибки без zod: apiClient есть на каждой странице, а zod весит десятки КБ. */
+export function isApiErrorBody(body: unknown): body is ApiErrorBody {
+  if (typeof body !== "object" || body === null || !("error" in body)) return false;
+  const { error } = body;
+  if (typeof error !== "object" || error === null) return false;
+  const { code, message, fields } = error as Record<string, unknown>;
+  return (
+    typeof code === "string" &&
+    typeof message === "string" &&
+    (fields === undefined ||
+      (typeof fields === "object" &&
+        fields !== null &&
+        Object.values(fields).every((value) => typeof value === "string")))
+  );
+}
 
 /**
  * Ошибка запроса к API. `status: 0` означает, что ответа не было (нет сети).

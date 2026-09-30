@@ -64,7 +64,16 @@ Telegram и делает личную страницу-визитку с уни�
   связи — главная кнопка под именем на странице. Раздел Search details в настройках: дата
   рождения (18+), пол и запросы клиентов, с которыми работает психолог: 77 пунктов по группам,
   запросы пар — при «Works with: Couples», детские — при Children или Teens (пункт Children
-  добавлен в «Works with»). Их нет на странице, они для будущего поиска.
+  добавлен в «Works with»). Их нет на странице, они для будущего поиска;
+- тема сайта в одном файле `src/app/globals.css` (шаг 17.8): палитра, шрифты, размеры
+  заголовков, ширины колонок, отступы и радиусы меняются там сразу для всех страниц;
+- веб-манифест и иконки для экрана «Домой» (шаг 17.3);
+- вес JS (шаг 17.6): главная грузит 213 КБ gzip вместо 313 (zod без локалей и не на каждой
+  странице, `sideEffects` для tree-shaking слайсов, кроп и QR-код — по требованию);
+- ошибки и ожидание (шаги 17.2 и 17.9): страница ошибки с повтором и почтой поддержки,
+  понятные тексты при сбое сети и таймауте, ошибки в тостах держатся вдвое дольше, одинаковые
+  тосты не копятся; каждая кнопка с запросом показывает спиннер («Saving…», «Redirecting to
+  Google…», «Signing out…»).
 
 Провайдер появляется на странице входа, когда его добавляют в `enabledAuthProviders`
 (`src/entities/viewer/config/auth-providers.ts`). Интерфейс сайта, ошибки API и юридические
@@ -77,7 +86,7 @@ Telegram и делает личную страницу-визитку с уни�
 |--------|-------|--------|
 | Фреймворк | Next.js 16 (App Router, React Compiler), React 19, TypeScript 5 | ✅ |
 | Стили | Tailwind CSS 4, `tw-animate-css` | ✅ |
-| UI-компоненты | shadcn/ui на Radix (`radix-ui`, `class-variance-authority`, `cn`), lucide-react; `cmdk` — список с поиском (`command`); `@dnd-kit/core` и `@dnd-kit/sortable` — перетаскивание в списке порядка блоков | ✅ |
+| UI-компоненты | shadcn/ui на Radix (`radix-ui`, `cn` — слияние классов; варианты классов — своя `cva` в `shared/lib` вместо `class-variance-authority`), lucide-react; `cmdk` — список с поиском (`command`); `@dnd-kit/core` и `@dnd-kit/sortable` — перетаскивание в списке порядка блоков | ✅ |
 | Темы и уведомления | next-themes, sonner | ✅ |
 | Запросы к API | TanStack Query (+ Devtools в dev) | ✅ |
 | Валидация | zod | ✅ |
@@ -154,19 +163,23 @@ npm run dev
 ```
 src/
 ├─ app/                # роутинг Next.js (App Router) и слой app
-│  ├─ layout.tsx       # html/body, шрифты, metadata, шапка, <main>, подвал
+│  ├─ layout.tsx       # html/body, metadata, шапка, <main>, подвал
+│  ├─ error.tsx, global-error.tsx   # страница ошибки (view error); global-error — со своими html и body
+│  ├─ fonts.ts         # шрифты сайта (next/font), их же берёт Storybook
+│  ├─ globals.css      # тема: палитра, шрифты, типографика, размеры и отступы, радиусы
 │  ├─ _providers/      # темы, TanStack Query, тултипы, уведомления
 │  ├─ robots.ts, sitemap.ts, opengraph-image.jpg   # SEO-файлы
 │  ├─ icon.svg, apple-icon.png, favicon.ico       # иконки сайта (розовая точка из логотипа)
+│  ├─ manifest.ts      # веб-манифест: название, цвета, иконки из public/icon-*.png
 │  └─ api/             # API-роуты; _lib — общие хелперы (ошибки, ответы, zod, защита от CSRF)
-├─ views/              # страницы: home, login, onboarding, settings, profile, privacy, terms, not-found
+├─ views/              # страницы: home, login, onboarding, settings, profile, privacy, terms, not-found, error
 ├─ widgets/            # header, footer, sign-in-panel, profile-card, profile-form, profile-documents, account-settings, legal-document
 ├─ entities/           # viewer (вход), profile (профиль, username, данные психолога), location (страны и города), social-link (ссылки на соцсети)
 └─ shared/
-   ├─ ui/              # компоненты shadcn/ui, Container, Logo, ThemeToggle, NotFoundState, SupportEmailLink, Combobox; истории *.stories.tsx и токены (tokens.stories.tsx)
-   ├─ lib/             # утилиты: cn, безопасный редирект по ?next=, кроп и сжатие картинок, буфер обмена, ошибки форм
+   ├─ ui/              # компоненты shadcn/ui, Container, Logo, ThemeToggle, NotFoundState, ErrorState, Spinner, toast (обёртка sonner), SupportEmailLink, Combobox; истории *.stories.tsx и токены (tokens.stories.tsx)
+   ├─ lib/             # утилиты: cn, cva (варианты классов компонентов), безопасный редирект по ?next=, кроп и сжатие картинок, буфер обмена, ошибки форм
    ├─ api/             # apiClient, ApiError, QueryClient; на сервере — клиенты Supabase и типы БД
-   └─ config/          # routes, apiRoutes, site, зарезервированные адреса, серверный env
+   └─ config/          # routes, apiRoutes, site, цвета темы для <meta name="theme-color">, зарезервированные адреса, серверный env
 supabase/
 ├─ config.toml         # настройки Supabase CLI
 └─ migrations/         # SQL-миграции схемы БД и Storage
@@ -174,10 +187,11 @@ scripts/
 ├─ db-dump.sh          # резервная копия базы (npm run db:dump)
 └─ generate-cities-migration.mjs   # миграция со справочником городов из выгрузки GeoNames
 public/
-└─ demo-certificate.svg   # документ демо-профиля
+├─ demo-certificate.svg   # документ демо-профиля
+└─ icon-192.png, icon-512.png, icon-maskable-512.png   # иконки веб-манифеста
 backups/               # резервные копии; не в git: в них персональные данные
 components.json        # настройки shadcn/ui (алиасы под FSD)
-.storybook/            # настройки Storybook: истории из src/**/*.stories.tsx, globals.css, Geist, переключатель темы
+.storybook/            # настройки Storybook: истории из src/**/*.stories.tsx, globals.css, шрифты из src/app/fonts.ts, переключатель темы
 .env.example           # шаблон переменных окружения
 docs/
 ├─ PLAN.md             # пошаговый план
@@ -226,8 +240,10 @@ API:
 
 Полный список запланированных API-роутов со статусами — в [`AGENTS.md`](AGENTS.md#api).
 
-Служебные файлы: `/robots.txt`, `/sitemap.xml`, `/opengraph-image.jpg` (картинка превью ссылок)
-и иконки `/icon.svg`, `/apple-icon.png`, `/favicon.ico`.
+Служебные файлы: `/robots.txt`, `/sitemap.xml`, `/opengraph-image.jpg` (картинка превью ссылок),
+иконки `/icon.svg`, `/apple-icon.png`, `/favicon.ico` и веб-манифест `/manifest.webmanifest`.
+Ошибку рендера любой страницы показывает `src/app/error.tsx` (Try again и почта поддержки),
+падение корневого layout — `src/app/global-error.tsx`.
 
 ## SEO
 
@@ -246,7 +262,7 @@ API:
   навигация и поля ввода.
 - shadcn/ui на Radix, стиль по умолчанию (nova), шрифт Geist (с кириллицей для
   пользовательских имён и описаний),
-  иконки lucide. Токены темы — в `src/app/globals.css`.
+  иконки lucide. Токены темы — в `src/app/globals.css` (см. «Тема» ниже).
 - Палитра «Iris & Orchid» (28.09.2026) в `globals.css` двумя слоями. Примитивы — шкалы OKLCH
   по 11 шагов `violet`, `pink`, `neutral` и `red`. Семантические токены shadcn ссылаются на
   примитивы, а тёмная тема переопределяет только их. Светлая тема: текст `#292535`, фон
@@ -258,12 +274,37 @@ API:
   (29.09.2026): успех — `violet-200` (`success`), ошибка — `red-200` (`error`), информация —
   как меню (`popover`); в тёмной теме — шаги 800 тех же шкал.
 - Логотип (28.09.2026) — адрес `freud.in`, точка розовая (`text-cta`). Фавиконка — та же точка
-  на фиолетовой плитке (`src/app/icon.svg`), из неё отрисованы `apple-icon.png` и `favicon.ico`.
+  на фиолетовой плитке (`src/app/icon.svg`), из неё отрисованы `apple-icon.png`, `favicon.ico` и иконки манифеста `public/icon-*.png`.
 - UI kit — Storybook (`npm run storybook`): компоненты `shared/ui`, которые использует сайт, страница токенов
   и виджеты с данными психолога (карточка профиля, форма настроек) в светлой и тёмной темах. Опубликован на https://freudin-storybook.vercel.app (см. «Деплой»).
 - Светлая, тёмная и системная темы, переключатель в шапке.
 - Вёрстка mobile-first, есть ссылка Skip to content для навигации с клавиатуры.
 - Компоненты добавляются командой `npx shadcn add <component>` и попадают в `src/shared/ui`.
+  Варианты классов CLI пишет на `class-variance-authority`: импорт меняем на `@/shared/lib/cva`
+  (тот же API), зависимость удаляем.
+
+### Тема
+
+Вид всего сайта задаётся в одном месте, `src/app/globals.css`, разделами с комментариями.
+Правка файла меняет все страницы в обеих темах, после неё нужен деплой.
+
+| Что поменять | Где |
+|--------------|-----|
+| Основной цвет, фон, текст, ссылки | «Семантические токены»: `--primary`, `--cta`, `--background`, `--link` в `:root` (светлая тема) и `.dark`. Новый цвет берём из шкал-примитивов (`--violet-*`, `--pink-*`, `--neutral-*`, `--red-*`) |
+| Шрифт | `src/app/fonts.ts`: импорт и вызов `next/font` (он принимает только литералы). Заголовкам отдельный шрифт — `--font-heading` в разделе «Шрифты» |
+| Размеры заголовков | «Типографика»: `--text-page-title`, `--text-section-title`, `--text-document-*` — размер, интерлиньяж, трекинг и насыщенность. Обычный текст — шкала Tailwind, переопределяется там же (`--text-sm`) |
+| Плотность отступов | «Размеры и отступы»: `--spacing` (шаг сетки, от него считаются все отступы Tailwind), отступ страницы `--spacing-page` |
+| Ширины | `--container-site` (шапка, подвал, контент) и колонки `--container-document`, `form`, `profile`, `sign-in`. Страница выбирает ширину пропом `width` у `Container` |
+| Скругления | «Радиусы»: `--radius`, остальные считаются от него |
+
+После смены цветов:
+- цвет фона повторите в `src/shared/config/theme.ts`: `<meta name="theme-color">` не читает
+  CSS-переменные;
+- проверьте контраст по WCAG AA в обеих темах (текст не ниже 4.5:1);
+- перерисуйте картинку превью `src/app/opengraph-image.jpg`: она статичная.
+
+Не темизируются: цвета логотипов Google, Facebook и Telegram (правила брендов), белый фон
+при сжатии фото и чёрно-белый QR-код (это содержимое картинок, а не интерфейс).
 
 ## Внешние сервисы
 

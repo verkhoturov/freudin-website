@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 import {
   getProfileChanges,
   type ProfileInput,
@@ -18,6 +17,7 @@ import {
   ViewerGuard,
 } from "@/entities/viewer";
 import { Container } from "@/shared/ui/container";
+import { toast } from "@/shared/ui/sonner";
 import { AccountSettings } from "@/widgets/account-settings";
 import { ProfileDocuments } from "@/widgets/profile-documents";
 import { type AvatarValue, getAvatarSource, ProfileForm } from "@/widgets/profile-form";
@@ -25,8 +25,8 @@ import { type AvatarValue, getAvatarSource, ProfileForm } from "@/widgets/profil
 export function SettingsView() {
   return (
     <ViewerGuard access="with-profile">
-      <Container className="flex max-w-lg flex-col gap-10 py-10">
-        <h1 className="font-semibold text-2xl tracking-tight">Settings</h1>
+      <Container width="form" className="flex flex-col gap-10 py-page">
+        <h1 className="font-heading text-page-title">Settings</h1>
         <SettingsContent />
       </Container>
     </ViewerGuard>
@@ -41,7 +41,7 @@ function SettingsContent() {
   return (
     <>
       <section aria-labelledby="profile-settings-title" className="flex flex-col gap-6">
-        <h2 id="profile-settings-title" className="font-semibold text-lg tracking-tight">
+        <h2 id="profile-settings-title" className="font-heading text-section-title">
           Profile
         </h2>
         <ProfileSettingsForm viewer={viewer.data} profile={viewer.data.profile} />

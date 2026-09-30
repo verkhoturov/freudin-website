@@ -19,10 +19,10 @@ type ProfileCardProps = {
 
 export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
   return (
-    <article className="mx-auto flex w-full max-w-md flex-col items-center gap-6 text-center">
+    <article className="mx-auto flex w-full max-w-profile flex-col items-center gap-6 text-center">
       <ProfileAvatar displayName={profile.displayName} avatarUrl={profile.avatarUrl} />
       <header className="flex flex-col gap-1">
-        <h1 className="font-semibold text-2xl tracking-tight">{profile.displayName}</h1>
+        <h1 className="font-heading text-page-title">{profile.displayName}</h1>
         <p className="text-muted-foreground text-sm">@{profile.username}</p>
       </header>
       <PreferredContactButton profile={profile} />

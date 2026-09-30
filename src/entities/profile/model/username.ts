@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { reservedUsernames } from "@/shared/config";
 import { USERNAME_MAX_LENGTH, USERNAME_MIN_LENGTH } from "../config/limits";
 

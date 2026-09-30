@@ -2,7 +2,6 @@
 
 import { Trash2Icon } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import type { ProfileDocument } from "@/entities/profile";
 import { useDeleteDocumentMutation } from "@/entities/viewer";
 import { ApiError } from "@/shared/api";
@@ -17,6 +16,8 @@ import {
   AlertDialogTrigger,
 } from "@/shared/ui/alert-dialog";
 import { Button } from "@/shared/ui/button";
+import { toast } from "@/shared/ui/sonner";
+import { Spinner } from "@/shared/ui/spinner";
 
 /** Удаление документа с подтверждением. */
 export function DeleteDocumentButton({ profileDocument }: { profileDocument: ProfileDocument }) {
@@ -62,6 +63,7 @@ export function DeleteDocumentButton({ profileDocument }: { profileDocument: Pro
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <Button variant="destructive" disabled={isPending} onClick={handleDelete}>
+            {isPending ? <Spinner /> : null}
             {isPending ? "Deleting…" : "Delete"}
           </Button>
         </AlertDialogFooter>

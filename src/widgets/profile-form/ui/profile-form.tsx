@@ -4,7 +4,6 @@ import { type DeepKeys, useForm, useStore } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon, XIcon } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
-import { toast } from "sonner";
 import type { City } from "@/entities/location";
 import {
   APPROACHES_MAX,
@@ -59,6 +58,8 @@ import {
 } from "@/shared/ui/field";
 import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+import { toast } from "@/shared/ui/sonner";
+import { Spinner } from "@/shared/ui/spinner";
 import { Textarea } from "@/shared/ui/textarea";
 import { getPreferredContactOptions } from "../lib/preferred-contact-options";
 import type { AvatarValue } from "../model/avatar-value";
@@ -1127,6 +1128,7 @@ export function ProfileForm({
               size="lg"
               className="self-start"
               disabled={isSubmitting || (isEditMode && !hasChanges)}>
+              {isSubmitting ? <Spinner /> : null}
               {isSubmitting ? "Saving…" : submitLabel}
             </Button>
           )}

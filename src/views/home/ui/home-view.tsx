@@ -8,8 +8,8 @@ import { Container } from "@/shared/ui/container";
 
 export function HomeView() {
   return (
-    <Container className="flex flex-col gap-6 py-10">
-      <h1 className="font-semibold text-2xl tracking-tight">
+    <Container className="flex flex-col gap-6 py-page">
+      <h1 className="font-heading text-page-title">
         A personal page with your photo, bio, and social links
       </h1>
       <div className="flex flex-wrap gap-3">

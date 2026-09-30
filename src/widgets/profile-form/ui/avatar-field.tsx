@@ -1,7 +1,6 @@
 "use client";
 
 import { type ChangeEvent, useRef, useState } from "react";
-import { toast } from "sonner";
 import { ProfileAvatar } from "@/entities/profile";
 import type { AccountPhoto } from "@/entities/viewer";
 import { Button } from "@/shared/ui/button";
@@ -12,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
 import { FieldLegend, FieldSet } from "@/shared/ui/field";
+import { toast } from "@/shared/ui/sonner";
 import type { AvatarValue } from "../model/avatar-value";
 import { AvatarCropDialog } from "./avatar-crop-dialog";
 

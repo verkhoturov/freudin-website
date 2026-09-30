@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import type { ReactNode } from "react";
+import { cn } from "@/shared/lib/utils";
 
 const meta = {
   title: "Foundations/Tokens",
@@ -31,6 +32,7 @@ const singleColors = [
   { name: "border", note: "Рамки" },
   { name: "input", note: "Рамки полей" },
   { name: "ring", note: "Обводка фокуса" },
+  { name: "overlay", note: "Затемнение под диалогами" },
 ];
 
 // Примитивы палитры: одинаковы в обеих темах, компоненты берут не их, а семантические токены
@@ -42,6 +44,24 @@ const ramps = [
 ];
 
 const rampSteps = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+
+// Заголовки из раздела «Типографика» в globals.css: один класс на размер, трекинг и насыщенность.
+// Классы записаны целиком: Tailwind не находит собранные из частей имена
+const headings = [
+  { className: "text-page-title", note: "Заголовок страницы (h1)", sample: "Page title" },
+  { className: "text-section-title", note: "Заголовок раздела", sample: "Section title" },
+  { className: "text-document-title", note: "Заголовок документа", sample: "Privacy Policy" },
+  { className: "text-document-heading", note: "Раздел документа", sample: "1. Who we are" },
+];
+
+// Ширины колонок из раздела «Размеры и отступы»
+const widths = [
+  { className: "max-w-site", note: "Шапка, подвал и контент (Container)" },
+  { className: "max-w-document", note: "Юридические документы" },
+  { className: "max-w-form", note: "Онбординг и настройки" },
+  { className: "max-w-profile", note: "Карточка личной страницы" },
+  { className: "max-w-sign-in", note: "Вход" },
+];
 
 // Все радиусы считаются от --radius
 const radii = [
@@ -57,7 +77,7 @@ const radii = [
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="font-semibold text-xl tracking-tight">{title}</h2>
+      <h2 className="font-heading text-section-title">{title}</h2>
       {children}
     </section>
   );
@@ -126,22 +146,69 @@ export const Palette: Story = {
 
 export const Typography: Story = {
   render: () => (
-    <div className="flex flex-col gap-4">
-      <p className="text-muted-foreground text-sm">Geist (latin, cyrillic) — --font-sans</p>
-      <h1 className="font-semibold text-2xl tracking-tight">Page title — Заголовок страницы</h1>
-      <h2 className="font-semibold text-xl tracking-tight">Section title — Заголовок раздела</h2>
-      <p className="max-w-prose leading-7">
-        Body text. A personal page with your photo, bio, and social links. Основной текст: имена и
-        описания пользователей бывают на любом языке.
-      </p>
-      <p className="text-muted-foreground text-sm">Caption and hints — подписи и подсказки</p>
-      <p>
-        Inline{" "}
-        <a href="https://www.freud.in" className="text-link underline underline-offset-4">
-          link in text
-        </a>
-        .
-      </p>
+    <div className="flex flex-col gap-10">
+      <Section title="Headings">
+        <p className="text-muted-foreground text-sm">
+          Geist (latin, cyrillic) — --font-sans, заголовки — font-heading
+        </p>
+        {headings.map(({ className, note, sample }) => (
+          <div key={className} className="flex flex-col gap-1">
+            <span className={cn("font-heading", className)}>{sample} — Заголовок</span>
+            <span className="text-muted-foreground text-xs">
+              font-heading {className} — {note}
+            </span>
+          </div>
+        ))}
+      </Section>
+      <Section title="Text">
+        <p className="max-w-document text-document">
+          text-document — Body text of legal documents. A personal page with your photo, bio, and
+          social links. Основной текст: имена и описания пользователей бывают на любом языке.
+        </p>
+        <p>text-base — Body text, fields</p>
+        <p className="text-sm">text-sm — Buttons, labels, hints</p>
+        <p className="text-muted-foreground text-sm">Caption and hints — подписи и подсказки</p>
+        <p>
+          Inline{" "}
+          <a href="https://www.freud.in" className="text-link underline underline-offset-4">
+            link in text
+          </a>{" "}
+          and <code>inline_code</code> (--font-mono).
+        </p>
+      </Section>
+    </div>
+  ),
+};
+
+export const Layout: Story = {
+  render: () => (
+    <div className="flex flex-col gap-10">
+      <Section title="Widths">
+        {widths.map(({ className, note }) => (
+          <div key={className} className="flex flex-col gap-1">
+            <div className={cn("h-6 w-full rounded-md bg-accent", className)} />
+            <span className="text-xs">
+              {className} — <span className="text-muted-foreground">{note}</span>
+            </span>
+          </div>
+        ))}
+      </Section>
+      <Section title="Spacing">
+        <div className="flex items-end gap-6">
+          <div className="flex flex-col gap-1">
+            <div className="size-1 bg-primary" />
+            <span className="text-xs">
+              --spacing — <span className="text-muted-foreground">шаг сетки: p-1, gap-1</span>
+            </span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="w-6 bg-primary py-page" />
+            <span className="text-xs">
+              py-page — <span className="text-muted-foreground">отступ контента страницы</span>
+            </span>
+          </div>
+        </div>
+      </Section>
     </div>
   ),
 };

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { countryCodes } from "../config/countries";
 
 export const CITY_QUERY_MAX_LENGTH = 100;

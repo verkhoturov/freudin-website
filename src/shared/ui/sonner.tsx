@@ -8,7 +8,39 @@ import {
   TriangleAlertIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Toaster as Sonner, type ToasterProps } from "sonner";
+import {
+  type ExternalToast,
+  Toaster as Sonner,
+  // biome-ignore lint/style/noRestrictedImports: единственное место, где берём toast из sonner
+  toast as sonnerToast,
+  type ToasterProps,
+} from "sonner";
+
+/** Сколько держится тост. Ошибка и предупреждение — вдвое дольше (решение 28.09.2026). */
+const TOAST_DURATION = 4000;
+
+type ToastMessage = Parameters<typeof sonnerToast.success>[0];
+type ToastKind = "success" | "info" | "error" | "warning";
+
+// id тоста — его текст: повторный «Link copied» заменяет прежний, а не встаёт в стопку
+function show(kind: ToastKind, duration: number) {
+  return (message: ToastMessage, data?: ExternalToast) =>
+    sonnerToast[kind](message, {
+      id: typeof message === "string" ? message : undefined,
+      duration,
+      ...data,
+    });
+}
+
+/** Тосты сайта: берём отсюда, а не из sonner (правило Biome). */
+export const toast = {
+  success: show("success", TOAST_DURATION),
+  info: show("info", TOAST_DURATION),
+  error: show("error", TOAST_DURATION * 2),
+  warning: show("warning", TOAST_DURATION * 2),
+  loading: (message: ToastMessage, data?: ExternalToast) => sonnerToast.loading(message, data),
+  dismiss: sonnerToast.dismiss,
+};
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();

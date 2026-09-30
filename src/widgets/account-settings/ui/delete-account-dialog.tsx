@@ -1,7 +1,6 @@
 "use client";
 
 import { type FormEvent, useId, useRef, useState } from "react";
-import { toast } from "sonner";
 import { isAccountDeletionConfirmed, useDeleteAccountMutation } from "@/entities/viewer";
 import { routes, siteConfig } from "@/shared/config";
 import {
@@ -17,6 +16,8 @@ import {
 import { Button } from "@/shared/ui/button";
 import { Field, FieldLabel } from "@/shared/ui/field";
 import { Input } from "@/shared/ui/input";
+import { toast } from "@/shared/ui/sonner";
+import { Spinner } from "@/shared/ui/spinner";
 
 const SITE_HOST = new URL(siteConfig.url).host;
 
@@ -95,6 +96,7 @@ export function DeleteAccountDialog({ username }: { username: string | null }) {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isBusy}>Cancel</AlertDialogCancel>
             <Button type="submit" variant="destructive" disabled={!isConfirmed || isBusy}>
+              {isBusy ? <Spinner /> : null}
               {isBusy ? "Deleting…" : "Delete"}
             </Button>
           </AlertDialogFooter>

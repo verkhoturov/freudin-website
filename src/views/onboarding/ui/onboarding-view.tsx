@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 import { getEmptySettingsInput, type ProfileInput } from "@/entities/profile";
 import {
   getAccountPhotos,
@@ -13,6 +12,7 @@ import {
 import { routes } from "@/shared/config";
 import { copyToClipboard } from "@/shared/lib/clipboard";
 import { Container } from "@/shared/ui/container";
+import { toast } from "@/shared/ui/sonner";
 import { DeleteAccountDialog } from "@/widgets/account-settings";
 import { type AvatarValue, getAvatarSource, ProfileForm } from "@/widgets/profile-form";
 import { useOnboardingDraftStore } from "../model/draft-store";
@@ -20,8 +20,8 @@ import { useOnboardingDraftStore } from "../model/draft-store";
 export function OnboardingView() {
   return (
     <ViewerGuard access="without-profile">
-      <Container className="flex max-w-lg flex-col gap-6 py-10">
-        <h1 className="font-semibold text-2xl tracking-tight">Create your page</h1>
+      <Container width="form" className="flex flex-col gap-6 py-page">
+        <h1 className="font-heading text-page-title">Create your page</h1>
         <OnboardingForm />
         {/* Аккаунт, созданный не тем способом входа, иначе не удалить: без страницы нет настроек */}
         <div className="flex flex-col items-start gap-2 border-t pt-6">
@@ -46,7 +46,7 @@ function showPageReadyToast(username: string) {
       label: "Copy link",
       onClick: async () => {
         if (await copyToClipboard(url)) toast.success("Link copied");
-        else toast.error("Couldn’t copy the link");
+        else toast.error("Couldn’t copy the link. Please try again.");
       },
     },
   });

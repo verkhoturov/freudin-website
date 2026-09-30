@@ -8,7 +8,7 @@ export function jsonOk<T>(data: T, init?: ResponseInit): Response {
   return Response.json(data, init);
 }
 
-export function jsonError(status: number, error: ApiErrorBody["error"]): Response {
+function jsonError(status: number, error: ApiErrorBody["error"]): Response {
   return Response.json({ error } satisfies ApiErrorBody, { status });
 }
 

@@ -1,5 +1,5 @@
 import "server-only";
-import { z } from "zod";
+import * as z from "zod";
 import { AVATAR_SIZE } from "@/entities/profile/@x/viewer";
 import type { SupabaseServerClient } from "@/shared/api/index.server";
 

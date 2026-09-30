@@ -12,7 +12,7 @@ export {
   useUploadDocumentMutation,
 } from "./api/use-profile-mutations";
 export { useSignOutMutation } from "./api/use-sign-out-mutation";
-export { useViewerQuery, viewerQueries } from "./api/viewer-queries";
+export { useViewerQuery } from "./api/viewer-queries";
 export { getAuthErrorMessage } from "./config/auth-errors";
 export {
   type AuthProvider,
@@ -23,7 +23,7 @@ export { identityLinkParams } from "./config/identity-link";
 export { type AccountPhoto, getAccountPhotos } from "./lib/get-account-photos";
 export { getLoginHref } from "./lib/get-login-href";
 export { getSignInHref } from "./lib/get-sign-in-href";
-export { getViewerHomePath, type ViewerAccess } from "./lib/get-viewer-redirect";
+export type { ViewerAccess } from "./lib/get-viewer-redirect";
 export { isAccountDeletionConfirmed } from "./lib/is-account-deletion-confirmed";
 export { useViewerRedirect } from "./lib/use-viewer-redirect";
 export type { IdentityLinkInput } from "./model/auth-provider-schema";

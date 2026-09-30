@@ -1,9 +1,8 @@
 "use client";
 
 import { CopyIcon, DownloadIcon, Share2Icon } from "lucide-react";
-import { QRCodeCanvas } from "qrcode.react";
+import dynamic from "next/dynamic";
 import { useRef } from "react";
-import { toast } from "sonner";
 import { routes, siteConfig } from "@/shared/config";
 import { copyToClipboard } from "@/shared/lib/clipboard";
 import { Button } from "@/shared/ui/button";
@@ -16,6 +15,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/shared/ui/dialog";
+import { toast } from "@/shared/ui/sonner";
+
+// Библиотека QR-кода грузится, только когда открыли диалог. Заглушка того же размера
+const QrCode = dynamic(() => import("./qr-code").then((module) => module.QrCode), {
+  loading: () => <div className="mx-auto aspect-square w-full max-w-60 rounded-md bg-muted" />,
+});
 
 type ShareProfileButtonProps = {
   username: string;
@@ -39,7 +44,7 @@ export function ShareProfileButton({ username, displayName }: ShareProfileButton
 
   const copy = async () => {
     if (await copyToClipboard(url)) toast.success("Link copied");
-    else toast.error("Couldn’t copy the link");
+    else toast.error("Couldn’t copy the link. Please try again.");
   };
 
   const download = () => {
@@ -63,18 +68,7 @@ export function ShareProfileButton({ username, displayName }: ShareProfileButton
             {url.replace(/^https:\/\//, "")}
           </DialogDescription>
         </DialogHeader>
-        {/* Чёрный код на белом в обеих темах: так его читают все сканеры. 512 px — для печати */}
-        <QRCodeCanvas
-          ref={qrRef}
-          value={url}
-          size={512}
-          level="M"
-          marginSize={4}
-          role="img"
-          aria-label={`QR code for ${displayName}’s page`}
-          className="mx-auto rounded-md"
-          style={{ width: "100%", maxWidth: 240, height: "auto" }}
-        />
+        <QrCode canvasRef={qrRef} value={url} label={`QR code for ${displayName}’s page`} />
         <DialogFooter className="sm:flex-wrap sm:*:grow">
           <Button variant="outline" onClick={download}>
             <DownloadIcon aria-hidden="true" />

@@ -2,8 +2,8 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { toast } from "sonner";
 import { authProviderLabels, getAuthErrorMessage, identityLinkParams } from "@/entities/viewer";
+import { toast } from "@/shared/ui/sonner";
 
 // Один id: в dev React Strict Mode вызывает эффект дважды, и тост не дублируется
 const TOAST_ID = "identity-link";

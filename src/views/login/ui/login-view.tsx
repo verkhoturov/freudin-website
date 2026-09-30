@@ -34,8 +34,8 @@ function SignInWithParams() {
 
 export function LoginView() {
   return (
-    <Container className="flex max-w-sm flex-col gap-6 py-10">
-      <h1 className="font-semibold text-2xl tracking-tight">Sign in</h1>
+    <Container width="sign-in" className="flex flex-col gap-6 py-page">
+      <h1 className="font-heading text-page-title">Sign in</h1>
       {/* useSearchParams на статической странице работает только внутри Suspense */}
       <Suspense fallback={<SignInPanel />}>
         <SignInWithParams />

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { countryCodeSchema } from "@/entities/location/@x/profile";
 import { normalizeSocialLinkUrl, socialLinkSchema } from "@/entities/social-link/@x/profile";
 import { concernIds, getAvailableConcerns } from "../config/concerns";
@@ -27,18 +27,18 @@ import { approachIds, clientTypeIds, workFormatIds } from "../config/practice";
 import { profileSectionIds } from "../config/sections";
 import { usernameSchema } from "./username";
 
-export const displayNameSchema = z
+const displayNameSchema = z
   .string()
   .trim()
   .min(1, "Enter your name")
   .max(DISPLAY_NAME_MAX_LENGTH, `Must be ${DISPLAY_NAME_MAX_LENGTH} characters or fewer`);
 
-export const bioSchema = z
+const bioSchema = z
   .string()
   .trim()
   .max(BIO_MAX_LENGTH, `Must be ${BIO_MAX_LENGTH} characters or fewer`);
 
-export const socialLinksSchema = z
+const socialLinksSchema = z
   .array(socialLinkSchema)
   .max(SOCIAL_LINKS_MAX, `Up to ${SOCIAL_LINKS_MAX} links`)
   .refine(
@@ -50,7 +50,7 @@ export const socialLinksSchema = z
  * Контактная почта для аккаунта без email у провайдера входа. Необязательна: пустая строка —
  * почты нет. Хранится в `account_contacts` и видна только владельцу.
  */
-export const contactEmailSchema = z
+const contactEmailSchema = z
   .string()
   .trim()
   .max(CONTACT_EMAIL_MAX_LENGTH, `Must be ${CONTACT_EMAIL_MAX_LENGTH} characters or fewer`)
@@ -69,7 +69,7 @@ function inListOrder<T extends string>(ids: readonly T[]) {
 }
 
 /** Страна: код ISO 3166-1 или пустая строка — не указана. */
-export const countrySchema = z
+const countrySchema = z
   .string()
   .refine(
     (value) => value === "" || countryCodeSchema.safeParse(value).success,
@@ -77,24 +77,24 @@ export const countrySchema = z
   );
 
 /** Город из справочника (`cities.id`), `null` — не указан. Город должен быть из `country`. */
-export const cityIdSchema = z.number().int().positive().nullable();
+const cityIdSchema = z.number().int().positive().nullable();
 
-export const workFormatsSchema = z
+const workFormatsSchema = z
   .array(z.enum(workFormatIds, "Choose a work format from the list"))
   .transform(inListOrder(workFormatIds));
 
-export const clientTypesSchema = z
+const clientTypesSchema = z
   .array(z.enum(clientTypeIds, "Choose from the list"))
   .transform(inListOrder(clientTypeIds));
 
 /** Подходы в порядке, который выбрал психолог: первый — основной. */
-export const approachesSchema = z
+const approachesSchema = z
   .array(z.enum(approachIds, "Choose an approach from the list"))
   .max(APPROACHES_MAX, `Choose up to ${APPROACHES_MAX} approaches`)
   .refine(hasNoRepeats, "Approaches must not repeat");
 
 /** Коды языков ISO 639-1 в порядке, который выбрал психолог. */
-export const languagesSchema = z
+const languagesSchema = z
   .array(z.enum(languageCodes, "Choose a language from the list"))
   .max(LANGUAGES_MAX, `Choose up to ${LANGUAGES_MAX} languages`)
   .refine(hasNoRepeats, "Languages must not repeat");
@@ -103,7 +103,7 @@ export const languagesSchema = z
  * Цена сессии «от»: целое число строкой, как в поле ввода; пустая строка — цены нет.
  * На выходе без ведущих нулей: `060` → `60`.
  */
-export const priceAmountSchema = z
+const priceAmountSchema = z
   .string()
   .trim()
   .superRefine((value, ctx) => {
@@ -120,7 +120,7 @@ export const priceAmountSchema = z
 const currencyCodeSet = new Set(currencyCodes);
 
 /** Валюта цены: код ISO 4217 или пустая строка. Указывается вместе с суммой. */
-export const priceCurrencySchema = z
+const priceCurrencySchema = z
   .string()
   .refine((value) => value === "" || currencyCodeSet.has(value), "Choose a currency from the list");
 
@@ -154,22 +154,22 @@ function optionalDateSchema(check: (value: string) => string | null) {
 }
 
 /** Дата рождения: не показывается на странице, психологу не меньше 18 лет. */
-export const birthDateSchema = optionalDateSchema((value) => {
+const birthDateSchema = optionalDateSchema((value) => {
   if (value < BIRTH_DATE_MIN) return "Enter a valid date";
   return value > utcDateYearsAgo(MIN_AGE) ? `You must be at least ${MIN_AGE} years old` : null;
 });
 
 /** Дата начала практики: на странице — стаж в годах. */
-export const practiceStartedOnSchema = optionalDateSchema((value) => {
+const practiceStartedOnSchema = optionalDateSchema((value) => {
   if (value < PRACTICE_START_MIN) return "Enter a valid date";
   return value > utcDateYearsAgo(0) ? "The date can’t be in the future" : null;
 });
 
 /** Пол или пустая строка — не указан. На странице не показывается. */
-export const genderSchema = z.enum(["", ...genderIds], "Choose from the list");
+const genderSchema = z.enum(["", ...genderIds], "Choose from the list");
 
 /** Запросы клиентов: в порядке справочника и без повторов, на странице не показываются. */
-export const concernsSchema = z
+const concernsSchema = z
   .array(z.enum(concernIds, "Choose from the list"))
   .transform(inListOrder(concernIds));
 
@@ -181,7 +181,7 @@ const educationTextSchema = (emptyMessage: string) =>
     .max(EDUCATION_TEXT_MAX_LENGTH, `Must be ${EDUCATION_TEXT_MAX_LENGTH} characters or fewer`);
 
 /** Запись об образовании. Год — строкой, как в поле ввода; пустая строка — не указан. */
-export const educationEntrySchema = z.object({
+const educationEntrySchema = z.object({
   qualification: educationTextSchema("Enter a degree or qualification"),
   institution: educationTextSchema("Enter a school or institution"),
   year: z
@@ -199,7 +199,7 @@ export const educationEntrySchema = z.object({
     }),
 });
 
-export const educationSchema = z
+const educationSchema = z
   .array(educationEntrySchema)
   .max(EDUCATION_MAX, `Up to ${EDUCATION_MAX} entries`);
 
@@ -242,13 +242,13 @@ export const contactsSchema = z.object({
  * на соцсеть; пустая строка — не выбран. Согласованность с контактами и ссылками проверяет
  * `dropStalePreferredContact`.
  */
-export const preferredContactSchema = z.string().max(2048);
+const preferredContactSchema = z.string().max(2048);
 
 /**
  * Порядок блоков страницы после фото и имени; пустой массив — порядок по умолчанию. Форма
  * настроек отправляет полный список.
  */
-export const sectionOrderSchema = z
+const sectionOrderSchema = z
   .array(z.enum(profileSectionIds, "Choose a block from the list"))
   .max(profileSectionIds.length)
   .refine(hasNoRepeats, "Blocks must not repeat");

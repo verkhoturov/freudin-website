@@ -1,5 +1,5 @@
 import "server-only";
-import { z } from "zod";
+import * as z from "zod";
 
 const serverEnvSchema = z.object({
   SUPABASE_URL: z.url(),

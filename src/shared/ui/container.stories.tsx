@@ -6,7 +6,7 @@ const meta = {
   component: Container,
   parameters: { layout: "fullscreen" },
   args: {
-    className: "py-10",
+    className: "py-page",
     children: (
       <div className="rounded-lg border border-dashed bg-card p-4 text-muted-foreground text-sm">
         Page content aligns to the container, like the header and footer.
@@ -20,3 +20,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+/** Юридические документы. */
+export const DocumentWidth: Story = { args: { width: "document" } };
+
+/** Онбординг и настройки. */
+export const FormWidth: Story = { args: { width: "form" } };
+
+/** Вход. */
+export const SignInWidth: Story = { args: { width: "sign-in" } };

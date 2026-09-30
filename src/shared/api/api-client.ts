@@ -1,4 +1,4 @@
-import { ApiError, apiErrorBodySchema } from "./api-error";
+import { ApiError, isApiErrorBody } from "./api-error";
 
 type Query = Record<string, string | number | boolean | null | undefined>;
 
@@ -35,9 +35,8 @@ async function readJson(response: Response): Promise<unknown> {
 
 async function toApiError(response: Response): Promise<ApiError> {
   const body = await readJson(response).catch(() => null);
-  const parsed = apiErrorBodySchema.safeParse(body);
-  if (parsed.success) {
-    const { code, message, fields } = parsed.data.error;
+  if (isApiErrorBody(body)) {
+    const { code, message, fields } = body.error;
     return new ApiError(response.status, code, message, fields);
   }
   return new ApiError(
@@ -45,6 +44,17 @@ async function toApiError(response: Response): Promise<ApiError> {
     "unexpected_response",
     `The server returned error ${response.status}.`,
   );
+}
+
+// Запрос без ответа дольше этого считаем сбоем сети. Загрузка файлов на медленной сети дольше
+const TIMEOUT_MS = 30_000;
+const UPLOAD_TIMEOUT_MS = 120_000;
+
+function withTimeout(signal: AbortSignal | null | undefined, ms: number) {
+  // Без AbortSignal.any (браузеры до 2024 года) запрос живёт без таймаута
+  if (typeof AbortSignal.any !== "function") return { signal, timeout: null };
+  const timeout = AbortSignal.timeout(ms);
+  return { signal: signal ? AbortSignal.any([signal, timeout]) : timeout, timeout };
 }
 
 async function request<T>(method: string, path: string, options: ApiRequestOptions = {}) {
@@ -60,6 +70,10 @@ async function request<T>(method: string, path: string, options: ApiRequestOptio
     requestBody = JSON.stringify(body);
   }
 
+  const { signal, timeout } = withTimeout(
+    init.signal,
+    body instanceof FormData ? UPLOAD_TIMEOUT_MS : TIMEOUT_MS,
+  );
   let response: Response;
   try {
     response = await fetch(withQuery(path, query), {
@@ -68,11 +82,23 @@ async function request<T>(method: string, path: string, options: ApiRequestOptio
       headers: requestHeaders,
       body: requestBody,
       credentials: "same-origin",
+      signal,
     });
   } catch (error) {
     // Отмену запроса (например, TanStack Query через signal) пробрасываем как есть.
     if (init.signal?.aborted) throw error;
-    throw new ApiError(0, "network_error", "Can’t reach the server. Check your connection.");
+    if (timeout?.aborted) {
+      throw new ApiError(
+        0,
+        "network_error",
+        "The server is taking too long to respond. Please try again.",
+      );
+    }
+    throw new ApiError(
+      0,
+      "network_error",
+      "Can’t reach the server. Check your connection and try again.",
+    );
   }
 
   if (!response.ok) throw await toApiError(response);

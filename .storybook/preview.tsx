@@ -1,16 +1,10 @@
 import type { Preview } from "@storybook/nextjs-vite";
-import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { fontVariables } from "../src/app/fonts";
 import "../src/app/globals.css";
 
-// Повторяет подключение шрифта в src/app/layout.tsx
-const geistSans = Geist({
-  variable: "--font-sans",
-  subsets: ["latin", "cyrillic"],
-});
-
-// Порталы (диалоги, меню, тосты) рендерятся в body, поэтому переменная шрифта нужна на <html>
-document.documentElement.classList.add(geistSans.variable, "antialiased");
+// Порталы (диалоги, меню, тосты) рендерятся в body, поэтому переменные шрифтов нужны на <html>
+document.documentElement.classList.add(...fontVariables.split(" "), "antialiased");
 
 const preview: Preview = {
   parameters: {

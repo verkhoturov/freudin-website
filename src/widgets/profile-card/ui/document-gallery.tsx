@@ -15,7 +15,7 @@ export function DocumentGallery({ documents }: DocumentGalleryProps) {
 
   return (
     <section aria-labelledby="profile-documents-title" className="flex w-full flex-col gap-3">
-      <h2 id="profile-documents-title" className="font-semibold text-lg tracking-tight">
+      <h2 id="profile-documents-title" className="font-heading text-section-title">
         Documents
       </h2>
       <ul className="flex flex-wrap justify-center gap-3">
