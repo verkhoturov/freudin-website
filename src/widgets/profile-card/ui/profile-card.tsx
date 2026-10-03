@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
-import { ProfileAvatar, type ProfileSection, type PublicProfile } from "@/entities/profile";
+import type { ProfileSection, PublicProfile } from "@/entities/profile";
 import { SocialLinkButton } from "@/entities/social-link";
 import { routes } from "@/shared/config";
 import { Button } from "@/shared/ui/button";
 import { DocumentGallery } from "./document-gallery";
 import { FaqList } from "./faq-list";
 import { OwnerChecklist } from "./owner-checklist";
+import { PageCover } from "./page-cover";
 import { getPracticeDetails, PracticeDetails, type PracticeItem } from "./practice-details";
 import { getPreferredContactAction, PreferredContactButton } from "./preferred-contact-button";
 import { ServiceList } from "./service-list";
@@ -29,7 +30,7 @@ export function ProfileCard({ profile, isOwner = false, isPreview = false }: Pro
   const Name = isPreview ? "p" : "h1";
   return (
     <article className="mx-auto flex w-full max-w-profile flex-col items-center gap-6 text-center">
-      <ProfileAvatar displayName={profile.displayName} avatarUrl={profile.avatarUrl} />
+      <PageCover profile={profile} />
       <header className="flex flex-col gap-1">
         <Name className="break-words font-heading text-page-title">{profile.displayName}</Name>
         <p className="text-muted-foreground text-sm">@{profile.username}</p>

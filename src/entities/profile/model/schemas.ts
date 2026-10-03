@@ -4,6 +4,7 @@ import { normalizeSocialLinkUrl, socialLinkSchema } from "@/entities/social-link
 import { concernIds, getAvailableConcerns } from "../config/concerns";
 import { isContactType } from "../config/contacts";
 import { coverIds } from "../config/cover";
+import { ctaPlacementIds } from "../config/cta-placement";
 import { currencyCodes } from "../config/currencies";
 import { genderIds } from "../config/gender";
 import { languageCodes } from "../config/languages";
@@ -31,6 +32,7 @@ import {
   SERVICES_MAX,
   SOCIAL_LINKS_MAX,
 } from "../config/limits";
+import { pageThemeIds } from "../config/page-theme";
 import { approachIds, clientTypeIds, clientTypeLabels, workFormatIds } from "../config/practice";
 import { profileSectionIds } from "../config/sections";
 import {
@@ -338,6 +340,10 @@ const highlightedSectionsSchema = z
 
 const coverSchema = z.enum(coverIds, "Choose a cover from the list");
 
+const pageThemeSchema = z.enum(pageThemeIds, "Choose a theme from the list");
+
+const ctaPlacementSchema = z.enum(ctaPlacementIds, "Choose where to show the contact button");
+
 const visibilitySchema = z.enum(visibilityIds, "Choose who can see your page");
 
 const PAGE_PASSWORD_LENGTH_MESSAGE = `Use ${PAGE_PASSWORD_MIN_LENGTH} to ${PAGE_PASSWORD_MAX_LENGTH} characters`;
@@ -378,6 +384,9 @@ export const profileFieldsSchema = z.object({
   services: servicesSchema,
   highlightedSections: highlightedSectionsSchema,
   cover: coverSchema,
+  pageTheme: pageThemeSchema,
+  linkIcons: z.boolean(),
+  ctaPlacement: ctaPlacementSchema,
   // Кто видит страницу и новый пароль: пишутся функцией set_profile_visibility
   visibility: visibilitySchema,
   pagePassword: pagePasswordSchema,

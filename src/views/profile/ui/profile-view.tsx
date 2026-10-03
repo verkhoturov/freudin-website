@@ -3,8 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type PublicProfile, profileQueries } from "@/entities/profile";
 import { useViewerQuery } from "@/entities/viewer";
-import { Container } from "@/shared/ui/container";
-import { ProfileCard } from "@/widgets/profile-card";
+import { ProfileCanvas, ProfileCard } from "@/widgets/profile-card";
 
 type ProfileViewProps = {
   /** Профиль из серверного рендера страницы. */
@@ -21,11 +20,11 @@ export function ProfileView({ profile: renderedProfile }: ProfileViewProps) {
   const viewer = useViewerQuery();
 
   return (
-    <Container className="py-page">
+    <ProfileCanvas theme={profile.pageTheme}>
       <ProfileCard
         profile={profile}
         isOwner={viewer.data?.profile?.username === profile.username}
       />
-    </Container>
+    </ProfileCanvas>
   );
 }

@@ -26,6 +26,9 @@ type SettingsInput = Pick<
   | "services"
   | "highlightedSections"
   | "cover"
+  | "pageTheme"
+  | "linkIcons"
+  | "ctaPlacement"
   | "visibility"
   | "pagePassword"
   | "birthDate"
@@ -56,6 +59,9 @@ export function getEmptySettingsInput(): SettingsInput {
     services: [],
     highlightedSections: [],
     cover: "classic",
+    pageTheme: "classic",
+    linkIcons: true,
+    ctaPlacement: "inline",
     visibility: "public",
     pagePassword: "",
     birthDate: "",
@@ -106,6 +112,9 @@ export function toProfileInput(
     services: profile.services.map(toServiceInput),
     highlightedSections: profile.highlightedSections,
     cover: profile.cover,
+    pageTheme: profile.pageTheme,
+    linkIcons: profile.linkIcons,
+    ctaPlacement: profile.ctaPlacement,
     visibility: profile.visibility,
     pagePassword: privateDetails.pagePassword ?? "",
     birthDate: privateDetails.birthDate ?? "",

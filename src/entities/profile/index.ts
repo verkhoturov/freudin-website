@@ -14,6 +14,7 @@ export {
   isContactType,
 } from "./config/contacts";
 export { coverIds, coverLabels, type ProfileCover } from "./config/cover";
+export { type CtaPlacement, ctaPlacementIds } from "./config/cta-placement";
 export { currencyCodes } from "./config/currencies";
 export { type Gender, genderIds, genderLabels } from "./config/gender";
 export { languageCodes } from "./config/languages";
@@ -41,6 +42,7 @@ export {
   SOCIAL_LINKS_MAX,
   USERNAME_MAX_LENGTH,
 } from "./config/limits";
+export { type PageTheme, pageThemeIds, pageThemeLabels } from "./config/page-theme";
 export {
   type Approach,
   approachIds,
@@ -58,6 +60,7 @@ export {
   profileSectionLabels,
 } from "./config/sections";
 export {
+  AVATAR_CROP_SIZE,
   AVATAR_SIZE,
   DOCUMENT_MAX_BYTES,
   DOCUMENT_MAX_DIMENSION,

@@ -3,7 +3,9 @@ import type { SocialLink } from "@/entities/social-link/@x/profile";
 import type { Concern } from "../config/concerns";
 import type { ContactType } from "../config/contacts";
 import type { ProfileCover } from "../config/cover";
+import type { CtaPlacement } from "../config/cta-placement";
 import type { Gender } from "../config/gender";
+import type { PageTheme } from "../config/page-theme";
 import type { Approach, ClientType, WorkFormat } from "../config/practice";
 import type { ProfileSection } from "../config/sections";
 import type { ProfileVisibility } from "../config/visibility";
@@ -92,6 +94,11 @@ export type PublicProfile = {
   /** Выделенные блоки страницы. */
   highlightedSections: ProfileSection[];
   cover: ProfileCover;
+  /** Пресет оформления: фон за карточкой и карточка. */
+  pageTheme: PageTheme;
+  /** Иконки на кнопках ссылок и главной кнопке. */
+  linkIcons: boolean;
+  ctaPlacement: CtaPlacement;
   /** Кто видит страницу. Скрытую гость получает только по паролю, владелец — всегда. */
   visibility: ProfileVisibility;
 };

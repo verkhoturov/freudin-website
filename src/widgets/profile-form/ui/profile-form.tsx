@@ -2,7 +2,16 @@
 
 import { type DeepKeys, useForm, useStore } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDownIcon, ArrowUpIcon, EyeIcon, EyeOffIcon, PlusIcon, XIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  EyeIcon,
+  EyeOffIcon,
+  MonitorIcon,
+  PlusIcon,
+  SmartphoneIcon,
+  XIcon,
+} from "lucide-react";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import type { City } from "@/entities/location";
 import {
@@ -18,8 +27,6 @@ import {
   concernIds,
   contactTypeIds,
   contactTypeLabels,
-  coverIds,
-  coverLabels,
   DISPLAY_NAME_MAX_LENGTH,
   EDUCATION_MAX,
   EDUCATION_TEXT_MAX_LENGTH,
@@ -37,7 +44,6 @@ import {
   PAGE_PASSWORD_MAX_LENGTH,
   PHONE_MAX_LENGTH,
   PRICE_AMOUNT_MAX,
-  type ProfileCover,
   type ProfileInput,
   type ProfileSection,
   type ProfileVisibility,
@@ -93,6 +99,7 @@ import { Textarea } from "@/shared/ui/textarea";
 import { getBlockSummary } from "../lib/block-summary";
 import { getPreferredContactOptions } from "../lib/preferred-contact-options";
 import { type AvatarValue, getAvatarUrl } from "../model/avatar-value";
+import { AppearanceBlock } from "./appearance-block";
 import { AvatarField } from "./avatar-field";
 import { CheckboxGroup } from "./checkbox-group";
 import { HighlightCheckbox } from "./highlight-checkbox";
@@ -207,13 +214,24 @@ const fieldBlocks: Record<keyof ProfileInput, string | null> = {
   faq: "faq",
   services: "services",
   highlightedSections: null,
-  cover: null,
+  cover: "appearance",
+  pageTheme: "appearance",
+  linkIcons: "appearance",
+  ctaPlacement: "appearance",
   visibility: null,
   pagePassword: null,
   birthDate: null,
   gender: null,
   concerns: null,
 };
+
+// Ширина превью в редакторе: Phone — ширина iPhone, на ней видна страница с телефона
+type PreviewWidth = "desktop" | "phone";
+
+const previewWidths = [
+  { id: "desktop", label: "Desktop", Icon: MonitorIcon },
+  { id: "phone", label: "Phone", Icon: SmartphoneIcon },
+] as const;
 
 /** Элемент, к которому прокрутить и на который поставить фокус после отрисовки. */
 type RevealTarget = { selector: string };
@@ -299,6 +317,8 @@ const layoutClasses = {
     preview:
       "rounded-xl border p-4 @3xl:sticky @3xl:top-6 @3xl:max-h-[calc(100svh-3rem)] @3xl:overflow-y-auto",
     previewCard: "flex flex-col gap-4",
+    previewBar: "flex items-center",
+    previewBody: "flex flex-col",
     bar: "border-t bg-background py-3",
   },
   workspace: {
@@ -306,11 +326,13 @@ const layoutClasses = {
     root: "@container flex flex-col",
     columns: "@3xl:grid @3xl:grid-cols-[--spacing(88)_minmax(0,1fr)]",
     formColumn: "flex flex-col gap-10 bg-background px-4 py-6 sm:px-6 @3xl:border-r",
-    // Рамка превью — вся область справа, как окно браузера: карточка внутри сама держит ширину
-    // личной страницы. Прокручивается рамка, а не холст
+    // Рамка превью — вся область справа, как окно браузера: панель с подписью и выбором ширины,
+    // под ней холст страницы, карточка в нём сама держит ширину личной страницы. Прокручивается
+    // холст под панелью. overflow-clip, а не hidden: не мешает sticky внутри страницы
     preview: "p-4 sm:p-6 @3xl:sticky @3xl:top-0 @3xl:h-svh @3xl:self-start",
-    previewCard:
-      "flex w-full flex-col gap-4 rounded-xl border bg-background p-4 sm:p-6 @3xl:h-full @3xl:overflow-y-auto",
+    previewCard: "flex w-full flex-col overflow-clip rounded-xl border bg-background @3xl:h-full",
+    previewBar: "flex min-h-11 items-center justify-between gap-2 border-b px-4 py-1.5",
+    previewBody: "flex flex-1 flex-col @3xl:overflow-y-auto",
     bar: "border-t bg-background px-4 py-3 sm:px-6 @3xl:border-r",
   },
 } as const;
@@ -375,6 +397,7 @@ export function ProfileForm({
   const [reveal, setReveal] = useState<RevealTarget | null>(null);
   // Превью на телефоне: форма прячется, но остаётся в DOM, и введённое не теряется
   const [isPreviewShown, setIsPreviewShown] = useState(false);
+  const [previewWidth, setPreviewWidth] = useState<PreviewWidth>("desktop");
   const [isPagePasswordShown, setIsPagePasswordShown] = useState(false);
   const queryClient = useQueryClient();
   // В форме только id города, а на кнопке списка нужны название и регион: берём их у города,
@@ -1705,37 +1728,30 @@ export function ProfileForm({
 
               <div hidden={isSectionHidden("profile")} className="contents">
                 {showSectionOrder ? (
-                  <form.Field name="cover">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>Page cover</FieldLabel>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(next) => {
-                            // Пустую строку присылает скрытый <select> Radix, а не выбор пользователя
-                            if (!next) return;
-                            field.handleChange(next as ProfileCover);
-                            field.handleBlur();
-                          }}>
-                          <SelectTrigger
-                            id={field.name}
-                            aria-describedby={`${field.name}-description`}
-                            className="w-48">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {coverIds.map((cover) => (
-                              <SelectItem key={cover} value={cover}>
-                                {coverLabels[cover]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FieldDescription id={`${field.name}-description`}>
-                          Cover styles are coming soon. Until then, your page looks the same with
-                          any option.
-                        </FieldDescription>
-                      </Field>
+                  <form.Field name="pageTheme">
+                    {(themeField) => (
+                      <form.Field name="cover">
+                        {(coverField) => (
+                          <AppearanceBlock
+                            theme={themeField.state.value}
+                            onThemeChange={(theme) => {
+                              themeField.handleChange(theme);
+                              themeField.handleBlur();
+                            }}
+                            cover={coverField.state.value}
+                            onCoverChange={(cover) => {
+                              coverField.handleChange(cover);
+                              coverField.handleBlur();
+                            }}
+                            collapsed={isCollapsed("appearance")}
+                            onCollapsedChange={
+                              onCollapsedChange
+                                ? (collapsed) => onCollapsedChange("appearance", collapsed)
+                                : undefined
+                            }
+                          />
+                        )}
+                      </form.Field>
                     )}
                   </form.Field>
                 ) : null}
@@ -2017,12 +2033,47 @@ export function ProfileForm({
             hidden={!hasPreview}
             className={cn(classes.preview, !isPreviewOpen && "@max-3xl:hidden")}>
             <div className={classes.previewCard}>
-              <p id={`${formId}-preview-title`} className="text-muted-foreground text-sm">
-                Preview
-              </p>
-              <form.Subscribe selector={(state) => state.values}>
-                {(values) => renderPreview(getPreview(values))}
-              </form.Subscribe>
+              <div className={classes.previewBar}>
+                <p id={`${formId}-preview-title`} className="text-muted-foreground text-sm">
+                  Preview
+                </p>
+                {/* На узком экране превью и так шириной с телефон */}
+                {layout === "workspace" ? (
+                  <fieldset className="hidden gap-1 @3xl:flex">
+                    <legend className="sr-only">Preview width</legend>
+                    {previewWidths.map(({ id, label, Icon }) => (
+                      <Button
+                        key={id}
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={label}
+                        aria-pressed={previewWidth === id}
+                        onClick={() => setPreviewWidth(id)}
+                        className="aria-pressed:bg-accent aria-pressed:text-accent-foreground">
+                        <Icon aria-hidden="true" />
+                      </Button>
+                    ))}
+                  </fieldset>
+                ) : null}
+              </div>
+              <div
+                className={cn(
+                  classes.previewBody,
+                  layout === "workspace" && previewWidth === "phone" && "@3xl:bg-muted",
+                )}>
+                <div
+                  className={cn(
+                    "flex flex-1 flex-col",
+                    layout === "workspace" &&
+                      previewWidth === "phone" &&
+                      "@3xl:mx-auto @3xl:w-full @3xl:max-w-[390px]",
+                  )}>
+                  <form.Subscribe selector={(state) => state.values}>
+                    {(values) => renderPreview(getPreview(values))}
+                  </form.Subscribe>
+                </div>
+              </div>
             </div>
           </section>
         ) : null}

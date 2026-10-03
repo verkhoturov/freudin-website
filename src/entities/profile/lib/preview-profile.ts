@@ -88,6 +88,9 @@ export function toPreviewProfile(input: ProfileInput, extras: PreviewExtras): Pu
     }),
     highlightedSections: parseOr(fields.highlightedSections, input.highlightedSections, []),
     cover: parseOr(fields.cover, input.cover, "classic"),
+    pageTheme: parseOr(fields.pageTheme, input.pageTheme, "classic"),
+    linkIcons: parseOr(fields.linkIcons, input.linkIcons, true),
+    ctaPlacement: parseOr(fields.ctaPlacement, input.ctaPlacement, "inline"),
     visibility: parseOr(fields.visibility, input.visibility, "public"),
   };
 }

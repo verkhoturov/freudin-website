@@ -7,7 +7,7 @@ import { routes } from "@/shared/config";
 import { Alert, AlertDescription } from "@/shared/ui/alert";
 import { Container } from "@/shared/ui/container";
 import { Skeleton } from "@/shared/ui/skeleton";
-import { ProfileCard } from "@/widgets/profile-card";
+import { ProfileCanvas, ProfileCard } from "@/widgets/profile-card";
 import { HiddenPageNotice } from "./hidden-page-notice";
 
 type HiddenProfileViewProps = {
@@ -40,17 +40,22 @@ export function HiddenProfileView({ username, visibility }: HiddenProfileViewPro
 
   if (ownProfile?.username === username) {
     return (
-      <Container className="flex flex-col gap-6 py-page">
-        <Alert className="mx-auto max-w-profile">
-          <AlertDescription>
-            {ownerNotices[visibility]}{" "}
-            <Link href={routes.settingsSection("account")} className="text-link underline">
-              Change in Settings
-            </Link>
-          </AlertDescription>
-        </Alert>
-        <ProfileCard profile={ownProfile} isOwner />
-      </Container>
+      <>
+        {/* Пометка — часть сайта, а не страницы: стоит над холстом в теме сайта */}
+        <Container className="pt-page">
+          <Alert className="mx-auto max-w-profile">
+            <AlertDescription>
+              {ownerNotices[visibility]}{" "}
+              <Link href={routes.settingsSection("account")} className="text-link underline">
+                Change in Settings
+              </Link>
+            </AlertDescription>
+          </Alert>
+        </Container>
+        <ProfileCanvas theme={ownProfile.pageTheme}>
+          <ProfileCard profile={ownProfile} isOwner />
+        </ProfileCanvas>
+      </>
     );
   }
 

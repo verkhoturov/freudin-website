@@ -35,6 +35,8 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-overlay: var(--overlay);
+  --color-page-surface: var(--page-surface);
+  --color-page-surface-border: var(--page-surface-border);
 }
 
 /*
@@ -94,6 +96,31 @@
   --red-800: #781016;
   --red-900: #51060a;
   --red-950: #310103;
+
+  /* Зелёный и голубой: только пресеты личной страницы Sage и Sky. Светлота шагов — как у violet */
+  --sage-50: #f3f8f5;
+  --sage-100: #e3efe8;
+  --sage-200: #c9ddd1;
+  --sage-300: #a6c7b4;
+  --sage-400: #80b296;
+  --sage-500: #579273;
+  --sage-600: #387758;
+  --sage-700: #246043;
+  --sage-800: #1a4a33;
+  --sage-900: #0e3120;
+  --sage-950: #041b10;
+
+  --sky-50: #f1f8fc;
+  --sky-100: #dfeef7;
+  --sky-200: #c1dcec;
+  --sky-300: #98c5e0;
+  --sky-400: #68aed5;
+  --sky-500: #358dba;
+  --sky-600: #04719e;
+  --sky-700: #015a7e;
+  --sky-800: #024562;
+  --sky-900: #002d42;
+  --sky-950: #011926;
 }
 
 /* Семантические токены: светлая тема. Контраст пар проверен по WCAG AA в обеих темах */
@@ -134,6 +161,14 @@
   --ring: var(--violet-700);
   /* Затемнение под диалогами, одинаковое в обеих темах */
   --overlay: rgb(0 0 0 / 10%);
+  /* Личная страница, пресет Classic: контент прямо на фоне страницы, без карточки.
+     Пресеты переопределяют эти токены ниже, в разделе «Оформление личной страницы» */
+  --page-backdrop: var(--background);
+  --page-surface: var(--background);
+  --page-surface-border: transparent;
+  --page-surface-padding: 0px;
+  --page-surface-shadow: none;
+  --page-banner: linear-gradient(135deg, var(--violet-200), var(--pink-200));
 }
 
 .dark {
@@ -166,6 +201,91 @@
   --border: var(--neutral-800);
   --input: var(--neutral-500);
   --ring: var(--violet-300);
+  --page-banner: linear-gradient(135deg, var(--violet-800), var(--pink-800));
+}
+
+/*
+ * Оформление личной страницы: пресет — атрибут data-page-theme на обёртке (ProfileCanvas).
+ * Пресет меняет только фон за карточкой, карточку, заливку баннера, выделение (accent)
+ * и выделенную ссылку (secondary). Главная кнопка (cta), шрифты, размеры и радиусы — как
+ * на сайте (решение пользователя 03.10.2026). Текст лежит только на карточке: градиент —
+ * за ней. Контраст проверен в обеих темах: текст на карточке и в выделении — от 4.6:1,
+ * на выделенной ссылке — от 5:1. Новый пресет добавляй и в pageThemeIds.
+ */
+[data-page-theme]:not([data-page-theme="classic"]) {
+  --page-surface: var(--card);
+  --page-surface-border: var(--border);
+  --page-surface-padding: calc(var(--spacing) * 6);
+  --page-surface-shadow: 0 1px 3px rgb(0 0 0 / 6%), 0 12px 32px rgb(0 0 0 / 6%);
+}
+
+[data-page-theme="paper"] {
+  --page-backdrop: var(--neutral-100);
+}
+
+.dark [data-page-theme="paper"] {
+  --page-backdrop: var(--background);
+}
+
+[data-page-theme="lavender"] {
+  --page-backdrop: linear-gradient(160deg, var(--violet-100), var(--violet-200));
+  --page-banner: linear-gradient(135deg, var(--violet-300), var(--violet-500));
+}
+
+.dark [data-page-theme="lavender"] {
+  --page-backdrop: linear-gradient(160deg, var(--violet-950), var(--neutral-950));
+  --page-banner: linear-gradient(135deg, var(--violet-800), var(--violet-600));
+}
+
+[data-page-theme="orchid"] {
+  --page-backdrop: linear-gradient(160deg, var(--pink-100), var(--violet-100));
+  --page-banner: linear-gradient(135deg, var(--pink-300), var(--violet-400));
+  --accent: var(--pink-100);
+  --secondary: var(--pink-700);
+}
+
+.dark [data-page-theme="orchid"] {
+  --page-backdrop: linear-gradient(160deg, var(--pink-950), var(--violet-950));
+  --page-banner: linear-gradient(135deg, var(--pink-800), var(--violet-700));
+  --accent: var(--pink-800);
+  --secondary: var(--pink-600);
+}
+
+[data-page-theme="sage"] {
+  --page-backdrop: linear-gradient(160deg, var(--sage-50), var(--sage-200));
+  --page-banner: linear-gradient(135deg, var(--sage-300), var(--sage-500));
+  --accent: var(--sage-100);
+  --secondary: var(--sage-700);
+}
+
+.dark [data-page-theme="sage"] {
+  --page-backdrop: linear-gradient(160deg, var(--sage-950), var(--neutral-950));
+  --page-banner: linear-gradient(135deg, var(--sage-800), var(--sage-600));
+  --accent: var(--sage-800);
+  --secondary: var(--sage-600);
+}
+
+[data-page-theme="sky"] {
+  --page-backdrop: linear-gradient(160deg, var(--sky-50), var(--sky-200));
+  --page-banner: linear-gradient(135deg, var(--sky-300), var(--sky-500));
+  --accent: var(--sky-100);
+  --secondary: var(--sky-700);
+}
+
+.dark [data-page-theme="sky"] {
+  --page-backdrop: linear-gradient(160deg, var(--sky-950), var(--neutral-950));
+  --page-banner: linear-gradient(135deg, var(--sky-800), var(--sky-600));
+  --accent: var(--sky-800);
+  --secondary: var(--sky-600);
+}
+
+/* Фон за карточкой и баннер бывают градиентом, поэтому это не цвета @theme, а свои утилиты */
+@utility bg-page-backdrop {
+  background: var(--page-backdrop);
+}
+
+@utility bg-page-banner {
+  background: var(--page-banner);
 }
 
 /* Шрифты. --font-sans задаёт next/font в src/app/fonts.ts, заголовки — font-heading */

@@ -5,9 +5,11 @@ import { type SocialLink, socialLinkSchema } from "@/entities/social-link/@x/pro
 import type { Json, SupabaseClient, Tables, TablesUpdate } from "@/shared/api/index.server";
 import { contactTypeIds, isContactType } from "../config/contacts";
 import { coverIds } from "../config/cover";
+import { ctaPlacementIds } from "../config/cta-placement";
 import { demoProfile } from "../config/demo-profile";
 import { languageCodes } from "../config/languages";
 import { DEMO_USERNAME, USERNAME_MAX_LENGTH } from "../config/limits";
+import { pageThemeIds } from "../config/page-theme";
 import { approachIds, clientTypeIds, workFormatIds } from "../config/practice";
 import { profileSectionIds } from "../config/sections";
 import { AVATARS_BUCKET, DOCUMENTS_BUCKET } from "../config/storage";
@@ -31,7 +33,7 @@ import { setPrivateDetails } from "./private-details.server";
 
 /** Колонки публичной страницы. Гостю (`anon`) миграциями открыты только они. */
 export const PUBLIC_PROFILE_COLUMNS =
-  `username, display_name, bio, avatar_path, social_links, country, work_formats, client_types, approaches, languages, price_amount, price_currency, documents, section_order, practice_started_on, education, contacts, preferred_contact, faq, services, highlighted_sections, cover, visibility, city:cities(${CITY_COLUMNS})` as const;
+  `username, display_name, bio, avatar_path, social_links, country, work_formats, client_types, approaches, languages, price_amount, price_currency, documents, section_order, practice_started_on, education, contacts, preferred_contact, faq, services, highlighted_sections, cover, page_theme, link_icons, cta_placement, visibility, city:cities(${CITY_COLUMNS})` as const;
 
 // Коды Postgres для нарушения уникальности и внешнего ключа и имена ограничений из миграций
 const UNIQUE_VIOLATION = "23505";
@@ -63,6 +65,9 @@ type PublicProfileRow = Pick<
   | "services"
   | "highlighted_sections"
   | "cover"
+  | "page_theme"
+  | "link_icons"
+  | "cta_placement"
   | "visibility"
 > & { city: CityRow | null };
 
@@ -160,6 +165,9 @@ export function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow)
     services: parseList(row.services, storedServiceSchema),
     highlightedSections: pickKnown(row.highlighted_sections, profileSectionIds),
     cover: pickKnown([row.cover], coverIds)[0] ?? "classic",
+    pageTheme: pickKnown([row.page_theme], pageThemeIds)[0] ?? "classic",
+    linkIcons: row.link_icons,
+    ctaPlacement: pickKnown([row.cta_placement], ctaPlacementIds)[0] ?? "inline",
     visibility: pickKnown([row.visibility], visibilityIds)[0] ?? "public",
   };
 }
@@ -203,6 +211,9 @@ function toProfileRow(data: ProfileUpdateData): TablesUpdate<"profiles"> {
     services: data.services?.map(toProfileService),
     highlighted_sections: data.highlightedSections,
     cover: data.cover,
+    page_theme: data.pageTheme,
+    link_icons: data.linkIcons,
+    cta_placement: data.ctaPlacement,
   };
 }
 

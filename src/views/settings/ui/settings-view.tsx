@@ -25,7 +25,7 @@ import { SectionNav } from "@/shared/ui/section-nav";
 import { toast } from "@/shared/ui/sonner";
 import { ThemeToggle } from "@/shared/ui/theme-toggle";
 import { AccountSettings } from "@/widgets/account-settings";
-import { ProfileCard } from "@/widgets/profile-card";
+import { ProfileCanvas, ProfileCard } from "@/widgets/profile-card";
 import { ProfileDocuments } from "@/widgets/profile-documents";
 import {
   type AvatarValue,
@@ -201,7 +201,9 @@ function ProfileSettingsForm({
       accountBlock={<AccountSettings viewer={viewer} profile={profile} />}
       // Документы уже опубликованы: их загрузка и удаление идут мимо формы
       renderPreview={(draft) => (
-        <ProfileCard profile={{ ...draft, documents: profile.documents }} isPreview />
+        <ProfileCanvas theme={draft.pageTheme}>
+          <ProfileCard profile={{ ...draft, documents: profile.documents }} isPreview />
+        </ProfileCanvas>
       )}
       submitLabel="Save"
       onSubmit={submit}

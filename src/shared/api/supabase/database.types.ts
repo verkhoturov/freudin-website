@@ -123,6 +123,7 @@ export type Database = {
           country: string | null;
           cover: string;
           created_at: string;
+          cta_placement: string;
           display_name: string;
           documents: Json;
           education: Json;
@@ -130,6 +131,8 @@ export type Database = {
           highlighted_sections: string[];
           id: string;
           languages: string[];
+          link_icons: boolean;
+          page_theme: string;
           practice_started_on: string | null;
           preferred_contact: string | null;
           price_amount: number | null;
@@ -152,6 +155,7 @@ export type Database = {
           country?: string | null;
           cover?: string;
           created_at?: string;
+          cta_placement?: string;
           display_name: string;
           documents?: Json;
           education?: Json;
@@ -159,6 +163,8 @@ export type Database = {
           highlighted_sections?: string[];
           id: string;
           languages?: string[];
+          link_icons?: boolean;
+          page_theme?: string;
           practice_started_on?: string | null;
           preferred_contact?: string | null;
           price_amount?: number | null;
@@ -181,6 +187,7 @@ export type Database = {
           country?: string | null;
           cover?: string;
           created_at?: string;
+          cta_placement?: string;
           display_name?: string;
           documents?: Json;
           education?: Json;
@@ -188,6 +195,8 @@ export type Database = {
           highlighted_sections?: string[];
           id?: string;
           languages?: string[];
+          link_icons?: boolean;
+          page_theme?: string;
           practice_started_on?: string | null;
           preferred_contact?: string | null;
           price_amount?: number | null;
@@ -228,6 +237,7 @@ export type Database = {
           country: string | null;
           cover: string;
           created_at: string;
+          cta_placement: string;
           display_name: string;
           documents: Json;
           education: Json;
@@ -235,6 +245,8 @@ export type Database = {
           highlighted_sections: string[];
           id: string;
           languages: string[];
+          link_icons: boolean;
+          page_theme: string;
           practice_started_on: string | null;
           preferred_contact: string | null;
           price_amount: number | null;

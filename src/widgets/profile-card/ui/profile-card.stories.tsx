@@ -77,6 +77,9 @@ const fullProfile: PublicProfile = {
   ],
   highlightedSections: [],
   cover: "classic",
+  pageTheme: "classic",
+  linkIcons: true,
+  ctaPlacement: "inline",
   visibility: "public",
 };
 

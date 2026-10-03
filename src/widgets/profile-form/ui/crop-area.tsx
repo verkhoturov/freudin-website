@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Cropper, { type Area, type Point } from "react-easy-crop";
-import { AVATAR_SIZE } from "@/entities/profile";
+import { AVATAR_CROP_SIZE } from "@/entities/profile";
 import { cropImage } from "@/shared/lib/crop-image";
 import { Button } from "@/shared/ui/button";
 import { DialogFooter } from "@/shared/ui/dialog";
@@ -25,7 +25,7 @@ export function CropArea({ src, onCancel, onConfirm }: CropAreaProps) {
     if (!area) return;
     setIsSaving(true);
     try {
-      onConfirm(await cropImage(src, area, AVATAR_SIZE));
+      onConfirm(await cropImage(src, area, AVATAR_CROP_SIZE));
     } catch {
       toast.error("Couldn’t process the photo. Try another one.");
     } finally {
