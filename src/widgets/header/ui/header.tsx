@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getLoginHref, useViewerQuery } from "@/entities/viewer";
+import { routes } from "@/shared/config";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 import { Logo } from "@/shared/ui/logo";
@@ -13,6 +14,8 @@ import { UserMenu } from "./user-menu";
 export function Header() {
   const pathname = usePathname();
   const viewer = useViewerQuery();
+  // В настройках своя навигация на весь экран: логотип и тема — в её сайдбаре
+  if (pathname === routes.settings) return null;
 
   return (
     <header className="border-b">

@@ -15,6 +15,7 @@ export {
   removeProfileDocument,
   removeUserDocumentFiles,
 } from "./api/document.server";
+export { setPageAccessCookie, unlockProfilePage } from "./api/page-access.server";
 export { getPrivateDetails } from "./api/private-details.server";
 export {
   type CreateProfileResult,
@@ -25,6 +26,7 @@ export {
   type UpdateProfileResult,
   updateProfile,
 } from "./api/profile.server";
+export { getVisitorProfile, type VisitorProfile } from "./api/visitor-profile.server";
 export { DOCUMENTS_MAX } from "./config/limits";
 export {
   AVATAR_MAX_BYTES,
@@ -40,6 +42,7 @@ export {
   documentTitleSchema,
   type ProfileData,
   type ProfileUpdateData,
+  pageAccessInputSchema,
   profileInputSchema,
   profileUpdateSchema,
   providerAvatarRequestSchema,

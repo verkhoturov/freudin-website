@@ -11,9 +11,11 @@ export const profileSectionIds = [
   "location",
   "languages",
   "price",
+  "services",
   "education",
   "contacts",
   "links",
+  "faq",
   "documents",
 ] as const;
 
@@ -29,8 +31,10 @@ export const profileSectionLabels: Record<ProfileSection, string> = {
   location: "Location",
   languages: "Languages",
   price: "Price",
+  services: "Services",
   education: "Education",
   contacts: "Contacts",
   links: "Links",
+  faq: "FAQ",
   documents: "Documents",
 };

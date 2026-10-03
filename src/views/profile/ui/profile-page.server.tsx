@@ -3,18 +3,21 @@ import "server-only";
 import type { Metadata, ResolvingMetadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
-import { getProfileByUsername, type PublicProfile } from "@/entities/profile/index.server";
+import { getVisitorProfile, type PublicProfile } from "@/entities/profile/index.server";
 import { createSupabasePublicClient } from "@/shared/api/index.server";
 import { routes, siteConfig } from "@/shared/config";
+import { HiddenProfileView } from "./hidden-profile-view";
 import { ProfileView } from "./profile-view";
 
 const DESCRIPTION_MAX_LENGTH = 160;
 
 // generateMetadata и страница просят один и тот же профиль: cache превращает два запроса
-// к базе в один на время рендера
+// к базе в один на время рендера. Страницу с паролем открывает cookie гостя
 const getProfile = cache((username: string) =>
-  getProfileByUsername(createSupabasePublicClient(), username),
+  getVisitorProfile(createSupabasePublicClient(), username),
 );
+
+const hiddenTitles = { private: "Hidden page", password: "Protected page" } as const;
 
 // Описание для поисковиков и превью ссылок: начало «О себе» одной строкой
 function getDescription({ bio, displayName }: PublicProfile) {
@@ -28,9 +31,17 @@ export async function generateMetadata(
   { params }: PageProps<"/[username]">,
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
-  const profile = await getProfile((await params).username);
+  const result = await getProfile((await params).username);
   // Страница сама ответит 404, метаданные возьмутся из not-found
-  if (!profile) return {};
+  if (!result) return {};
+  // Скрытая страница: ни имени, ни фото в превью ссылки и в поиске
+  if (result.status === "hidden") {
+    return { title: hiddenTitles[result.visibility], robots: { index: false, follow: false } };
+  }
+  const { profile } = result;
+  if (profile.visibility !== "public") {
+    return { title: profile.displayName, robots: { index: false, follow: false } };
+  }
 
   const url = routes.profile(profile.username);
   const description = getDescription(profile);
@@ -64,18 +75,22 @@ export async function generateMetadata(
  */
 export async function ProfilePage({ params, searchParams }: PageProps<"/[username]">) {
   const { username } = await params;
-  const profile = await getProfile(username);
-  if (!profile) notFound();
+  const result = await getProfile(username);
+  if (!result) notFound();
+  const canonicalUsername = result.status === "visible" ? result.profile.username : result.username;
 
   // Регистр адреса не важен: /Anna ведёт на каноничный /anna с тем же query
-  if (username !== profile.username) {
+  if (username !== canonicalUsername) {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(await searchParams)) {
       for (const item of [value ?? []].flat()) query.append(key, item);
     }
     const search = query.size > 0 ? `?${query}` : "";
-    permanentRedirect(`${routes.profile(profile.username)}${search}`);
+    permanentRedirect(`${routes.profile(canonicalUsername)}${search}`);
   }
 
-  return <ProfileView profile={profile} />;
+  if (result.status === "hidden") {
+    return <HiddenProfileView username={result.username} visibility={result.visibility} />;
+  }
+  return <ProfileView profile={result.profile} />;
 }

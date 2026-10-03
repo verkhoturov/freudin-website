@@ -31,7 +31,7 @@ function SettingsLink() {
 
 export function PrivacyView() {
   return (
-    <LegalDocument title="Privacy Policy" lastUpdated="September 29, 2026">
+    <LegalDocument title="Privacy Policy" lastUpdated="October 3, 2026">
       <p>
         This Privacy Policy explains how Freudin collects, uses, stores, and shares personal data
         when you access or use the Freudin website, applications, features, and related services
@@ -173,7 +173,7 @@ export function PrivacyView() {
           your profile photo, which you upload or choose to copy from your Google, Facebook, or
           Telegram account;
         </li>
-        <li>links to your social media profiles and websites;</li>
+        <li>links to your social media profiles and websites, with the titles you give them;</li>
         <li>
           details about your practice, if you add them: your country and the city where you see
           clients in person, whether you work online or in person, who you work with, your therapy
@@ -186,6 +186,14 @@ export function PrivacyView() {
           or a Telegram username, and the way you prefer to be contacted;
         </li>
         <li>
+          questions and answers you write for your page (FAQ) and service cards: who a service is
+          for, its name, description, duration, and price;
+        </li>
+        <li>
+          how your page is arranged: the order of its blocks, the blocks, links, and service cards
+          you choose to highlight, and your cover style;
+        </li>
+        <li>
           documents you upload, such as diplomas, certificates, or licenses, together with their
           captions.
         </li>
@@ -194,6 +202,17 @@ export function PrivacyView() {
         Your public profile is available to anyone at {SITE_HOST}/&lt;username&gt; without signing
         in. It may be indexed by search engines, shared by other people, and copied or cached by
         third parties. Do not add information to your profile that you do not want to make public.
+      </p>
+      <p>
+        You can hide your page in <SettingsLink />: then it is visible only to you or only to people
+        who enter the password you set. Other visitors see a message that the page is hidden, not
+        your name, photo, or other profile details, and search engines are asked not to index the
+        page. We store the page password as you enter it, so that you can see it in <SettingsLink />
+        . It is visible only to you and is deleted together with your account. Do not reuse a
+        password from your other accounts. A page password is a simple lock, not strong protection:
+        a short password can be guessed, so do not rely on it to protect sensitive information.
+        Images on your page are stored at direct web addresses, and anyone who saved such an address
+        while your page was visible may still be able to open the image.
       </p>
       <p>
         Documents are published as soon as you upload them. Before uploading, cover ID numbers,
@@ -288,14 +307,34 @@ export function PrivacyView() {
           to protect the sign-in process;
         </li>
         <li>
+          <code>freudin-page-access-&lt;username&gt;</code> cookies, set when you enter the correct
+          password for a password-protected page, so that you do not have to enter it again. They
+          contain a random access code, not the password, are not accessible to scripts on the page,
+          and are kept for 30 days. They stop working earlier if the page owner changes the password
+          or who can see the page;
+        </li>
+        <li>
           <code>theme</code> in your browser’s local storage, which remembers whether you chose the
           light, dark, or system theme;
         </li>
         <li>
           <code>freudin:onboarding-draft</code> in your browser’s session storage, which keeps the
-          details you enter while creating your page and is deleted when you close the browser tab.
+          details you enter while creating your page and is deleted when you close the browser tab;
+        </li>
+        <li>
+          <code>freudin:settings-collapsed-blocks</code> in your browser’s local storage, which
+          remembers which sections of <SettingsLink /> you collapsed. It stores your account ID and
+          the names of those sections, not the details you enter;
+        </li>
+        <li>
+          <code>freudin:page-checklist</code> in your browser’s local storage, which remembers that
+          you hid the “Finish your page” tips on your page. It stores your page’s username.
         </li>
       </ul>
+      <p>
+        Items in local storage stay in your browser until you clear your browser’s site data. They
+        are not sent to us.
+      </p>
       <p>
         Strictly necessary technologies cannot generally be disabled because the Service may not
         function without them. Because we use only these technologies, we do not show a cookie

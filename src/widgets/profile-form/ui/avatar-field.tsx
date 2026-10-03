@@ -12,7 +12,7 @@ import {
 } from "@/shared/ui/dropdown-menu";
 import { FieldLegend, FieldSet } from "@/shared/ui/field";
 import { toast } from "@/shared/ui/sonner";
-import type { AvatarValue } from "../model/avatar-value";
+import { type AvatarValue, getAvatarUrl } from "../model/avatar-value";
 import { AvatarCropDialog } from "./avatar-crop-dialog";
 
 // Исходник до кропа: большие фото с телефона браузер ещё открывает, дальше — вряд ли
@@ -31,23 +31,6 @@ type AvatarFieldProps = {
   disabled?: boolean;
 };
 
-function getPreviewUrl(
-  value: AvatarValue,
-  currentAvatarUrl: string | null,
-  accountPhotos: AccountPhoto[],
-): string | null {
-  switch (value.type) {
-    case "current":
-      return currentAvatarUrl;
-    case "provider":
-      return accountPhotos.find((photo) => photo.provider === value.provider)?.avatarUrl ?? null;
-    case "file":
-      return value.previewUrl;
-    case "none":
-      return null;
-  }
-}
-
 export function AvatarField({
   value,
   onChange,
@@ -58,7 +41,7 @@ export function AvatarField({
 }: AvatarFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
-  const previewUrl = getPreviewUrl(value, currentAvatarUrl, accountPhotos);
+  const previewUrl = getAvatarUrl(value, currentAvatarUrl, accountPhotos);
   // Фото аккаунтов, кроме уже выбранного
   const otherPhotos = accountPhotos.filter(
     (photo) => value.type !== "provider" || photo.provider !== value.provider,

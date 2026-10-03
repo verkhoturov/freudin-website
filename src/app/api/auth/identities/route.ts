@@ -42,7 +42,12 @@ export const POST = withErrorHandling(async (request) => {
   let url: string | null;
   if (oidcProvider) {
     const callbackUrl = new URL(apiRoutes.oidcAuthCallback(oidcProvider), origin);
-    url = await startOidcSignIn(oidcProvider, callbackUrl.toString(), routes.settings, claims.sub);
+    url = await startOidcSignIn(
+      oidcProvider,
+      callbackUrl.toString(),
+      routes.settingsSection("account"),
+      claims.sub,
+    );
   } else {
     const callbackUrl = new URL(apiRoutes.authCallback, origin);
     callbackUrl.searchParams.set("provider", provider);

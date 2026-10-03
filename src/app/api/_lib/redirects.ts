@@ -32,7 +32,8 @@ export function redirectToSettings(
   origin: string,
   result: { linked: AuthProvider } | { error: AuthErrorCode | null },
 ): Response {
-  const url = new URL(routes.settings, origin);
+  // Способы входа — в разделе Account
+  const url = new URL(routes.settingsSection("account"), origin);
   if ("linked" in result) url.searchParams.set(identityLinkParams.linked, result.linked);
   else if (result.error) url.searchParams.set(identityLinkParams.error, result.error);
   return redirectTo(url);

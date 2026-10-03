@@ -7,24 +7,31 @@ import type { ProfileUpdateData } from "../model/schemas";
 import type { PrivateProfileDetails } from "../model/types";
 
 /**
- * Данные психолога, которые не показываются на странице, из `profile_private`. RLS пускает
- * только владельца. Строки нет — ничего не заполнено.
+ * Данные психолога, которые не показываются на странице, из `profile_private`, и пароль скрытой
+ * страницы. RLS пускает только владельца. Строки нет — ничего не заполнено.
  */
 export async function getPrivateDetails(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<PrivateProfileDetails> {
-  const { data, error } = await supabase
-    .from("profile_private")
-    .select("birth_date, gender, concerns")
-    .eq("id", userId)
-    .maybeSingle();
+  const [details, pageAccess] = await Promise.all([
+    supabase
+      .from("profile_private")
+      .select("birth_date, gender, concerns")
+      .eq("id", userId)
+      .maybeSingle(),
+    // Пароль скрытой страницы: RLS отдаёт его только владельцу
+    supabase.from("profile_page_access").select("password").eq("id", userId).maybeSingle(),
+  ]);
 
-  if (error) throw error;
+  if (details.error) throw details.error;
+  if (pageAccess.error) throw pageAccess.error;
+  const { data } = details;
   return {
     birthDate: data?.birth_date ?? null,
     gender: pickKnown(data?.gender ? [data.gender] : [], genderIds)[0] ?? null,
     concerns: pickKnown(data?.concerns ?? [], concernIds),
+    pagePassword: pageAccess.data?.password ?? null,
   };
 }
 

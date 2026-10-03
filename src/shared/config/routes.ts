@@ -4,6 +4,13 @@ export const routes = {
   login: "/login",
   onboarding: "/onboarding",
   settings: "/settings",
+  /** Раздел настроек: `account`, `profile` или `search` (`ProfileFormSection` в `widgets/profile-form`). */
+  settingsSection: (section: string) => `/settings?section=${encodeURIComponent(section)}`,
+  /**
+   * Блок настроек: форма разворачивает его и прокручивает к нему. id блока — `block-<id>`
+   * (`getBlockElementId` в `widgets/profile-form`).
+   */
+  settingsBlock: (block: string) => `/settings#block-${encodeURIComponent(block)}`,
   privacy: "/privacy",
   terms: "/terms",
   profile: (username: string) => `/${encodeURIComponent(username)}`,
@@ -33,5 +40,6 @@ export const apiRoutes = {
   /** Поиск города в стране: query `country` и `q`. */
   cities: "/api/cities",
   publicProfile: (username: string) => `/api/profiles/${encodeURIComponent(username)}`,
+  pageAccess: (username: string) => `/api/profiles/${encodeURIComponent(username)}/access`,
   usernameAvailability: (username: string) => `/api/usernames/${encodeURIComponent(username)}`,
 } as const;

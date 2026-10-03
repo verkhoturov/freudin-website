@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { legalConfig, routes } from "@/shared/config";
 import { Container } from "@/shared/ui/container";
 import { SupportEmailLink } from "@/shared/ui/support-email-link";
@@ -12,7 +13,10 @@ const legalLinks = [
 ];
 
 export function Footer() {
+  const pathname = usePathname();
   const copyrightYears = useCopyrightYears();
+  // Настройки — редактор на весь экран, без подвала
+  if (pathname === routes.settings) return null;
 
   return (
     <footer className="border-t">

@@ -7,17 +7,22 @@ import {
   DialogTrigger,
 } from "@/shared/ui/dialog";
 
-type DocumentGalleryProps = { documents: ProfileDocument[] };
+type DocumentGalleryProps = {
+  documents: ProfileDocument[];
+  /** В превью страницы заголовки не нужны: у превью нет своего места в структуре страницы. */
+  isPreview?: boolean;
+};
 
 /** Документы психолога: превью с подписью, по нажатию — полное изображение в диалоге. */
-export function DocumentGallery({ documents }: DocumentGalleryProps) {
+export function DocumentGallery({ documents, isPreview = false }: DocumentGalleryProps) {
   if (documents.length === 0) return null;
+  const Title = isPreview ? "p" : "h2";
 
   return (
     <section aria-labelledby="profile-documents-title" className="flex w-full flex-col gap-3">
-      <h2 id="profile-documents-title" className="font-heading text-section-title">
+      <Title id="profile-documents-title" className="font-heading text-section-title">
         Documents
-      </h2>
+      </Title>
       <ul className="flex flex-wrap justify-center gap-3">
         {documents.map((profileDocument) => (
           <li key={profileDocument.id}>

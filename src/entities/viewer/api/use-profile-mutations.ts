@@ -40,9 +40,11 @@ function syncContactEmailCache(queryClient: QueryClient, contactEmail: string | 
 // (`getProfileChanges`), поэтому кладём их в кеш как есть
 function syncPrivateDetailsCache(
   queryClient: QueryClient,
-  input: Pick<ProfileUpdateInput, "birthDate" | "gender" | "concerns">,
+  input: Pick<ProfileUpdateInput, "birthDate" | "gender" | "concerns" | "pagePassword">,
 ) {
   const changes: Partial<PrivateProfileDetails> = {};
+  // Пустой пароль сервер не сохраняет: прежний остаётся
+  if (input.pagePassword) changes.pagePassword = input.pagePassword;
   if (input.birthDate !== undefined) changes.birthDate = input.birthDate.trim() || null;
   if (input.gender !== undefined) changes.gender = input.gender || null;
   if (input.concerns !== undefined) changes.concerns = input.concerns;

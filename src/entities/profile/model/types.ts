@@ -2,9 +2,11 @@ import type { City } from "@/entities/location/@x/profile";
 import type { SocialLink } from "@/entities/social-link/@x/profile";
 import type { Concern } from "../config/concerns";
 import type { ContactType } from "../config/contacts";
+import type { ProfileCover } from "../config/cover";
 import type { Gender } from "../config/gender";
 import type { Approach, ClientType, WorkFormat } from "../config/practice";
 import type { ProfileSection } from "../config/sections";
+import type { ProfileVisibility } from "../config/visibility";
 
 /** Цена сессии «от»: целая сумма и код валюты ISO 4217. */
 export type ProfilePrice = { amount: number; currency: string };
@@ -25,6 +27,22 @@ export type ProfileDocument = {
 /** Образование: год окончания может быть не указан. */
 export type ProfileEducation = { qualification: string; institution: string; year: number | null };
 
+/** Вопрос и ответ психолога о своей практике. */
+export type ProfileFaqItem = { question: string; answer: string };
+
+/**
+ * Карточка услуги для одной из категорий «Works with». Длительность — в минутах. `highlighted` —
+ * карточка выделена на странице.
+ */
+export type ProfileService = {
+  clientType: ClientType;
+  title: string;
+  description: string;
+  durationMinutes: number | null;
+  price: ProfilePrice | null;
+  highlighted: boolean;
+};
+
 /** Заполненные контакты для связи. Telegram — ссылка `https://t.me/…`. */
 export type ProfileContacts = Partial<Record<ContactType, string>>;
 
@@ -37,6 +55,8 @@ export type PrivateProfileDetails = {
   birthDate: string | null;
   gender: Gender | null;
   concerns: Concern[];
+  /** Пароль скрытой страницы или `null`, если не задан. Виден только владельцу. */
+  pagePassword: string | null;
 };
 
 /** Публичный профиль — ответ `GET /api/profiles/[username]`. */
@@ -67,6 +87,13 @@ export type PublicProfile = {
    * На странице — главная кнопка под именем.
    */
   preferredContact: string | null;
+  faq: ProfileFaqItem[];
+  services: ProfileService[];
+  /** Выделенные блоки страницы. */
+  highlightedSections: ProfileSection[];
+  cover: ProfileCover;
+  /** Кто видит страницу. Скрытую гость получает только по паролю, владелец — всегда. */
+  visibility: ProfileVisibility;
 };
 
 /** Ответ `GET /api/usernames/[username]`: `username` приведён к нижнему регистру. */

@@ -1,12 +1,13 @@
 import { useEffect } from "react";
 
-const LEAVE_MESSAGE = "You have unsaved changes. Leave this page?";
+const LEAVE_MESSAGE = "You have unsaved changes. Discard them?";
 
 function isModifiedClick(event: MouseEvent): boolean {
   return event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
 }
 
-// Ссылка, по которой браузер или next/link уведёт с текущей страницы в этой вкладке
+// Ссылка, по которой браузер или next/link уведёт с текущей страницы в этой вкладке. Другой query
+// тоже уход: раздел настроек пересоздаёт форму, и правки пропадают
 function getLeavingLink(event: MouseEvent): HTMLAnchorElement | null {
   if (event.defaultPrevented || isModifiedClick(event)) return null;
   const link = event.target instanceof Element ? event.target.closest("a[href]") : null;

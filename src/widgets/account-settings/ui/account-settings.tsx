@@ -11,9 +11,12 @@ import { DeleteAccountDialog } from "./delete-account-dialog";
 import { IdentityLinkToast } from "./identity-link-toast";
 import { SignInMethods } from "./sign-in-methods";
 
-type AccountSettingsProps = { viewer: Viewer; profile: PublicProfile };
+type AccountSettingsProps = {
+  viewer: Viewer;
+  profile: PublicProfile;
+};
 
-/** Способы входа, выход и удаление аккаунта. */
+/** Способы входа, выход и удаление аккаунта. Заголовок раздела рисует страница. */
 export function AccountSettings({ viewer, profile }: AccountSettingsProps) {
   const signOut = useSignOutMutation();
   const isSigningOut = signOut.isPending || signOut.isSuccess;
@@ -27,10 +30,7 @@ export function AccountSettings({ viewer, profile }: AccountSettingsProps) {
   };
 
   return (
-    <section aria-labelledby="account-settings-title" className="flex flex-col gap-6">
-      <h2 id="account-settings-title" className="font-heading text-section-title">
-        Account
-      </h2>
+    <div className="flex flex-col gap-6">
       {/* useSearchParams на статической странице работает только внутри Suspense */}
       <Suspense fallback={null}>
         <IdentityLinkToast />
@@ -44,6 +44,6 @@ export function AccountSettings({ viewer, profile }: AccountSettingsProps) {
         </Button>
         <DeleteAccountDialog username={profile.username} />
       </div>
-    </section>
+    </div>
   );
 }

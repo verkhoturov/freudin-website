@@ -56,6 +56,35 @@ export type Database = {
         };
         Relationships: [];
       };
+      profile_page_access: {
+        Row: {
+          access_token: string;
+          id: string;
+          password: string;
+          updated_at: string;
+        };
+        Insert: {
+          access_token?: string;
+          id: string;
+          password: string;
+          updated_at?: string;
+        };
+        Update: {
+          access_token?: string;
+          id?: string;
+          password?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "profile_page_access_id_fkey";
+            columns: ["id"];
+            isOneToOne: true;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profile_private: {
         Row: {
           birth_date: string | null;
@@ -92,10 +121,13 @@ export type Database = {
           client_types: string[];
           contacts: Json;
           country: string | null;
+          cover: string;
           created_at: string;
           display_name: string;
           documents: Json;
           education: Json;
+          faq: Json;
+          highlighted_sections: string[];
           id: string;
           languages: string[];
           practice_started_on: string | null;
@@ -103,9 +135,11 @@ export type Database = {
           price_amount: number | null;
           price_currency: string | null;
           section_order: string[];
+          services: Json;
           social_links: Json;
           updated_at: string;
           username: string;
+          visibility: string;
           work_formats: string[];
         };
         Insert: {
@@ -116,10 +150,13 @@ export type Database = {
           client_types?: string[];
           contacts?: Json;
           country?: string | null;
+          cover?: string;
           created_at?: string;
           display_name: string;
           documents?: Json;
           education?: Json;
+          faq?: Json;
+          highlighted_sections?: string[];
           id: string;
           languages?: string[];
           practice_started_on?: string | null;
@@ -127,9 +164,11 @@ export type Database = {
           price_amount?: number | null;
           price_currency?: string | null;
           section_order?: string[];
+          services?: Json;
           social_links?: Json;
           updated_at?: string;
           username: string;
+          visibility?: string;
           work_formats?: string[];
         };
         Update: {
@@ -140,10 +179,13 @@ export type Database = {
           client_types?: string[];
           contacts?: Json;
           country?: string | null;
+          cover?: string;
           created_at?: string;
           display_name?: string;
           documents?: Json;
           education?: Json;
+          faq?: Json;
+          highlighted_sections?: string[];
           id?: string;
           languages?: string[];
           practice_started_on?: string | null;
@@ -151,9 +193,11 @@ export type Database = {
           price_amount?: number | null;
           price_currency?: string | null;
           section_order?: string[];
+          services?: Json;
           social_links?: Json;
           updated_at?: string;
           username?: string;
+          visibility?: string;
           work_formats?: string[];
         };
         Relationships: [
@@ -171,7 +215,58 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      get_profile_visibility: { Args: { p_username: string }; Returns: string };
+      get_unlocked_profile: {
+        Args: { p_token: string; p_username: string };
+        Returns: {
+          approaches: string[];
+          avatar_path: string | null;
+          bio: string;
+          city_id: number | null;
+          client_types: string[];
+          contacts: Json;
+          country: string | null;
+          cover: string;
+          created_at: string;
+          display_name: string;
+          documents: Json;
+          education: Json;
+          faq: Json;
+          highlighted_sections: string[];
+          id: string;
+          languages: string[];
+          practice_started_on: string | null;
+          preferred_contact: string | null;
+          price_amount: number | null;
+          price_currency: string | null;
+          section_order: string[];
+          services: Json;
+          social_links: Json;
+          updated_at: string;
+          username: string;
+          visibility: string;
+          work_formats: string[];
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "profiles";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      is_valid_profile_faq: { Args: { faq: Json }; Returns: boolean };
+      is_valid_profile_services: {
+        Args: { client_types: string[]; services: Json };
+        Returns: boolean;
+      };
+      set_profile_visibility: {
+        Args: { p_password?: string; p_visibility: string };
+        Returns: undefined;
+      };
+      unlock_profile_page: {
+        Args: { p_password: string; p_username: string };
+        Returns: string;
+      };
     };
     Enums: {
       [_ in never]: never;

@@ -14,17 +14,21 @@ import { copyToClipboard } from "@/shared/lib/clipboard";
 import { Container } from "@/shared/ui/container";
 import { toast } from "@/shared/ui/sonner";
 import { DeleteAccountDialog } from "@/widgets/account-settings";
+import { ProfileCard } from "@/widgets/profile-card";
 import { type AvatarValue, getAvatarSource, ProfileForm } from "@/widgets/profile-form";
 import { useOnboardingDraftStore } from "../model/draft-store";
 
 export function OnboardingView() {
   return (
     <ViewerGuard access="without-profile">
-      <Container width="form" className="flex flex-col gap-6 py-page">
+      {/* Ширина сайта нужна превью рядом с формой; без него колонки узкие, как у формы */}
+      <Container className="flex flex-col gap-6 py-page">
         <h1 className="font-heading text-page-title">Create your page</h1>
-        <OnboardingForm />
+        <div className="max-w-form lg:max-w-none">
+          <OnboardingForm />
+        </div>
         {/* Аккаунт, созданный не тем способом входа, иначе не удалить: без страницы нет настроек */}
-        <div className="flex flex-col items-start gap-2 border-t pt-6">
+        <div className="flex max-w-form flex-col items-start gap-2 border-t pt-6">
           <p className="text-muted-foreground text-sm">Signed in with the wrong account?</p>
           <DeleteAccountDialog username={null} />
         </div>
@@ -100,6 +104,7 @@ function OnboardingProfileForm({ viewer }: { viewer: Viewer }) {
       submitLabel="Create page"
       onSubmit={submit}
       onValuesChange={(values) => saveDraft({ userId: user.id, values })}
+      renderPreview={(draft) => <ProfileCard profile={draft} isPreview />}
     />
   );
 }

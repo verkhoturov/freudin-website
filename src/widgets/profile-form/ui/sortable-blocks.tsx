@@ -18,6 +18,7 @@ import { ArrowDownIcon, ArrowUpIcon, GripVerticalIcon } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useState } from "react";
 import { type ProfileSection, profileSectionLabels } from "@/entities/profile";
 import { Button } from "@/shared/ui/button";
+import { DisclosureButton } from "@/shared/ui/disclosure-button";
 
 type Direction = "up" | "down";
 
@@ -26,7 +27,15 @@ type SortableBlocksProps = {
   /** Без `onChange` блоки идут подряд без рамок и кнопок: онбординг. */
   onChange?: (order: ProfileSection[]) => void;
   renderBlock: (section: ProfileSection) => ReactNode;
+  /** Свёрнутые блоки. Без `onCollapsedChange` блоки не сворачиваются. */
+  collapsedBlocks?: readonly string[];
+  onCollapsedChange?: (section: ProfileSection, collapsed: boolean) => void;
+  /** Сводка свёрнутого блока: что в нём заполнено. */
+  renderSummary?: (section: ProfileSection) => ReactNode;
 };
+
+/** id блока на странице настроек: на него ведут ссылки `/settings#block-contacts`. */
+export const getBlockElementId = (section: string) => `block-${section}`;
 
 const moveButtonId = (section: ProfileSection, direction: Direction) =>
   `block-${section}-${direction}`;
@@ -35,7 +44,14 @@ const moveButtonId = (section: ProfileSection, direction: Direction) =>
  * Блоки формы в порядке личной страницы. Порядок меняют перетаскиванием за ручку (мышь, палец)
  * и стрелками ↑↓; с клавиатуры и в скринридере — стрелками, поэтому ручка вне порядка табуляции.
  */
-export function SortableBlocks({ order, onChange, renderBlock }: SortableBlocksProps) {
+export function SortableBlocks({
+  order,
+  onChange,
+  renderBlock,
+  collapsedBlocks = [],
+  onCollapsedChange,
+  renderSummary,
+}: SortableBlocksProps) {
   const sensors = useSensors(useSensor(PointerSensor));
   const [announcement, setAnnouncement] = useState("");
   // Кнопка, на которую вернуть фокус после перестановки: блок перемещается в DOM и теряет его
@@ -87,6 +103,13 @@ export function SortableBlocks({ order, onChange, renderBlock }: SortableBlocksP
                 section={section}
                 isFirst={index === 0}
                 isLast={index === order.length - 1}
+                collapsed={collapsedBlocks.includes(section)}
+                onCollapsedChange={
+                  onCollapsedChange
+                    ? (collapsed) => onCollapsedChange(section, collapsed)
+                    : undefined
+                }
+                summary={renderSummary?.(section)}
                 onMove={(direction) => {
                   move(index, direction === "up" ? index - 1 : index + 1);
                   setFocusTarget({ section, direction });
@@ -109,18 +132,33 @@ type SortableBlockProps = {
   isFirst: boolean;
   isLast: boolean;
   onMove: (direction: Direction) => void;
+  collapsed: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
+  summary: ReactNode;
   children: ReactNode;
 };
 
-function SortableBlock({ section, isFirst, isLast, onMove, children }: SortableBlockProps) {
+function SortableBlock({
+  section,
+  isFirst,
+  isLast,
+  onMove,
+  collapsed,
+  onCollapsedChange,
+  summary,
+  children,
+}: SortableBlockProps) {
   const { listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: section });
   const label = profileSectionLabels[section];
   const titleId = `block-${section}-title`;
+  const contentId = `block-${section}-content`;
+  const isCollapsed = Boolean(onCollapsedChange) && collapsed;
 
   return (
     <li
       ref={setNodeRef}
+      id={getBlockElementId(section)}
       // Список вертикальный: сдвигаем только по Y, без растяжения блока
       style={{
         transform: transform ? `translate3d(0, ${Math.round(transform.y)}px, 0)` : undefined,
@@ -137,8 +175,18 @@ function SortableBlock({ section, isFirst, isLast, onMove, children }: SortableB
           className="-my-1 flex size-8 shrink-0 cursor-grab touch-none items-center justify-center text-muted-foreground active:cursor-grabbing">
           <GripVerticalIcon className="size-4" />
         </span>
-        <h3 id={titleId} className="min-w-0 flex-1 truncate font-medium text-sm">
-          {label}
+        <h3 id={titleId} className="flex min-w-0 flex-1 font-medium text-sm">
+          {onCollapsedChange ? (
+            <DisclosureButton
+              expanded={!isCollapsed}
+              controls={contentId}
+              onClick={() => onCollapsedChange(!isCollapsed)}
+              className="-my-1 min-h-8 flex-1">
+              <span className="truncate">{label}</span>
+            </DisclosureButton>
+          ) : (
+            <span className="truncate">{label}</span>
+          )}
         </h3>
         <Button
           id={moveButtonId(section, "up")}
@@ -161,7 +209,11 @@ function SortableBlock({ section, isFirst, isLast, onMove, children }: SortableB
           <ArrowDownIcon aria-hidden="true" />
         </Button>
       </div>
-      <fieldset aria-labelledby={titleId} className="min-w-0">
+      {isCollapsed ? (
+        <p className="truncate pl-8 text-muted-foreground text-sm">{summary}</p>
+      ) : null}
+      {/* Свёрнутый блок прячем, но не убираем: поля формы внутри сохраняют значения и ошибки */}
+      <fieldset id={contentId} aria-labelledby={titleId} hidden={isCollapsed} className="min-w-0">
         {children}
       </fieldset>
     </li>

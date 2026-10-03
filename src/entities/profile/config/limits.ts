@@ -24,5 +24,15 @@ export const MIN_AGE = 18;
 export const BIRTH_DATE_MIN = "1900-01-01";
 export const PRACTICE_START_MIN = "1950-01-01";
 
+// Содержимое страницы. Совпадают с CHECK-ограничениями миграции add_page_content
+export const FAQ_MAX = 10;
+export const FAQ_QUESTION_MAX_LENGTH = 150;
+export const FAQ_ANSWER_MAX_LENGTH = 1000;
+export const SERVICES_MAX = 10;
+export const SERVICE_TITLE_MAX_LENGTH = 80;
+export const SERVICE_DESCRIPTION_MAX_LENGTH = 500;
+/** Длительность услуги в минутах. */
+export const SERVICE_DURATION_MAX = 600;
+
 /** Адрес демо-профиля: слово зарезервировано, настоящий пользователь его не займёт. */
 export const DEMO_USERNAME = "demo";

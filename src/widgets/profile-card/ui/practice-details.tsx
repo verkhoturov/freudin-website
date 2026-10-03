@@ -17,7 +17,10 @@ import {
 } from "@/entities/profile";
 
 /** Блоки с данными практики: на странице это пункты списка `dl`. */
-export type PracticeSection = Exclude<ProfileSection, "bio" | "links" | "documents">;
+export type PracticeSection = Exclude<
+  ProfileSection,
+  "bio" | "links" | "documents" | "faq" | "services"
+>;
 
 export type PracticeItem = { section: PracticeSection; details: ReactNode };
 

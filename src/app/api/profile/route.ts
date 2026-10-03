@@ -18,6 +18,14 @@ const USERNAME_TAKEN_MESSAGE = "This username is already taken.";
 
 const CITY_INVALID_MESSAGE = "Choose a city from the list";
 
+const PAGE_PASSWORD_REQUIRED_MESSAGE = "Set a password for your page";
+
+function pagePasswordRequiredError(): HttpError {
+  return new HttpError(400, "validation_error", `${PAGE_PASSWORD_REQUIRED_MESSAGE}.`, {
+    pagePassword: PAGE_PASSWORD_REQUIRED_MESSAGE,
+  });
+}
+
 function usernameTakenError(): HttpError {
   return new HttpError(409, "conflict", USERNAME_TAKEN_MESSAGE, {
     username: USERNAME_TAKEN_MESSAGE,
@@ -54,6 +62,7 @@ export const PATCH = withErrorHandling(async (request) => {
   if (!result.ok) {
     if (result.reason === "username_taken") throw usernameTakenError();
     if (result.reason === "city_invalid") throw cityInvalidError();
+    if (result.reason === "page_password_required") throw pagePasswordRequiredError();
     throw new HttpError(404, "not_found", "Create your page first.");
   }
   return jsonOk<PublicProfile>(result.profile, { headers: NO_STORE_HEADERS });

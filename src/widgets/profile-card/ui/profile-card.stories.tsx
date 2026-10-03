@@ -11,8 +11,14 @@ const fullProfile: PublicProfile = {
   bio: "I help adults and couples cope with anxiety, burnout, and relationship difficulties.",
   avatarUrl: null,
   socialLinks: [
-    { platform: "instagram", url: "https://www.instagram.com/anna" },
-    { platform: "website", url: "https://example.com/" },
+    { platform: "instagram", url: "https://www.instagram.com/anna", title: "", highlighted: false },
+    // Свой заголовок почти предельной длины: кнопка в одну строку
+    {
+      platform: "website",
+      url: "https://example.com/",
+      title: "Articles on anxiety, burnout and stress",
+      highlighted: false,
+    },
   ],
   country: "GE",
   city: { id: 611717, name: "Tbilisi", region: "Tbilisi", countryCode: "GE" },
@@ -44,6 +50,34 @@ const fullProfile: PublicProfile = {
     telegram: "https://t.me/telegram",
   },
   preferredContact: "whatsapp",
+  faq: [
+    {
+      question: "What happens in the first session?",
+      answer: "We talk about what brings you here and agree on how we’ll work together.",
+    },
+    { question: "How long is a session?", answer: "50 minutes for individuals, 80 for couples." },
+  ],
+  services: [
+    {
+      clientType: "individuals",
+      title: "Individual session",
+      description: "",
+      durationMinutes: 50,
+      price: { amount: 60, currency: "USD" },
+      highlighted: false,
+    },
+    {
+      clientType: "couples",
+      title: "Couples session",
+      description: "For partners who want to understand each other better.",
+      durationMinutes: 80,
+      price: { amount: 90, currency: "USD" },
+      highlighted: true,
+    },
+  ],
+  highlightedSections: [],
+  cover: "classic",
+  visibility: "public",
 };
 
 // Только обязательное: пустые блоки на странице не показываются
@@ -63,6 +97,8 @@ const minimalProfile: PublicProfile = {
   education: [],
   contacts: {},
   preferredContact: null,
+  faq: [],
+  services: [],
 };
 
 const meta = {
@@ -81,6 +117,37 @@ export const Owner: Story = { args: { isOwner: true } };
 
 export const Minimal: Story = { args: { profile: minimalProfile } };
 
+/** Владелец незаполненной страницы: подсказки, что добавить, со ссылками на блоки настроек. */
+export const OwnerChecklist: Story = {
+  args: { profile: { ...minimalProfile, username: "storybook-owner" }, isOwner: true },
+};
+
+/** Превью в редакторе: без Share, Edit и подсказок, имя — не заголовок страницы. */
+export const Preview: Story = {
+  args: { isPreview: true, isOwner: true },
+  decorators: [
+    (Story) => (
+      <section aria-label="Preview" className="mx-auto max-w-profile rounded-xl border p-4">
+        <Story />
+      </section>
+    ),
+  ],
+};
+
+/** Выделенные блок, пункт практики, ссылка и карточка услуги. */
+export const Highlighted: Story = {
+  args: {
+    profile: {
+      ...fullProfile,
+      socialLinks: fullProfile.socialLinks.map((link, index) => ({
+        ...link,
+        highlighted: index === 0,
+      })),
+      highlightedSections: ["bio", "price", "contacts"],
+    },
+  },
+};
+
 /** Диалог Share: QR-код страницы. */
 export const ShareDialog: Story = {
   play: async ({ canvasElement }) => {
@@ -88,7 +155,7 @@ export const ShareDialog: Story = {
   },
 };
 
-// Подпись главной кнопки зависит от выбранного способа связи
+// Подпись главной кнопки зависит от выбранного способа связи, у ссылки — ещё и от её заголовка
 const preferredContacts = [
   "email",
   "phone",
@@ -98,6 +165,15 @@ const preferredContacts = [
   "https://example.com/",
 ];
 
+// Сайт без своего заголовка
+const untitledWebsiteProfile: PublicProfile = {
+  ...fullProfile,
+  socialLinks: [
+    { platform: "website", url: "https://example.com/", title: "", highlighted: false },
+  ],
+  preferredContact: "https://example.com/",
+};
+
 export const PreferredContact: Story = {
   render: () => (
     <ul className="mx-auto flex max-w-md flex-col gap-3">
@@ -106,6 +182,9 @@ export const PreferredContact: Story = {
           <PreferredContactButton profile={{ ...fullProfile, preferredContact }} />
         </li>
       ))}
+      <li>
+        <PreferredContactButton profile={untitledWebsiteProfile} />
+      </li>
     </ul>
   ),
 };

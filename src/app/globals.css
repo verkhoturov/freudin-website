@@ -247,4 +247,8 @@
   html {
     @apply font-sans;
   }
+  /* Липкая панель Save внизу формы: поле, к которому переходит фокус, не прячется под ней */
+  html:has([data-sticky-actions]) {
+    scroll-padding-bottom: calc(var(--spacing) * 24);
+  }
 }

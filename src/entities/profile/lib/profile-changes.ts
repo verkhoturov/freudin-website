@@ -5,6 +5,7 @@ import {
   profileInputSchema,
 } from "../model/schemas";
 import type { PrivateProfileDetails, PublicProfile } from "../model/types";
+import { toServiceInput } from "./services";
 
 type SettingsInput = Pick<
   ProfileInput,
@@ -21,6 +22,12 @@ type SettingsInput = Pick<
   | "education"
   | "contacts"
   | "preferredContact"
+  | "faq"
+  | "services"
+  | "highlightedSections"
+  | "cover"
+  | "visibility"
+  | "pagePassword"
   | "birthDate"
   | "gender"
   | "concerns"
@@ -45,6 +52,12 @@ export function getEmptySettingsInput(): SettingsInput {
     education: [],
     contacts: { email: "", phone: "", whatsapp: "", telegram: "" },
     preferredContact: "",
+    faq: [],
+    services: [],
+    highlightedSections: [],
+    cover: "classic",
+    visibility: "public",
+    pagePassword: "",
     birthDate: "",
     gender: "",
     concerns: [],
@@ -89,6 +102,12 @@ export function toProfileInput(
       telegram: contacts.telegram ?? "",
     },
     preferredContact: profile.preferredContact ?? "",
+    faq: profile.faq,
+    services: profile.services.map(toServiceInput),
+    highlightedSections: profile.highlightedSections,
+    cover: profile.cover,
+    visibility: profile.visibility,
+    pagePassword: privateDetails.pagePassword ?? "",
     birthDate: privateDetails.birthDate ?? "",
     gender: privateDetails.gender ?? "",
     concerns: privateDetails.concerns,

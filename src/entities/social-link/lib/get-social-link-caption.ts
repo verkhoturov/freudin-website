@@ -21,10 +21,12 @@ function getProfileHandle(url: URL): string | null {
 }
 
 /**
- * Подпись кнопки ссылки: платформа и имя профиля (`Telegram · @anna`), у сайта — адрес без
- * протокола (`example.com/blog`). Так различаются две ссылки одной платформы.
+ * Подпись кнопки ссылки: свой заголовок, а без него — платформа и имя профиля
+ * (`Telegram · @anna`), у сайта — адрес без протокола (`example.com/blog`). Так различаются
+ * две ссылки одной платформы.
  */
 export function getSocialLinkCaption(link: SocialLink): string {
+  if (link.title) return link.title;
   const { label, handlePrefix } = socialPlatforms[link.platform];
   let url: URL;
   try {

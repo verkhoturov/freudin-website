@@ -3,6 +3,7 @@ import { countryCodeSchema } from "@/entities/location/@x/profile";
 import { normalizeSocialLinkUrl, socialLinkSchema } from "@/entities/social-link/@x/profile";
 import { concernIds, getAvailableConcerns } from "../config/concerns";
 import { isContactType } from "../config/contacts";
+import { coverIds } from "../config/cover";
 import { currencyCodes } from "../config/currencies";
 import { genderIds } from "../config/gender";
 import { languageCodes } from "../config/languages";
@@ -16,15 +17,27 @@ import {
   EDUCATION_MAX,
   EDUCATION_TEXT_MAX_LENGTH,
   EDUCATION_YEAR_MIN,
+  FAQ_ANSWER_MAX_LENGTH,
+  FAQ_MAX,
+  FAQ_QUESTION_MAX_LENGTH,
   LANGUAGES_MAX,
   MIN_AGE,
   PHONE_MAX_LENGTH,
   PRACTICE_START_MIN,
   PRICE_AMOUNT_MAX,
+  SERVICE_DESCRIPTION_MAX_LENGTH,
+  SERVICE_DURATION_MAX,
+  SERVICE_TITLE_MAX_LENGTH,
+  SERVICES_MAX,
   SOCIAL_LINKS_MAX,
 } from "../config/limits";
-import { approachIds, clientTypeIds, workFormatIds } from "../config/practice";
+import { approachIds, clientTypeIds, clientTypeLabels, workFormatIds } from "../config/practice";
 import { profileSectionIds } from "../config/sections";
+import {
+  PAGE_PASSWORD_MAX_LENGTH,
+  PAGE_PASSWORD_MIN_LENGTH,
+  visibilityIds,
+} from "../config/visibility";
 import { usernameSchema } from "./username";
 
 const displayNameSchema = z
@@ -181,7 +194,7 @@ const educationTextSchema = (emptyMessage: string) =>
     .max(EDUCATION_TEXT_MAX_LENGTH, `Must be ${EDUCATION_TEXT_MAX_LENGTH} characters or fewer`);
 
 /** Запись об образовании. Год — строкой, как в поле ввода; пустая строка — не указан. */
-const educationEntrySchema = z.object({
+export const educationEntrySchema = z.object({
   qualification: educationTextSchema("Enter a degree or qualification"),
   institution: educationTextSchema("Enter a school or institution"),
   year: z
@@ -253,7 +266,96 @@ const sectionOrderSchema = z
   .max(profileSectionIds.length)
   .refine(hasNoRepeats, "Blocks must not repeat");
 
-const profileFieldsSchema = z.object({
+const maxLengthMessage = (max: number) => `Must be ${max} characters or fewer`;
+
+/** Вопрос и ответ психолога. Ответ пишет он сам: пустой вопрос без ответа не сохраняем. */
+const faqItemSchema = z.object({
+  question: z
+    .string()
+    .trim()
+    .min(1, "Enter a question")
+    .max(FAQ_QUESTION_MAX_LENGTH, maxLengthMessage(FAQ_QUESTION_MAX_LENGTH)),
+  answer: z
+    .string()
+    .trim()
+    .min(1, "Enter an answer")
+    .max(FAQ_ANSWER_MAX_LENGTH, maxLengthMessage(FAQ_ANSWER_MAX_LENGTH)),
+});
+
+const faqSchema = z.array(faqItemSchema).max(FAQ_MAX, `Up to ${FAQ_MAX} questions`);
+
+/** Длительность в минутах строкой, как в поле ввода; пустая строка — не указана. */
+const serviceDurationSchema = z
+  .string()
+  .trim()
+  .superRefine((value, ctx) => {
+    if (value === "") return;
+    if (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > SERVICE_DURATION_MAX) {
+      ctx.addIssue({
+        code: "custom",
+        message: `Enter minutes from 1 to ${SERVICE_DURATION_MAX}`,
+      });
+    }
+  })
+  .transform((value) => (value === "" ? "" : String(Number(value))));
+
+/**
+ * Карточка услуги: для какой категории «Works with», название, описание, длительность и цена.
+ * Сумма и валюта — строками, как у цены сессии, и указываются вместе.
+ */
+const serviceSchema = z
+  .object({
+    clientType: z.enum(clientTypeIds, "Choose who this service is for"),
+    title: z
+      .string()
+      .trim()
+      .min(1, "Enter a service name")
+      .max(SERVICE_TITLE_MAX_LENGTH, maxLengthMessage(SERVICE_TITLE_MAX_LENGTH)),
+    description: z
+      .string()
+      .trim()
+      .max(SERVICE_DESCRIPTION_MAX_LENGTH, maxLengthMessage(SERVICE_DESCRIPTION_MAX_LENGTH)),
+    durationMinutes: serviceDurationSchema,
+    priceAmount: priceAmountSchema,
+    priceCurrency: priceCurrencySchema,
+    highlighted: z.boolean(),
+  })
+  .superRefine((service, ctx) => {
+    if (service.priceAmount && service.priceCurrency === "") {
+      ctx.addIssue({ code: "custom", path: ["priceCurrency"], message: "Choose a currency" });
+    }
+    if (service.priceAmount === "" && service.priceCurrency) {
+      ctx.addIssue({ code: "custom", path: ["priceAmount"], message: "Enter a price" });
+    }
+  });
+
+const servicesSchema = z.array(serviceSchema).max(SERVICES_MAX, `Up to ${SERVICES_MAX} services`);
+
+/** Выделенные блоки страницы: в порядке справочника и без повторов. */
+const highlightedSectionsSchema = z
+  .array(z.enum(profileSectionIds, "Choose a block from the list"))
+  .transform(inListOrder(profileSectionIds));
+
+const coverSchema = z.enum(coverIds, "Choose a cover from the list");
+
+const visibilitySchema = z.enum(visibilityIds, "Choose who can see your page");
+
+const PAGE_PASSWORD_LENGTH_MESSAGE = `Use ${PAGE_PASSWORD_MIN_LENGTH} to ${PAGE_PASSWORD_MAX_LENGTH} characters`;
+
+/**
+ * Пароль скрытой страницы; пустая строка — пароль не задан (режиму password он обязателен).
+ * Пробелы не обрезаем: это часть пароля. Хранится в `profile_page_access`, виден только владельцу.
+ */
+const pagePasswordSchema = z
+  .string()
+  .refine(
+    (value) =>
+      value === "" ||
+      (value.length >= PAGE_PASSWORD_MIN_LENGTH && value.length <= PAGE_PASSWORD_MAX_LENGTH),
+    PAGE_PASSWORD_LENGTH_MESSAGE,
+  );
+
+export const profileFieldsSchema = z.object({
   username: usernameSchema,
   displayName: displayNameSchema,
   bio: bioSchema,
@@ -272,6 +374,13 @@ const profileFieldsSchema = z.object({
   education: educationSchema,
   contacts: contactsSchema,
   preferredContact: preferredContactSchema,
+  faq: faqSchema,
+  services: servicesSchema,
+  highlightedSections: highlightedSectionsSchema,
+  cover: coverSchema,
+  // Кто видит страницу и новый пароль: пишутся функцией set_profile_visibility
+  visibility: visibilitySchema,
+  pagePassword: pagePasswordSchema,
   // Не показываются на странице: хранятся в profile_private
   birthDate: birthDateSchema,
   gender: genderSchema,
@@ -288,12 +397,21 @@ export const linkedFieldGroups = [
   ["country", "cityId", "workFormats"],
   ["priceAmount", "priceCurrency"],
   ["socialLinks", "contacts", "preferredContact"],
-  ["clientTypes", "concerns"],
+  ["clientTypes", "concerns", "services"],
+  // Режиму password нужен пароль: они проверяются вместе
+  ["visibility", "pagePassword"],
 ] as const satisfies readonly (readonly (keyof ProfileFields)[])[];
 
 // Правила повторяют CHECK-ограничения миграции add_psychologist_profile_fields.
 // Для частичного обновления проверяются только переданные поля
 function checkLinkedFields(data: Partial<ProfileFields>, ctx: z.RefinementCtx) {
+  if (data.visibility === "password" && data.pagePassword === "") {
+    ctx.addIssue({
+      code: "custom",
+      path: ["pagePassword"],
+      message: "Set a password for your page",
+    });
+  }
   if (data.cityId != null && data.country === "") {
     ctx.addIssue({ code: "custom", path: ["cityId"], message: "Choose a country first" });
   }
@@ -309,6 +427,18 @@ function checkLinkedFields(data: Partial<ProfileFields>, ctx: z.RefinementCtx) {
   }
   if (data.priceAmount === "" && data.priceCurrency) {
     ctx.addIssue({ code: "custom", path: ["priceAmount"], message: "Enter a price" });
+  }
+  // Карточку не удаляем молча, когда категорию сняли в «Works with»: психолог выберет другую
+  const { services, clientTypes } = data;
+  if (services && clientTypes) {
+    services.forEach((service, index) => {
+      if (clientTypes.includes(service.clientType)) return;
+      ctx.addIssue({
+        code: "custom",
+        path: ["services", index, "clientType"],
+        message: `${clientTypeLabels[service.clientType]} isn’t selected in Works with`,
+      });
+    });
   }
 }
 
@@ -382,6 +512,16 @@ export const providerAvatarRequestSchema = z.object({
 
 export type ProviderAvatarRequest = z.infer<typeof providerAvatarRequestSchema>;
 
+/** Пароль, который гость вводит на скрытой странице (`POST /api/profiles/[username]/access`). */
+export const pageAccessInputSchema = z.object({
+  password: z
+    .string("Enter the password")
+    .min(1, "Enter the password")
+    .max(PAGE_PASSWORD_MAX_LENGTH, "Wrong password"),
+});
+
+export type PageAccessInput = z.infer<typeof pageAccessInputSchema>;
+
 /** Подпись документа: видна под изображением и служит его `alt`. */
 export const documentTitleSchema = z
   .string("Enter a caption")
@@ -394,6 +534,19 @@ export const storedEducationSchema = z.object({
   qualification: z.string(),
   institution: z.string(),
   year: z.number().int().nullable(),
+});
+
+/** Вопрос в jsonb-колонке `profiles.faq`. */
+export const storedFaqItemSchema = z.object({ question: z.string(), answer: z.string() });
+
+/** Карточка услуги в jsonb-колонке `profiles.services`: числа — числами, цена — объектом. */
+export const storedServiceSchema = z.object({
+  clientType: z.enum(clientTypeIds),
+  title: z.string(),
+  description: z.string(),
+  durationMinutes: z.number().int().nullable(),
+  price: z.object({ amount: z.number().int(), currency: z.string() }).nullable(),
+  highlighted: z.boolean(),
 });
 
 /** Документ в jsonb-колонке `profiles.documents`: `width` и `height` — полного изображения. */

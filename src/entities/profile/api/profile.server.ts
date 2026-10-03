@@ -1,29 +1,37 @@
 import "server-only";
+import type * as z from "zod";
 import { CITY_COLUMNS, type CityRow, toCity } from "@/entities/location/@x/profile";
 import { type SocialLink, socialLinkSchema } from "@/entities/social-link/@x/profile";
 import type { Json, SupabaseClient, Tables, TablesUpdate } from "@/shared/api/index.server";
 import { contactTypeIds, isContactType } from "../config/contacts";
+import { coverIds } from "../config/cover";
 import { demoProfile } from "../config/demo-profile";
 import { languageCodes } from "../config/languages";
 import { DEMO_USERNAME, USERNAME_MAX_LENGTH } from "../config/limits";
 import { approachIds, clientTypeIds, workFormatIds } from "../config/practice";
+import { profileSectionIds } from "../config/sections";
 import { AVATARS_BUCKET, DOCUMENTS_BUCKET } from "../config/storage";
+import { visibilityIds } from "../config/visibility";
 import { pickKnown } from "../lib/pick-known";
 import { normalizeSectionOrder } from "../lib/section-order";
+import { toProfileService } from "../lib/services";
 import {
   type ProfileData,
   type ProfileUpdateData,
   type StoredDocument,
   storedDocumentSchema,
   storedEducationSchema,
+  storedFaqItemSchema,
+  storedServiceSchema,
 } from "../model/schemas";
-import type { ProfileContacts, ProfileEducation, PublicProfile } from "../model/types";
+import type { ProfileContacts, PublicProfile } from "../model/types";
 import { setContactEmail } from "./contact-email.server";
+import { getProfileVisibility, setProfileVisibility } from "./page-access.server";
 import { setPrivateDetails } from "./private-details.server";
 
 /** Колонки публичной страницы. Гостю (`anon`) миграциями открыты только они. */
 export const PUBLIC_PROFILE_COLUMNS =
-  `username, display_name, bio, avatar_path, social_links, country, work_formats, client_types, approaches, languages, price_amount, price_currency, documents, section_order, practice_started_on, education, contacts, preferred_contact, city:cities(${CITY_COLUMNS})` as const;
+  `username, display_name, bio, avatar_path, social_links, country, work_formats, client_types, approaches, languages, price_amount, price_currency, documents, section_order, practice_started_on, education, contacts, preferred_contact, faq, services, highlighted_sections, cover, visibility, city:cities(${CITY_COLUMNS})` as const;
 
 // Коды Postgres для нарушения уникальности и внешнего ключа и имена ограничений из миграций
 const UNIQUE_VIOLATION = "23505";
@@ -51,6 +59,11 @@ type PublicProfileRow = Pick<
   | "education"
   | "contacts"
   | "preferred_contact"
+  | "faq"
+  | "services"
+  | "highlighted_sections"
+  | "cover"
+  | "visibility"
 > & { city: CityRow | null };
 
 type PostgrestErrorLike = { code: string; message: string };
@@ -66,10 +79,11 @@ function parseSocialLinks(value: Json): SocialLink[] {
   });
 }
 
-function parseEducation(value: Json): ProfileEducation[] {
+// Повреждённые записи jsonb-списков пропускаем
+function parseList<T>(value: Json, schema: z.ZodType<T>): T[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
-    const entry = storedEducationSchema.safeParse(item);
+    const entry = schema.safeParse(item);
     return entry.success ? [entry.data] : [];
   });
 }
@@ -139,9 +153,14 @@ export function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow)
     })),
     sectionOrder: normalizeSectionOrder(row.section_order),
     practiceStartedOn: row.practice_started_on,
-    education: parseEducation(row.education),
+    education: parseList(row.education, storedEducationSchema),
     contacts,
     preferredContact: parsePreferredContact(row.preferred_contact, contacts, socialLinks),
+    faq: parseList(row.faq, storedFaqItemSchema),
+    services: parseList(row.services, storedServiceSchema),
+    highlightedSections: pickKnown(row.highlighted_sections, profileSectionIds),
+    cover: pickKnown([row.cover], coverIds)[0] ?? "classic",
+    visibility: pickKnown([row.visibility], visibilityIds)[0] ?? "public",
   };
 }
 
@@ -180,6 +199,10 @@ function toProfileRow(data: ProfileUpdateData): TablesUpdate<"profiles"> {
         : Object.fromEntries(Object.entries(data.contacts).filter(([, value]) => value)),
     preferred_contact:
       data.preferredContact === undefined ? undefined : data.preferredContact || null,
+    faq: data.faq,
+    services: data.services?.map(toProfileService),
+    highlighted_sections: data.highlightedSections,
+    cover: data.cover,
   };
 }
 
@@ -229,13 +252,8 @@ export async function isUsernameAvailable(
   supabase: SupabaseClient,
   username: string,
 ): Promise<boolean> {
-  const { count, error } = await supabase
-    .from("profiles")
-    .select("username", { count: "exact", head: true })
-    .eq("username", username);
-
-  if (error) throw error;
-  return count === 0;
+  // Скрытые профили гость в profiles не видит: режим по адресу отдаёт функция базы
+  return (await getProfileVisibility(supabase, username)) === null;
 }
 
 export type CreateProfileResult =
@@ -285,11 +303,14 @@ export async function createProfile(
 
 export type UpdateProfileResult =
   | { ok: true; profile: PublicProfile }
-  | { ok: false; reason: "username_taken" | "profile_missing" | "city_invalid" };
+  | {
+      ok: false;
+      reason: "username_taken" | "profile_missing" | "city_invalid" | "page_password_required";
+    };
 
 /**
- * Обновляет переданные поля профиля пользователя, а также контактную почту и закрытые данные
- * (`profile_private`), если они переданы.
+ * Обновляет переданные поля профиля пользователя, а также контактную почту, закрытые данные
+ * (`profile_private`) и режим страницы с паролем, если они переданы.
  */
 export async function updateProfile(
   supabase: SupabaseClient,
@@ -298,6 +319,10 @@ export async function updateProfile(
 ): Promise<UpdateProfileResult> {
   if (data.contactEmail !== undefined) await setContactEmail(supabase, userId, data.contactEmail);
   await setPrivateDetails(supabase, userId, data);
+  if (data.visibility !== undefined) {
+    const result = await setProfileVisibility(supabase, data.visibility, data.pagePassword);
+    if (!result.ok) return result;
+  }
 
   const changes = toProfileRow(data);
   const hasChanges = Object.values(changes).some((value) => value !== undefined);
