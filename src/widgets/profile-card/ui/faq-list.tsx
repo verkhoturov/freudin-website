@@ -1,4 +1,10 @@
 import type { ProfileFaqItem } from "@/entities/profile";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/shared/ui/accordion";
 
 type FaqListProps = {
   faq: ProfileFaqItem[];
@@ -6,7 +12,7 @@ type FaqListProps = {
   isPreview?: boolean;
 };
 
-/** Вопросы и ответы психолога: ответ раскрывается по нажатию и с клавиатуры (`details`). */
+/** Вопросы и ответы психолога: ответ раскрывается по нажатию и с клавиатуры. */
 export function FaqList({ faq, isPreview = false }: FaqListProps) {
   const Title = isPreview ? "p" : "h2";
   return (
@@ -14,20 +20,18 @@ export function FaqList({ faq, isPreview = false }: FaqListProps) {
       <Title id="profile-faq-title" className="font-heading text-section-title">
         FAQ
       </Title>
-      <div className="flex flex-col divide-y rounded-xl border text-left">
+      <Accordion type="multiple" className="rounded-xl border text-left">
         {faq.map((item, index) => (
           // Вопросы могут повторяться, порядок задаёт владелец
           // biome-ignore lint/suspicious/noArrayIndexKey: список только для чтения
-          <details key={index} className="group px-4 py-3">
-            <summary className="cursor-pointer rounded-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-              {item.question}
-            </summary>
-            <p className="mt-2 whitespace-pre-line break-words text-muted-foreground">
+          <AccordionItem key={index} value={String(index)} className="px-4">
+            <AccordionTrigger>{item.question}</AccordionTrigger>
+            <AccordionContent className="whitespace-pre-line wrap-break-word text-muted-foreground">
               {item.answer}
-            </p>
-          </details>
+            </AccordionContent>
+          </AccordionItem>
         ))}
-      </div>
+      </Accordion>
     </section>
   );
 }
