@@ -328,9 +328,11 @@ const layoutClasses = {
     formColumn: "flex flex-col gap-10 bg-background px-4 py-6 sm:px-6 @3xl:border-r",
     // Рамка превью — вся область справа, как окно браузера: панель с подписью и выбором ширины,
     // под ней холст страницы, карточка в нём сама держит ширину личной страницы. Прокручивается
-    // холст под панелью. overflow-clip, а не hidden: не мешает sticky внутри страницы
-    preview: "p-4 sm:p-6 @3xl:sticky @3xl:top-0 @3xl:h-svh @3xl:self-start",
-    previewCard: "flex w-full flex-col overflow-clip rounded-xl border bg-background @3xl:h-full",
+    // холст под панелью. overflow-clip, а не hidden: не мешает sticky внутри страницы.
+    // На телефоне рамки и полей вокруг нет: превью шириной с экран, как сама страница
+    preview: "@3xl:sticky @3xl:top-0 @3xl:h-svh @3xl:self-start @3xl:p-6",
+    previewCard:
+      "flex w-full flex-col overflow-clip bg-background @3xl:h-full @3xl:rounded-xl @3xl:border",
     previewBar: "flex min-h-11 items-center justify-between gap-2 border-b px-4 py-1.5",
     previewBody: "flex flex-1 flex-col @3xl:overflow-y-auto",
     bar: "border-t bg-background px-4 py-3 sm:px-6 @3xl:border-r",

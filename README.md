@@ -9,7 +9,7 @@ Telegram и делает личную страницу-визитку с уни�
 
 ## Возможности (MVP)
 
-- вход и регистрация через Google, Facebook и Telegram;
+- вход и регистрация через Google и Telegram (вход через Facebook готов, но скрыт до подтверждения компании в Meta);
 - онбординг: фото, имя, описание, адрес страницы, ссылки на соцсети;
 - публичная страница `https://<домен>/<username>`;
 - редактирование профиля, выход, удаление аккаунта.
@@ -37,9 +37,10 @@ Telegram и делает личную страницу-визитку с уни�
 | Клиентское состояние | Zustand (черновик онбординга) | ✅ |
 | Кроп фото | react-easy-crop | ✅ |
 | QR-код страницы | qrcode.react (рисуется в браузере, без внешних сервисов) | ✅ |
-| БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI (миграции и типы) | ✅ БД, вход через Google, Facebook и Telegram |
+| БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI (миграции и типы) | ✅ БД, вход через Google и Telegram (Facebook скрыт) |
 | UI kit | Storybook 10 (`storybook`, `@storybook/nextjs-vite`, `vite`), dev-зависимость | ✅ локально и на `freudin-storybook.vercel.app` |
 | Линтер и форматтер | Biome | ✅ |
+| Юнит-тесты | Vitest 4 (`vitest`), dev-зависимость; окружение node, только чистая логика | ✅ локально, в CI — после шага 18.7 |
 | Хостинг | Vercel, прод на `www.freud.in` | ✅ |
 
 Номера шагов указаны по [`docs/PLAN.md`](docs/PLAN.md).
@@ -92,6 +93,7 @@ npm run dev
 | `npm run lint` | Biome: линт, формат, порядок импортов, границы слоёв FSD |
 | `npm run lint:fix` | то же с автоисправлением |
 | `npm run typecheck` | генерация типов роутов (`next typegen`) и проверка типов (`tsc --noEmit`) |
+| `npm test` | юнит-тесты Vitest (`vitest run`); в режиме наблюдения — `npx vitest` (см. «Тесты») |
 | `npm run storybook` | UI kit на http://localhost:6006: компоненты `shared/ui`, которые использует сайт, и токены темы; тема — в тулбаре |
 | `npm run build-storybook` | статическая сборка кита в `storybook-static/` (не в git) |
 | `npm run db:push` | применить новые миграции из `supabase/migrations` к базе проекта |
@@ -134,6 +136,7 @@ public/
 └─ icon-192.png, icon-512.png, icon-maskable-512.png   # иконки веб-манифеста
 backups/               # резервные копии; не в git: в них персональные данные
 components.json        # настройки shadcn/ui (алиасы под FSD)
+vitest.config.mts      # юнит-тесты: src/**/*.test.ts, окружение node, server-only подменён пустым модулем
 .storybook/            # настройки Storybook: истории из src/**/*.stories.tsx, globals.css, шрифты из src/app/fonts.ts, переключатель темы
 .env.example           # шаблон переменных окружения
 docs/
@@ -146,6 +149,27 @@ docs/
 компоненты, а серверная логика живёт в `src/app/api`. Исключения: личная страница `/<username>`
 загружает профиль на сервере, а `/privacy` и `/terms` — серверные компоненты без клиентского JS. Правила слоёв и импортов
 описаны в [`AGENTS.md`](AGENTS.md), линтер проверяет их при `npm run lint`.
+
+## Тесты
+
+Юнит-тесты (шаг 24) лежат рядом с кодом: `<модуль>.test.ts`. Покрыта логика, ошибка в которой
+дорого стоит или незаметна в интерфейсе:
+
+| Что | Тесты |
+|-----|-------|
+| Безопасность | `getSafeRedirectPath` (open redirect), `assertSameOrigin` (CSRF) |
+| Адрес страницы | `usernameSchema`: формат, служебные слова и сегменты роутов из `routes` |
+| Ссылки | `normalizeSocialLinkUrl`, `socialLinkSchema` |
+| Профиль | `profileInputSchema` и `profileUpdateSchema`: связанные поля (город и формат, цена, карточки услуг, запросы, способ связи, пароль скрытой страницы), даты, контакты |
+| Сохранение и превью | `getProfileChanges`, `normalizeSectionOrder`, `toPreviewProfile` (без закрытых данных) |
+| Аккаунт | `isAccountDeletionConfirmed` |
+| Загрузки | `detectImage`: формат по сигнатуре, размеры из заголовка PNG, JPEG и WebP |
+| Подсказки и поиск | `transliterate`, `toSearchKey`, `getProfileSuggestions` |
+| Ошибки | `getOAuthErrorCode`, `toFieldErrors`, `toFormFieldName` |
+
+Проверка `state` при входе через Google и Telegram не покрыта: это сравнение в роуте, для теста
+пришлось бы подменять `cookies()` из Next. E2e и тесты интерфейса пишем только по отдельному
+запросу.
 
 ## Роуты
 
@@ -164,7 +188,7 @@ API:
 | Метод | Путь | Назначение | Статус |
 |-------|------|------------|--------|
 | GET | `/api/health` | проверка связки клиент → API | готово |
-| GET | `/api/auth/sign-in?provider=&next=` | старт входа, редирект к провайдеру | готово: Google, Facebook, Telegram |
+| GET | `/api/auth/sign-in?provider=&next=` | старт входа, редирект к провайдеру | готово: Google, Telegram; Facebook скрыт |
 | GET | `/api/auth/callback?code=&next=` | обмен кода на сессию после OAuth Supabase (Facebook, Telegram на localhost), редирект дальше | готово |
 | GET | `/api/auth/callback/[provider]?code=&state=` | возврат от Google и Telegram на наш домен: код → ID-токен → сессия Supabase, редирект дальше | готово |
 | POST | `/api/auth/sign-out` | выход | готово |
@@ -383,6 +407,11 @@ Google и создаёт сессию Supabase по ID-токену (`signInWith
 сессии `httpOnly`: браузер их не читает, сессию видят только API-роуты.
 
 ### Вход через Facebook
+
+**Скрыт с 08.10.2026:** Meta не приняла документы для подтверждения компании, поэтому `facebook`
+убран из `enabledAuthProviders` (кнопки на `/login` и Connect в настройках нет, уже привязанный
+Facebook можно отвязать). Код и настройки ниже остались: вход вернётся добавлением провайдера
+в список (этап G в `docs/PLAN.md`).
 
 Подробная инструкция — в [`docs/PLAN.md`](docs/PLAN.md), шаг 9. Кратко:
 

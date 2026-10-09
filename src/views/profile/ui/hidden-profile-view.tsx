@@ -15,11 +15,6 @@ type HiddenProfileViewProps = {
   visibility: Exclude<ProfileVisibility, "public">;
 };
 
-const ownerNotices = {
-  private: "Your page is hidden. Only you can see it.",
-  password: "Your page is protected with a password. Visitors need it to see the page.",
-} as const;
-
 /**
  * Скрытая страница. Сервер не знает, кто смотрит (сессия видна только API), поэтому владельца
  * узнаём здесь и показываем ему страницу из `/api/me`, остальным — сообщение или форму пароля.
@@ -41,17 +36,20 @@ export function HiddenProfileView({ username, visibility }: HiddenProfileViewPro
   if (ownProfile?.username === username) {
     return (
       <>
-        {/* Пометка — часть сайта, а не страницы: стоит над холстом в теме сайта */}
-        <Container className="pt-page">
-          <Alert className="mx-auto max-w-profile">
-            <AlertDescription>
-              {ownerNotices[visibility]}{" "}
-              <Link href={routes.settingsSection("account")} className="text-link underline">
-                Change in Settings
-              </Link>
-            </AlertDescription>
-          </Alert>
-        </Container>
+        {/* Пометка — часть сайта, а не страницы: стоит над холстом в теме сайта. Странице
+            с паролем она не нужна (решение пользователя 09.10.2026) */}
+        {visibility === "private" ? (
+          <Container className="pt-page">
+            <Alert className="mx-auto max-w-profile">
+              <AlertDescription>
+                Your page is hidden. Only you can see it.{" "}
+                <Link href={routes.settingsSection("account")} className="text-link underline">
+                  Change in Settings
+                </Link>
+              </AlertDescription>
+            </Alert>
+          </Container>
+        ) : null}
         <ProfileCanvas theme={ownProfile.pageTheme}>
           <ProfileCard profile={ownProfile} isOwner />
         </ProfileCanvas>

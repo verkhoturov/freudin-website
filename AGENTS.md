@@ -27,10 +27,16 @@ Freudin — сайт для психологов и их будущих клие
    окружения, структура, роуты, настройка внешних сервисов.
 3. Если изменились стек, роуты или правила, обнови этот файл. Выполненные пункты отметь
    в `docs/PLAN.md`.
-4. **Юнит-тесты пишем ТОЛЬКО по прямому запросу пользователя.** По своей инициативе не добавляй
-   тесты (unit, integration, e2e), тестовые фреймворки и их конфиги.
-5. **Для проверки результата работы над задачей запускай `npm run lint:fix` и `npm run typecheck`.**
-   Обе команды должны завершаться без ошибок. Перед коммитом дополнительно проверь `npm run build`.
+4. **Новые тесты пишем ТОЛЬКО по прямому запросу пользователя.** По своей инициативе не добавляй
+   тесты (unit, integration, e2e), тестовые фреймворки и их конфиги. Исключение — уже покрытая
+   логика (шаг 24, список в разделе «Тесты» `README.md`): меняя её, обнови её тесты в том же
+   изменении, а новый сценарий этой функции покрой тестом.
+5. **Для проверки результата работы над задачей запускай `npm run lint:fix`, `npm run typecheck`
+   и `npm test`.** Все три команды должны завершаться без ошибок. **Юнит-тесты (`npm test`)
+   запускай после каждого изменения кода**, даже если правка не касается покрытой логики:
+   покрытые функции используются по всему проекту. Упавший тест — ошибка в изменении: чини код
+   или, если поведение поменялось намеренно, тест. Не отключай и не пропускай тесты, чтобы
+   проверка прошла. Перед коммитом дополнительно проверь `npm run build`.
 6. Зависимости ставь через **npm 11+** (`npx npm@11 install …`, если локально npm 10):
    `package-lock.json` создан npm 11, а npm 10 переписывает его лишними изменениями. CLI shadcn
    ставит пакеты системным npm, поэтому после `npx shadcn add …` пересобери lock-файл:
@@ -83,6 +89,7 @@ Freudin — сайт для психологов и их будущих клие
 | БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI для миграций и типов |
 | UI kit | Storybook 10 (`@storybook/nextjs-vite`), только dev; опубликован отдельным проектом Vercel |
 | Линтер и форматтер | Biome |
+| Юнит-тесты | Vitest 4, только dev: окружение node, чистая логика без DOM и React |
 | Хостинг | Vercel: `main` сразу выкладывается в прод, превью не используем |
 
 Библиотеки ставим на тех шагах `docs/PLAN.md`, где они нужны: что уже установлено, видно
@@ -264,7 +271,7 @@ view: `export { generateMetadata, ProfilePage as default } from "@/views/profile
 | `widgets` | `account-settings` | без своего заголовка (раздел Account рисует страница): способы входа (Connect, Disconnect, тост итога привязки), Sign out, Delete account с подтверждением вводом username; `DeleteAccountDialog` (с `username={null}` — для аккаунта без страницы) |
 | `widgets` | `legal-document` | обёртка юридической страницы `LegalDocument` (заголовок, дата редакции, типографика), `OperatorDetails` (реквизиты из `legalConfig`), `CodeList` |
 | `views` | `error` | страница ошибки рендера: `ErrorState` с `retry` из Next (для `error.tsx` и `global-error.tsx`) |
-| `views` | `profile` | личная страница с серверным рендером: `ProfilePage` и `generateMetadata` (имя в `title`, начало «О себе» в `description`, в превью ссылки — фото, без фото — картинка сайта) в `index.server`; клиентская `ProfileView` берёт профиль из кеша запроса с `initialData` с сервера, чтобы правки владельца из мутаций были видны и после «Назад»; скрытая страница — `HiddenProfileView`: гостю `HiddenPageNotice` («Hidden page» или «Protected page» с формой пароля `PagePasswordForm`, после верного — `router.refresh()`; история `Views/Hidden page`), владельцу — его страница из `/api/me` с пометкой; в метаданных скрытой страницы нет имени и фото, `noindex` |
+| `views` | `profile` | личная страница с серверным рендером: `ProfilePage` и `generateMetadata` (имя в `title`, начало «О себе» в `description`, в превью ссылки — фото, без фото — картинка сайта) в `index.server`; клиентская `ProfileView` берёт профиль из кеша запроса с `initialData` с сервера, чтобы правки владельца из мутаций были видны и после «Назад»; скрытая страница — `HiddenProfileView`: гостю `HiddenPageNotice` («Hidden page» или «Protected page» с формой пароля `PagePasswordForm`, после верного — `router.refresh()`; история `Views/Hidden page`), владельцу — его страница из `/api/me` (в режиме `private` — с пометкой над ней); в метаданных скрытой страницы нет имени и фото, `noindex` |
 | `views` | `onboarding` | онбординг с превью страницы (`ProfileCard` с `isPreview`) и удаление аккаунта без страницы; черновик формы — Zustand-стор `useOnboardingDraftStore` в `model` |
 | `widgets` | `profile-documents` | документы психолога в настройках (без своего заголовка: стоит блоком в конструкторе `profile-form`): список с превью, загрузка в диалоге (картинка уменьшается в браузере до 2048 px, превью — до 480 px, подпись обязательна) и удаление с подтверждением; сохраняются сразу, без формы профиля |
 | `views` | `settings` | настройки — редактор на весь экран без шапки и подвала сайта: слева сайдбар на всю высоту (логотип, `ThemeToggle`, `SectionNav` с разделами Account, Public profile, Search details; уже `lg` — панель сверху), справа `profile-form` с `layout="workspace"`: колонка формы 22rem (поля — 19rem) и рамка превью `ProfileCard` в `ProfileCanvas` на всю остальную ширину и высоту экрана (как окно браузера: панель с подписью Preview и выбором ширины Desktop / Phone — 390 px, под ней холст; карточка внутри держит ширину личной страницы, прокручивается холст под панелью; вокруг — фон `muted`), превью видно во всех разделах; заголовок `h1` — название раздела (слот `header`), в `title` вкладки — Settings; раздел — в адресе `?section=` (`routes.settingsSection`, по умолчанию Public profile; смена раздела пересоздаёт форму — `key` с разделом, несохранённые правки сбрасываются после `confirm` из `useUnsavedChangesWarning`); `account-settings` — слотом `accountBlock`; свёрнутые блоки — Zustand-стор `useCollapsedBlocksStore` в `model` (localStorage, по id пользователя, только id блоков) |
@@ -282,7 +289,7 @@ view: `export { generateMetadata, ProfilePage as default } from "@/views/profile
 | Путь | Файл роутинга | View | Доступ | Статус |
 |------|---------------|------|--------|--------|
 | `/` | `src/app/page.tsx` | `home` | все | готово (минимальная) |
-| `/login` | `src/app/login/page.tsx` | `login` | гости; авторизованных редиректим | готово: Google, Facebook и Telegram |
+| `/login` | `src/app/login/page.tsx` | `login` | гости; авторизованных редиректим | готово: Google и Telegram (Facebook скрыт до подтверждения компании в Meta, этап G) |
 | `/onboarding` | `src/app/onboarding/page.tsx` | `onboarding` | авторизованные без профиля; с профилем уводим на `/<username>` | готово: превью страницы |
 | `/settings` | `src/app/settings/page.tsx` | `settings` | авторизованные с профилем | готово: редактор на весь экран без шапки и подвала, разделы Account, Public profile и Search details в сайдбаре (`?section=`, `routes.settingsSection`), сворачивание блоков, панель Save, превью во всех разделах; `routes.settingsBlock(id)` (`#block-<id>`) ведёт к блоку |
 | `/privacy` | `src/app/privacy/page.tsx` | `privacy` | все | готово: Privacy Policy на английском, у разделов якоря (`#account-and-data-deletion`) |
@@ -319,7 +326,7 @@ view: `export { generateMetadata, ProfilePage as default } from "@/views/profile
 | Метод | Путь | Назначение | Сессия | Статус |
 |-------|------|------------|:------:|--------|
 | GET | `/api/health` | проверка связки клиент → API | — | готово |
-| GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | готово: Google, Facebook и Telegram |
+| GET | `/api/auth/sign-in?provider=&next=` | старт OAuth и редирект к провайдеру | — | готово: Google и Telegram; Facebook скрыт (`auth_unavailable`) |
 | GET | `/api/auth/callback?code=&provider=&next=&mode=` | обмен кода на сессию и редирект (вход через OAuth Supabase: Facebook, Telegram на localhost); ошибку провайдера переводит в код через `getOAuthErrorCode`; после Facebook берёт фото 512×512 из Graph API. `mode=link` — привязка способа входа, итог в `/settings` | — | готово: Facebook и Telegram |
 | GET | `/api/auth/callback/[provider]?code=&state=` | возврат от Google и Telegram без OAuth Supabase (`provider`: `google`, `telegram`): проверка `state` по cookie `freudin-<provider>-sign-in`, код → ID-токен → сессия Supabase, редирект. С `linkUserId` в cookie — привязка способа входа, итог в `/settings` | — | готово |
 | POST | `/api/auth/identities` | старт привязки способа входа: `{ provider }` → `{ url }` провайдера; не подключён — 400, уже привязан — 409 | ✓ | готово |
@@ -542,6 +549,10 @@ view: `export { generateMetadata, ProfilePage as default } from "@/views/profile
 - Имена файлов и папок — kebab-case, компоненты — PascalCase. Экспорты именованные
   (`export function LoginView`), default-экспорт только там, где его требует Next.js.
 - Комментарии пишем, только когда код неочевиден.
+- Тесты лежат рядом с модулем: `<модуль>.test.ts`, импорт из `vitest` явный (`describe`, `it`,
+  `expect`), названия тестов — по-русски. Конфиг — `vitest.config.mts`: окружение `node`, алиас `@/`
+  из `tsconfig`, `server-only` подменён пустым модулем, поэтому серверные функции без обращений
+  к Supabase и `cookies()` тестируются напрямую.
 - **Вес JS** (шаг 17.6). zod импортируем как `import * as z from "zod"`: `import { z }` тянет
   на каждую страницу все локали (около 60 КБ gzip). В `package.json` стоит
   `"sideEffects": ["*.css"]`: сборщик выбрасывает неиспользуемые реэкспорты из `index.ts`
@@ -560,6 +571,7 @@ view: `export { generateMetadata, ProfilePage as default } from "@/views/profile
 | `npm run lint` | Biome: линт, формат, порядок импортов, границы слоёв |
 | `npm run lint:fix` | то же с автоисправлением |
 | `npm run typecheck` | генерация типов роутов (`next typegen`) и `tsc --noEmit` |
+| `npm test` | юнит-тесты Vitest (`vitest run`), в режиме наблюдения — `npx vitest` |
 | `npm run storybook` | UI kit на http://localhost:6006 |
 | `npm run build-storybook` | статическая сборка кита в `storybook-static/` |
 | `npm run db:push` | применить миграции из `supabase/migrations` к базе проекта (запускает пользователь) |

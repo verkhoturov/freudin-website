@@ -16,7 +16,8 @@
     "build-storybook": "storybook build",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked --schema public > src/shared/api/supabase/database.types.ts && biome format --write src/shared/api/supabase/database.types.ts",
-    "db:dump": "bash scripts/db-dump.sh"
+    "db:dump": "bash scripts/db-dump.sh",
+    "test": "vitest run"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -55,6 +56,7 @@
     "supabase": "^2.118.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vite": "^8.3.1"
+    "vite": "^8.3.1",
+    "vitest": "^4.1.11"
   }
 }

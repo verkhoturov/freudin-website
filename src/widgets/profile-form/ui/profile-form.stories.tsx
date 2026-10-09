@@ -159,6 +159,7 @@ export const Workspace: Story = {
     layout: "workspace",
     header: <h1 className="font-heading text-page-title">Public profile</h1>,
   },
+  parameters: { layout: "fullscreen" },
   decorators: [
     (Story) => (
       <div className="bg-muted">

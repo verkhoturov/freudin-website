@@ -371,4 +371,12 @@
   html:has([data-sticky-actions]) {
     scroll-padding-bottom: calc(var(--spacing) * 24);
   }
+  /* iOS Safari со стандартным видом поля даты не слушается ширины и вылезает за блок,
+     а дату ставит по центру */
+  input[type="date"] {
+    appearance: none;
+  }
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: start;
+  }
 }
