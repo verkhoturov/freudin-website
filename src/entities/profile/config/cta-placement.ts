@@ -5,3 +5,8 @@
 export const ctaPlacementIds = ["inline", "sticky"] as const;
 
 export type CtaPlacement = (typeof ctaPlacementIds)[number];
+
+export const ctaPlacementLabels: Record<CtaPlacement, string> = {
+  inline: "Under the name",
+  sticky: "Pinned to the bottom",
+};

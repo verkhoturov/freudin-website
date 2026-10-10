@@ -6,4 +6,5 @@ export {
   type SocialLinkInput,
   socialLinkSchema,
 } from "./model/schema";
+export { PlatformIcon } from "./ui/platform-icon";
 export { SocialLinkButton } from "./ui/social-link-button";

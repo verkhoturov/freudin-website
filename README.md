@@ -323,8 +323,12 @@ API:
 - Оформление личной страницы (шаги 50–51): пресет фона и карточки — колонка
   `profiles.page_theme` (`pageThemeIds`), цвета — токены `globals.css`, раздел «Оформление
   личной страницы», атрибут `data-page-theme` на обёртке `ProfileCanvas`. Обложки Classic,
-  Banner и Hero рисует `PageCover` по `cover`. Колонки `link_icons` и `cta_placement` (иконки
-  на кнопках и главная кнопка на телефоне, шаги 52–53) пока только сохраняются. Миграция
+  Banner и Hero рисует `PageCover` по `cover`. Колонка `link_icons` (шаг 52) включает логотипы
+  платформ на кнопках ссылок, главной кнопке и кнопках услуг (`PlatformIcon` в `social-link`:
+  одноцветные SVG simple-icons, CC0, без зависимости; почта, телефон и сайт — lucide).
+  `cta_placement` (шаг 53): `sticky` закрепляет главную кнопку внизу экрана, когда страница
+  уже 32rem (container query `page` у `ProfileCanvas`, в превью — тоже). На такой же узкой
+  странице карточка пресета стоит во всю ширину экрана, без рамки и отступа от шапки. Миграция
   `*_add_page_appearance.sql`, выбор — блок Appearance в Settings → Public profile.
 - FAQ, карточки услуг, выделенные блоки и вариант обложки — колонки `profiles.faq`, `services`,
   `highlighted_sections` и `cover` (миграция `*_add_page_content.sql`). jsonb-списки проверяют

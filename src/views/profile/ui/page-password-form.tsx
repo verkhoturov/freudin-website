@@ -71,14 +71,19 @@ export function PagePasswordForm({ username }: { username: string }) {
           );
         }}
       </form.Field>
-      <form.Subscribe selector={(state) => state.isSubmitting || state.isSubmitSuccessful}>
-        {/* После успеха страница перерисовывается на сервере: кнопка ждёт её */}
-        {(isPending) => (
-          <Button type="submit" disabled={isPending} className="self-start">
-            {isPending ? <Spinner /> : null}
-            {isPending ? "Opening…" : "Open page"}
-          </Button>
-        )}
+      <form.Subscribe selector={(state) => state.isSubmitting}>
+        {/* После успеха страница перерисовывается на сервере: кнопка ждёт её. Успех берём
+            у мутации, а не у формы: onSubmit ловит ошибку, и для формы неверный пароль — тоже
+            успешная отправка */}
+        {(isSubmitting) => {
+          const isPending = isSubmitting || unlock.isSuccess;
+          return (
+            <Button type="submit" disabled={isPending} className="self-start">
+              {isPending ? <Spinner /> : null}
+              {isPending ? "Opening…" : "Open page"}
+            </Button>
+          );
+        }}
       </form.Subscribe>
     </form>
   );

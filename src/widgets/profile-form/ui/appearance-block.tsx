@@ -1,11 +1,15 @@
 import {
+  type CtaPlacement,
   coverIds,
   coverLabels,
+  ctaPlacementIds,
+  ctaPlacementLabels,
   type PageTheme,
   type ProfileCover,
   pageThemeIds,
   pageThemeLabels,
 } from "@/entities/profile";
+import { Checkbox } from "@/shared/ui/checkbox";
 import { DisclosureButton } from "@/shared/ui/disclosure-button";
 import { Field, FieldDescription, FieldLabel, FieldLegend, FieldSet } from "@/shared/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/shared/ui/radio-group";
@@ -18,13 +22,19 @@ type AppearanceBlockProps = {
   onThemeChange: (theme: PageTheme) => void;
   cover: ProfileCover;
   onCoverChange: (cover: ProfileCover) => void;
+  linkIcons: boolean;
+  onLinkIconsChange: (linkIcons: boolean) => void;
+  /** Место главной кнопки на телефоне; `null` — главной кнопки нет, выбор не показываем. */
+  ctaPlacement: CtaPlacement | null;
+  onCtaPlacementChange: (placement: CtaPlacement) => void;
   collapsed: boolean;
   /** Без него блок не сворачивается. */
   onCollapsedChange?: (collapsed: boolean) => void;
 };
 
 /**
- * Оформление страницы: пресет фона и карточки и обложка. Стоит над конструктором в такой же
+ * Оформление страницы: пресет фона и карточки, обложка, иконки на кнопках и место главной
+ * кнопки на телефоне. Стоит над конструктором в такой же
  * рамке и так же сворачивается (`/settings#block-appearance` ведёт к нему).
  */
 export function AppearanceBlock({
@@ -32,6 +42,10 @@ export function AppearanceBlock({
   onThemeChange,
   cover,
   onCoverChange,
+  linkIcons,
+  onLinkIconsChange,
+  ctaPlacement,
+  onCtaPlacementChange,
   collapsed,
   onCollapsedChange,
 }: AppearanceBlockProps) {
@@ -105,6 +119,37 @@ export function AppearanceBlock({
             Hero shows your photo large. Without a photo, it looks like Banner.
           </FieldDescription>
         </FieldSet>
+        <Field orientation="horizontal">
+          <Checkbox
+            id="link-icons"
+            checked={linkIcons}
+            onCheckedChange={(next) => onLinkIconsChange(next === true)}
+          />
+          <FieldLabel htmlFor="link-icons" className="font-normal">
+            Show icons on buttons
+          </FieldLabel>
+        </Field>
+        {ctaPlacement ? (
+          <FieldSet>
+            <FieldLegend variant="label">Contact button on phones</FieldLegend>
+            <RadioGroup
+              value={ctaPlacement}
+              onValueChange={(next) => onCtaPlacementChange(next as CtaPlacement)}
+              aria-describedby="cta-placement-description">
+              {ctaPlacementIds.map((id) => (
+                <Field key={id} orientation="horizontal">
+                  <RadioGroupItem id={`cta-placement-${id}`} value={id} />
+                  <FieldLabel htmlFor={`cta-placement-${id}`} className="font-normal">
+                    {ctaPlacementLabels[id]}
+                  </FieldLabel>
+                </Field>
+              ))}
+            </RadioGroup>
+            <FieldDescription id="cta-placement-description">
+              A pinned button stays at the bottom of the screen while visitors scroll.
+            </FieldDescription>
+          </FieldSet>
+        ) : null}
       </div>
     </section>
   );

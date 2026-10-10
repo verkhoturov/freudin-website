@@ -1,11 +1,19 @@
+import { Mail, Phone } from "lucide-react";
 import type { ComponentProps } from "react";
 import {
+  type ContactType,
   getContactHref,
   isContactType,
   type ProfileContacts,
   type PublicProfile,
 } from "@/entities/profile";
-import { type SocialLink, socialPlatforms } from "@/entities/social-link";
+import {
+  PlatformIcon,
+  type SocialLink,
+  type SocialPlatform,
+  socialPlatforms,
+} from "@/entities/social-link";
+import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 
 const contactActionLabels = {
@@ -15,7 +23,13 @@ const contactActionLabels = {
   telegram: "Message on Telegram",
 } as const;
 
-export type ContactAction = { href: string; label: string; isExternal: boolean };
+export type ContactAction = {
+  href: string;
+  label: string;
+  isExternal: boolean;
+  /** Куда ведёт кнопка: по нему выбирается иконка. */
+  target: ContactType | SocialPlatform;
+};
 
 function getContactAction(
   preferred: string,
@@ -26,7 +40,12 @@ function getContactAction(
     const value = contacts[preferred];
     if (!value) return null;
     const href = getContactHref(preferred, value);
-    return { href, label: contactActionLabels[preferred], isExternal: href.startsWith("https:") };
+    return {
+      href,
+      label: contactActionLabels[preferred],
+      isExternal: href.startsWith("https:"),
+      target: preferred,
+    };
   }
   const link = socialLinks.find((item) => item.url === preferred);
   if (!link) return null;
@@ -37,7 +56,7 @@ function getContactAction(
     (link.platform === "website"
       ? "Visit website"
       : `Open ${socialPlatforms[link.platform].label}`);
-  return { href: link.url, label, isExternal: true };
+  return { href: link.url, label, isExternal: true, target: link.platform };
 }
 
 /** Действие предпочтительного способа связи: главная кнопка и кнопки в карточках услуг. */
@@ -52,14 +71,27 @@ type ContactActionButtonProps = Pick<
   "variant" | "size" | "className"
 > & {
   action: ContactAction;
+  /** Иконка способа связи перед подписью. */
+  showIcon?: boolean;
 };
 
-export function ContactActionButton({ action, ...buttonProps }: ContactActionButtonProps) {
+function ContactActionIcon({ target }: { target: ContactAction["target"] }) {
+  if (target === "email") return <Mail aria-hidden="true" />;
+  if (target === "phone") return <Phone aria-hidden="true" />;
+  return <PlatformIcon platform={target} />;
+}
+
+export function ContactActionButton({
+  action,
+  showIcon = false,
+  ...buttonProps
+}: ContactActionButtonProps) {
   return (
     <Button asChild {...buttonProps}>
       <a
         href={action.href}
         {...(action.isExternal ? { target: "_blank", rel: "me noopener noreferrer" } : {})}>
+        {showIcon ? <ContactActionIcon target={action.target} /> : null}
         <span className="min-w-0 truncate">{action.label}</span>
       </a>
     </Button>
@@ -67,7 +99,20 @@ export function ContactActionButton({ action, ...buttonProps }: ContactActionBut
 }
 
 /** Главная кнопка страницы: предпочтительный способ связи, который выбрал психолог. */
-export function PreferredContactButton({ profile }: { profile: PublicProfile }) {
+export function PreferredContactButton({
+  profile,
+  className,
+}: {
+  profile: PublicProfile;
+  className?: string;
+}) {
   const action = getPreferredContactAction(profile);
-  return action ? <ContactActionButton action={action} size="lg" className="w-full" /> : null;
+  return action ? (
+    <ContactActionButton
+      action={action}
+      showIcon={profile.linkIcons}
+      size="lg"
+      className={cn("w-full", className)}
+    />
+  ) : null;
 }

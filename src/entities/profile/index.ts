@@ -14,7 +14,7 @@ export {
   isContactType,
 } from "./config/contacts";
 export { coverIds, coverLabels, type ProfileCover } from "./config/cover";
-export { type CtaPlacement, ctaPlacementIds } from "./config/cta-placement";
+export { type CtaPlacement, ctaPlacementIds, ctaPlacementLabels } from "./config/cta-placement";
 export { currencyCodes } from "./config/currencies";
 export { type Gender, genderIds, genderLabels } from "./config/gender";
 export { languageCodes } from "./config/languages";

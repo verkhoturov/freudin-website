@@ -6,6 +6,8 @@ type ServiceListProps = {
   services: ProfileService[];
   /** Кнопка связи в карточке: тот же способ, что у главной кнопки страницы. */
   contactAction: ContactAction | null;
+  /** Иконка способа связи на кнопке. */
+  showIcons?: boolean;
   isPreview?: boolean;
 };
 
@@ -20,7 +22,12 @@ function getServiceMeta(service: ProfileService): string {
  * Карточки услуг для разных категорий «Works with». Freudin не записывает и не принимает
  * оплату: кнопка ведёт к выбранному психологом способу связи.
  */
-export function ServiceList({ services, contactAction, isPreview = false }: ServiceListProps) {
+export function ServiceList({
+  services,
+  contactAction,
+  showIcons = false,
+  isPreview = false,
+}: ServiceListProps) {
   const Title = isPreview ? "p" : "h2";
   const CardTitle = isPreview ? "p" : "h3";
   return (
@@ -46,6 +53,7 @@ export function ServiceList({ services, contactAction, isPreview = false }: Serv
             {contactAction ? (
               <ContactActionButton
                 action={contactAction}
+                showIcon={showIcons}
                 variant="outline"
                 className="max-w-full self-start"
               />

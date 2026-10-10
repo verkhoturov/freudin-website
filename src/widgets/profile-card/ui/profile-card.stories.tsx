@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { userEvent, within } from "storybook/test";
 import { type PublicProfile, profileSectionIds } from "@/entities/profile";
+import { SocialLinkButton, socialPlatformIds, socialPlatforms } from "@/entities/social-link";
 import { PreferredContactButton } from "./preferred-contact-button";
 import { ProfileCard } from "./profile-card";
 
@@ -188,6 +189,31 @@ export const PreferredContact: Story = {
       <li>
         <PreferredContactButton profile={untitledWebsiteProfile} />
       </li>
+    </ul>
+  ),
+};
+
+/** Иконки на кнопках выключены (Show icons on buttons в Appearance). */
+export const WithoutIcons: Story = {
+  args: { profile: { ...fullProfile, linkIcons: false } },
+};
+
+// Ссылка каждой платформы: логотипы на кнопках
+const allPlatformLinks: PublicProfile["socialLinks"] = socialPlatformIds.map((platform) => ({
+  platform,
+  url: platform === "website" ? "https://example.com/" : `https://example.com/${platform}`,
+  title: socialPlatforms[platform].label,
+  highlighted: platform === "instagram",
+}));
+
+export const LinkIcons: Story = {
+  render: () => (
+    <ul className="mx-auto flex max-w-md flex-col gap-3">
+      {allPlatformLinks.map((link) => (
+        <li key={link.platform}>
+          <SocialLinkButton link={link} showIcon />
+        </li>
+      ))}
     </ul>
   ),
 };

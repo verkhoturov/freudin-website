@@ -158,3 +158,25 @@ export const Hero: Story = { args: { theme: "lavender", cover: "hero" } };
 export const HeroWithoutPhoto: Story = {
   args: { theme: "lavender", cover: "hero", withPhoto: false },
 };
+
+/**
+ * Главная кнопка закреплена внизу экрана: страница шириной с телефон, кнопка прилипает к низу
+ * рамки и встаёт на место в конце карточки. Шире 32rem кнопка стоит под именем.
+ */
+export const PinnedContactButton: Story = {
+  args: { theme: "lavender" },
+  render: ({ theme, cover, withPhoto }) => (
+    <div className="mx-auto flex h-[640px] max-w-[390px] flex-col overflow-y-auto border">
+      <ProfileCanvas theme={theme}>
+        <ProfileCard
+          profile={{
+            ...profile,
+            cover,
+            avatarUrl: withPhoto ? portrait : null,
+            ctaPlacement: "sticky",
+          }}
+        />
+      </ProfileCanvas>
+    </div>
+  ),
+};

@@ -329,8 +329,10 @@ const layoutClasses = {
     // Рамка превью — вся область справа, как окно браузера: панель с подписью и выбором ширины,
     // под ней холст страницы, карточка в нём сама держит ширину личной страницы. Прокручивается
     // холст под панелью. overflow-clip, а не hidden: не мешает sticky внутри страницы.
-    // На телефоне рамки и полей вокруг нет: превью шириной с экран, как сама страница
-    preview: "@3xl:sticky @3xl:top-0 @3xl:h-svh @3xl:self-start @3xl:p-6",
+    // На телефоне рамки и полей вокруг нет: превью шириной с экран, как сама страница.
+    // Закреплённая главная кнопка страницы встаёт над панелью Save (61px: py-3, кнопка, рамка)
+    preview:
+      "@max-3xl:[--page-cta-offset:61px] @3xl:sticky @3xl:top-0 @3xl:h-svh @3xl:self-start @3xl:p-6",
     previewCard:
       "flex w-full flex-col overflow-clip bg-background @3xl:h-full @3xl:rounded-xl @3xl:border",
     previewBar: "flex min-h-11 items-center justify-between gap-2 border-b px-4 py-1.5",
@@ -1734,24 +1736,50 @@ export function ProfileForm({
                     {(themeField) => (
                       <form.Field name="cover">
                         {(coverField) => (
-                          <AppearanceBlock
-                            theme={themeField.state.value}
-                            onThemeChange={(theme) => {
-                              themeField.handleChange(theme);
-                              themeField.handleBlur();
-                            }}
-                            cover={coverField.state.value}
-                            onCoverChange={(cover) => {
-                              coverField.handleChange(cover);
-                              coverField.handleBlur();
-                            }}
-                            collapsed={isCollapsed("appearance")}
-                            onCollapsedChange={
-                              onCollapsedChange
-                                ? (collapsed) => onCollapsedChange("appearance", collapsed)
-                                : undefined
-                            }
-                          />
+                          <form.Field name="linkIcons">
+                            {(linkIconsField) => (
+                              <form.Field name="ctaPlacement">
+                                {(ctaField) => (
+                                  <form.Subscribe
+                                    selector={(state) => Boolean(state.values.preferredContact)}>
+                                    {(hasPreferredContact) => (
+                                      <AppearanceBlock
+                                        theme={themeField.state.value}
+                                        onThemeChange={(theme) => {
+                                          themeField.handleChange(theme);
+                                          themeField.handleBlur();
+                                        }}
+                                        cover={coverField.state.value}
+                                        onCoverChange={(cover) => {
+                                          coverField.handleChange(cover);
+                                          coverField.handleBlur();
+                                        }}
+                                        linkIcons={linkIconsField.state.value}
+                                        onLinkIconsChange={(linkIcons) => {
+                                          linkIconsField.handleChange(linkIcons);
+                                          linkIconsField.handleBlur();
+                                        }}
+                                        ctaPlacement={
+                                          hasPreferredContact ? ctaField.state.value : null
+                                        }
+                                        onCtaPlacementChange={(placement) => {
+                                          ctaField.handleChange(placement);
+                                          ctaField.handleBlur();
+                                        }}
+                                        collapsed={isCollapsed("appearance")}
+                                        onCollapsedChange={
+                                          onCollapsedChange
+                                            ? (collapsed) =>
+                                                onCollapsedChange("appearance", collapsed)
+                                            : undefined
+                                        }
+                                      />
+                                    )}
+                                  </form.Subscribe>
+                                )}
+                              </form.Field>
+                            )}
+                          </form.Field>
                         )}
                       </form.Field>
                     )}

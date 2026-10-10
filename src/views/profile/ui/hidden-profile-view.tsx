@@ -37,9 +37,10 @@ export function HiddenProfileView({ username, visibility }: HiddenProfileViewPro
     return (
       <>
         {/* Пометка — часть сайта, а не страницы: стоит над холстом в теме сайта. Странице
-            с паролем она не нужна (решение пользователя 09.10.2026) */}
+            с паролем она не нужна (решение пользователя 09.10.2026). На телефоне карточка
+            пресета стоит без отступа сверху (ProfileCanvas): отступ под пометкой — её */}
         {visibility === "private" ? (
-          <Container className="pt-page">
+          <Container className="pt-page max-[32rem]:pb-4">
             <Alert className="mx-auto max-w-profile">
               <AlertDescription>
                 Your page is hidden. Only you can see it.{" "}

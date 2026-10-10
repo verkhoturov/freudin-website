@@ -28,6 +28,11 @@ type ProfileCardProps = {
 
 export function ProfileCard({ profile, isOwner = false, isPreview = false }: ProfileCardProps) {
   const Name = isPreview ? "p" : "h1";
+  // Закреплённая кнопка — только на узкой странице (container query `page` у ProfileCanvas,
+  // поэтому и в превью шириной с телефон). На каждой ширине одна копия скрыта display: none:
+  // скринридер видит одну кнопку
+  const isCtaSticky =
+    profile.ctaPlacement === "sticky" && getPreferredContactAction(profile) !== null;
   return (
     <article className="mx-auto flex w-full max-w-profile flex-col items-center gap-6 text-center">
       <PageCover profile={profile} />
@@ -36,7 +41,10 @@ export function ProfileCard({ profile, isOwner = false, isPreview = false }: Pro
         <p className="text-muted-foreground text-sm">@{profile.username}</p>
       </header>
       {isOwner && !isPreview ? <OwnerChecklist profile={profile} /> : null}
-      <PreferredContactButton profile={profile} />
+      <PreferredContactButton
+        profile={profile}
+        className={isCtaSticky ? "@max-lg/page:hidden" : undefined}
+      />
       {renderSections(profile, isPreview)}
       {isPreview ? null : (
         <div className="flex flex-wrap justify-center gap-2">
@@ -48,6 +56,14 @@ export function ProfileCard({ profile, isOwner = false, isPreview = false }: Pro
           ) : null}
         </div>
       )}
+      {isCtaSticky ? (
+        // В конце карточки: при прокрутке прилипает к низу экрана (в превью — к низу рамки),
+        // а в конце страницы встаёт на место и не закрывает подвал. Подложка — цвет карточки
+        // во всю её ширину, снизу — отступ под полоску жестов iOS
+        <div className="sticky bottom-[var(--page-cta-offset,0px)] -mx-(--page-surface-padding) hidden self-stretch bg-background px-(--page-surface-padding) pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] @max-lg/page:block">
+          <PreferredContactButton profile={profile} />
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -89,7 +105,7 @@ function renderSections(profile: PublicProfile, isPreview: boolean): ReactNode[]
           <ul aria-label="Links" className="flex w-full flex-col gap-3">
             {profile.socialLinks.map((link) => (
               <li key={link.url}>
-                <SocialLinkButton link={link} />
+                <SocialLinkButton link={link} showIcon={profile.linkIcons} />
               </li>
             ))}
           </ul>,
@@ -108,6 +124,7 @@ function renderSections(profile: PublicProfile, isPreview: boolean): ReactNode[]
           <ServiceList
             services={profile.services}
             contactAction={getPreferredContactAction(profile)}
+            showIcons={profile.linkIcons}
             isPreview={isPreview}
           />,
         );
