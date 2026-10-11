@@ -166,7 +166,8 @@
   --page-backdrop: var(--background);
   --page-surface: var(--background);
   --page-surface-border: transparent;
-  --page-surface-padding: 0px;
+  /* Отступ контента от края карточки — у всех пресетов один, у Classic карточка невидима */
+  --page-surface-padding: calc(var(--spacing) * 6);
   --page-surface-shadow: none;
   --page-banner: linear-gradient(135deg, var(--violet-200), var(--pink-200));
 }
@@ -215,7 +216,6 @@
 [data-page-theme]:not([data-page-theme="classic"]) {
   --page-surface: var(--card);
   --page-surface-border: var(--border);
-  --page-surface-padding: calc(var(--spacing) * 6);
   --page-surface-shadow: 0 1px 3px rgb(0 0 0 / 6%), 0 12px 32px rgb(0 0 0 / 6%);
 }
 

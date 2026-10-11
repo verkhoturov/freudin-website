@@ -333,7 +333,7 @@ API:
   `cta_placement` (шаг 53): `sticky` закрепляет главную кнопку внизу экрана, когда страница
   уже 32rem (container query `page` у `ProfileCanvas`, в превью — тоже). На такой же узкой
   странице карточка пресета стоит во всю ширину экрана, без рамки и отступов от шапки
-  и подвала. Миграция `*_add_page_appearance.sql`, выбор — блок Appearance в Settings →
+  и подвала; отступ контента от края карточки у всех пресетов, включая Classic, один. Миграция `*_add_page_appearance.sql`, выбор — блок Appearance в Settings →
   Public profile.
 - FAQ, карточки услуг, выделенные блоки и вариант обложки — колонки `profiles.faq`, `services`,
   `highlighted_sections` и `cover` (миграция `*_add_page_content.sql`). jsonb-списки проверяют

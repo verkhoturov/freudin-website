@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import type { PageTheme } from "@/entities/profile";
-import { cn } from "@/shared/lib/utils";
 import { Container } from "@/shared/ui/container";
 
 type ProfileCanvasProps = {
@@ -15,17 +14,12 @@ type ProfileCanvasProps = {
  * Он же контейнер `page`: по его ширине карточка решает, где главная кнопка на телефоне.
  */
 export function ProfileCanvas({ theme, children }: ProfileCanvasProps) {
-  // На телефоне (страница уже 32rem) карточка пресета — во всю ширину, без рамки, скругления
-  // и отступов от шапки и подвала. У Classic карточки нет (globals.css): там отступы остаются
-  const isEdgeToEdge = theme !== "classic";
+  // На телефоне (страница уже 32rem) карточка — во всю ширину, без рамки, скругления
+  // и отступов от шапки и подвала. У Classic карточка невидима, но отступ контента тот же
   return (
     <div data-page-theme={theme} className="@container/page flex-1 bg-page-backdrop">
-      <Container className={cn("py-page", isEdgeToEdge && "@max-lg/page:p-0")}>
-        <div
-          className={cn(
-            "mx-auto max-w-[calc(var(--container-profile)+var(--page-surface-padding)*2)] rounded-2xl border border-page-surface-border bg-page-surface p-(--page-surface-padding) shadow-(--page-surface-shadow) [--background:var(--page-surface)]",
-            isEdgeToEdge && "@max-lg/page:rounded-none @max-lg/page:border-0",
-          )}>
+      <Container className="py-page @max-lg/page:p-0">
+        <div className="mx-auto max-w-[calc(var(--container-profile)+var(--page-surface-padding)*2)] rounded-2xl border border-page-surface-border bg-page-surface p-(--page-surface-padding) shadow-(--page-surface-shadow) [--background:var(--page-surface)] @max-lg/page:rounded-none @max-lg/page:border-0">
           {children}
         </div>
       </Container>
