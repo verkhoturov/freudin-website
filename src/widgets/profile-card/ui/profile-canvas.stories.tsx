@@ -38,6 +38,7 @@ const profile: PublicProfile = {
   clientTypes: ["individuals", "couples"],
   approaches: ["cbt", "act"],
   languages: ["en", "ru"],
+  currency: "USD",
   price: { amount: 60, currency: "USD" },
   documents: [],
   sectionOrder: [...profileSectionIds],

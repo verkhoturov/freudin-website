@@ -2,10 +2,11 @@ import type * as z from "zod";
 import type { City } from "@/entities/location/@x/profile";
 import { socialLinkSchema } from "@/entities/social-link/@x/profile";
 import { contactTypeIds, isContactType } from "../config/contacts";
+import { DEFAULT_CURRENCY } from "../config/currencies";
 import { educationEntrySchema, type ProfileInput, profileFieldsSchema } from "../model/schemas";
 import type { ProfileContacts, PublicProfile } from "../model/types";
 import { normalizeSectionOrder } from "./section-order";
-import { toProfileService } from "./services";
+import { toProfileService, toStoredService } from "./services";
 
 const fields = profileFieldsSchema.shape;
 
@@ -41,7 +42,7 @@ export function toPreviewProfile(input: ProfileInput, extras: PreviewExtras): Pu
 
   const country = parseOr(fields.country, input.country, "");
   const priceAmount = parseOr(fields.priceAmount, input.priceAmount, "");
-  const priceCurrency = parseOr(fields.priceCurrency, input.priceCurrency, "");
+  const currency = parseOr(fields.currency, input.currency, DEFAULT_CURRENCY);
   const { preferredContact } = input;
   const clientTypes = parseOr(fields.clientTypes, input.clientTypes, []);
   const hasPreferredContact = isContactType(preferredContact)
@@ -60,10 +61,8 @@ export function toPreviewProfile(input: ProfileInput, extras: PreviewExtras): Pu
     clientTypes,
     approaches: parseOr(fields.approaches, input.approaches, []),
     languages: parseOr(fields.languages, input.languages, []),
-    price:
-      priceAmount && priceCurrency
-        ? { amount: Number(priceAmount), currency: priceCurrency }
-        : null,
+    currency,
+    price: priceAmount ? { amount: Number(priceAmount), currency } : null,
     documents: [],
     sectionOrder: normalizeSectionOrder(input.sectionOrder),
     practiceStartedOn: parseOr(fields.practiceStartedOn, input.practiceStartedOn, "") || null,
@@ -83,7 +82,7 @@ export function toPreviewProfile(input: ProfileInput, extras: PreviewExtras): Pu
     services: input.services.flatMap((service) => {
       const result = fields.services.element.safeParse(service);
       return result.success && clientTypes.includes(result.data.clientType)
-        ? [toProfileService(result.data)]
+        ? [toProfileService(toStoredService(result.data), currency)]
         : [];
     }),
     highlightedSections: parseOr(fields.highlightedSections, input.highlightedSections, []),

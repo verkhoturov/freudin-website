@@ -12,6 +12,7 @@ import {
   SmartphoneIcon,
   XIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import type { City } from "@/entities/location";
 import {
@@ -36,6 +37,7 @@ import {
   type Gender,
   genderIds,
   genderLabels,
+  getCurrencyName,
   hiddenVisibilityLabels,
   isConcernGroupAvailable,
   LANGUAGES_MAX,
@@ -69,7 +71,7 @@ import {
 } from "@/entities/social-link";
 import type { AccountPhoto } from "@/entities/viewer";
 import { ApiError } from "@/shared/api";
-import { siteConfig } from "@/shared/config";
+import { routes, siteConfig } from "@/shared/config";
 import { toFieldErrors, toFormFieldName } from "@/shared/lib/field-errors";
 import { useUnsavedChangesWarning } from "@/shared/lib/use-unsaved-changes-warning";
 import { cn } from "@/shared/lib/utils";
@@ -90,6 +92,7 @@ import {
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
+  InputGroupText,
 } from "@/shared/ui/input-group";
 import { RadioGroup, RadioGroupItem } from "@/shared/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
@@ -182,7 +185,15 @@ const faqSuggestions = [
 export type ProfileFormSection = "account" | "profile" | "search";
 
 // Поля разделов Account и Search details, остальные — в Public profile
-const accountFields = new Set<string>(["username", "contactEmail", "visibility", "pagePassword"]);
+const accountFields = new Set<string>([
+  "username",
+  "contactEmail",
+  "country",
+  "cityId",
+  "currency",
+  "visibility",
+  "pagePassword",
+]);
 const searchFields = new Set<string>(["birthDate", "gender", "concerns"]);
 
 function getFieldSection(field: string): ProfileFormSection {
@@ -203,11 +214,11 @@ const fieldBlocks: Record<keyof ProfileInput, string | null> = {
   approaches: "approaches",
   clientTypes: "client-types",
   workFormats: "work-formats",
-  country: "location",
-  cityId: "location",
+  country: null,
+  cityId: null,
   languages: "languages",
   priceAmount: "price",
-  priceCurrency: "price",
+  currency: null,
   education: "education",
   contacts: "contacts",
   preferredContact: "contacts",
@@ -758,80 +769,47 @@ export function ProfileForm({
       case "work-formats":
         return (
           <form.Field name="workFormats">
-            {(field) => (
-              <CheckboxGroup
-                name={field.name}
-                legend="Work format"
-                legendClassName={titleClassName}
-                options={workFormatOptions}
-                value={field.state.value}
-                onChange={field.handleChange}
-                onBlur={field.handleBlur}
-                errors={field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []}
-              />
-            )}
+            {(field) => {
+              // Город выбирают в Account: без него очный формат не выбрать
+              const hasCity = form.getFieldValue("cityId") !== null;
+              return (
+                <CheckboxGroup
+                  name={field.name}
+                  legend="Work format"
+                  legendClassName={titleClassName}
+                  options={workFormatOptions.map((option) => ({
+                    ...option,
+                    disabled: option.value === "in-person" && !hasCity,
+                  }))}
+                  description={
+                    hasCity ? undefined : (
+                      <>
+                        To offer in-person sessions, add your city in{" "}
+                        <Link href={routes.settingsSection("account")}>Account</Link>.
+                      </>
+                    )
+                  }
+                  value={field.state.value}
+                  onChange={field.handleChange}
+                  onBlur={field.handleBlur}
+                  errors={field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []}
+                />
+              );
+            }}
           </form.Field>
         );
       case "location":
+        // Страну и город выбирают в Account: блок здесь — только место на странице
         return (
-          <FieldGroup>
-            <form.Field name="country">
-              {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Country</FieldLabel>
-                    <CountrySelect
-                      id={field.name}
-                      value={field.state.value}
-                      aria-invalid={isInvalid}
-                      onChange={(country) => {
-                        // Город выбирается внутри страны: при смене страны он сбрасывается
-                        if (country !== field.state.value) form.setFieldValue("cityId", null);
-                        field.handleChange(country);
-                        field.handleBlur();
-                      }}
-                    />
-                    {isInvalid ? (
-                      <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                    ) : null}
-                  </Field>
-                );
-              }}
-            </form.Field>
-            <form.Field name="cityId">
-              {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>City</FieldLabel>
-                    <form.Subscribe selector={(state) => state.values.country}>
-                      {(country) => (
-                        <CitySelect
-                          id={field.name}
-                          country={country}
-                          value={findCity(field.state.value)}
-                          aria-invalid={isInvalid}
-                          aria-describedby={`${field.name}-description`}
-                          onChange={(next) => {
-                            if (next) setPickedCity(next);
-                            field.handleChange(next?.id ?? null);
-                            field.handleBlur();
-                          }}
-                        />
-                      )}
-                    </form.Subscribe>
-                    <FieldDescription id={`${field.name}-description`}>
-                      Required for in-person sessions.
-                    </FieldDescription>
-                    {isInvalid ? (
-                      <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                    ) : null}
-                  </Field>
-                );
-              }}
-            </form.Field>
-          </FieldGroup>
+          <form.Subscribe
+            selector={(state) => getBlockSummary("location", getPreview(state.values))}>
+            {(summary) => (
+              <FieldDescription>
+                {summary}. Change it in{" "}
+                <Link href={routes.settingsSection("account")}>Account</Link>.
+              </FieldDescription>
+            )}
+          </form.Subscribe>
         );
       case "languages":
         return (
@@ -867,55 +845,43 @@ export function ProfileForm({
       case "price":
         return (
           <form.Field name="priceAmount">
-            {(amountField) => (
-              <form.Field name="priceCurrency">
-                {(currencyField) => {
-                  const amountMeta = amountField.state.meta;
-                  const currencyMeta = currencyField.state.meta;
-                  const isAmountInvalid = amountMeta.isTouched && !amountMeta.isValid;
-                  const isCurrencyInvalid = currencyMeta.isTouched && !currencyMeta.isValid;
-                  return (
-                    <Field data-invalid={isAmountInvalid || isCurrencyInvalid}>
-                      <FieldLabel htmlFor={amountField.name}>Starting price per session</FieldLabel>
-                      <div className="flex gap-2">
-                        <Input
-                          id={amountField.name}
-                          name={amountField.name}
-                          value={amountField.state.value}
-                          onBlur={amountField.handleBlur}
-                          onChange={(event) => amountField.handleChange(event.target.value)}
-                          aria-invalid={isAmountInvalid}
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          autoComplete="off"
-                          maxLength={PRICE_AMOUNT_MAX_LENGTH}
-                          className="w-28 shrink-0"
-                        />
-                        <FieldLabel htmlFor={currencyField.name} className="sr-only">
-                          Currency
-                        </FieldLabel>
-                        <CurrencySelect
-                          id={currencyField.name}
-                          value={currencyField.state.value}
-                          aria-invalid={isCurrencyInvalid}
-                          onChange={(currency) => {
-                            currencyField.handleChange(currency);
-                            currencyField.handleBlur();
-                          }}
-                          className="flex-1"
-                        />
-                      </div>
-                      {isAmountInvalid ? (
-                        <FieldError errors={toFieldErrors(amountMeta.errors)} />
-                      ) : null}
-                      {isCurrencyInvalid ? (
-                        <FieldError errors={toFieldErrors(currencyMeta.errors)} />
-                      ) : null}
-                    </Field>
-                  );
-                }}
-              </form.Field>
-            )}
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const currency = form.getFieldValue("currency");
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Starting price per session</FieldLabel>
+                  {/* Поле узкое: Field растягивает прямых потомков на всю ширину */}
+                  <div>
+                    <InputGroup className="w-36">
+                      <InputGroupInput
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        aria-invalid={isInvalid}
+                        aria-describedby={`${field.name}-description`}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        autoComplete="off"
+                        maxLength={PRICE_AMOUNT_MAX_LENGTH}
+                      />
+                      <InputGroupAddon align="inline-end">
+                        <InputGroupText>{currency}</InputGroupText>
+                      </InputGroupAddon>
+                    </InputGroup>
+                  </div>
+                  <FieldDescription id={`${field.name}-description`}>
+                    In {getCurrencyName(currency)}. Change the currency in{" "}
+                    <Link href={routes.settingsSection("account")}>Account</Link>.
+                  </FieldDescription>
+                  {isInvalid ? (
+                    <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                  ) : null}
+                </Field>
+              );
+            }}
           </form.Field>
         );
       case "experience":
@@ -1313,7 +1279,7 @@ export function ProfileForm({
                       </FieldLegend>
                       <FieldDescription>
                         {clientTypes.length >= 2
-                          ? "A card for each client group, with its own price and duration. The contact button on each card is your main contact button."
+                          ? "A card for each client group, with its own price and duration."
                           : "Choose two or more groups in Works with to add a service card for each."}
                       </FieldDescription>
                       {count > 0 ? (
@@ -1447,52 +1413,35 @@ export function ProfileForm({
                                 </form.Field>
                                 <form.Field name={`services[${index}].priceAmount`}>
                                   {(field) => (
-                                    <Input
-                                      name={field.name}
-                                      value={field.state.value}
-                                      onBlur={field.handleBlur}
-                                      onChange={(event) => field.handleChange(event.target.value)}
-                                      aria-invalid={
-                                        field.state.meta.isTouched && !field.state.meta.isValid
-                                      }
-                                      aria-label={`Price, service ${index + 1}`}
-                                      placeholder="Price"
-                                      inputMode="numeric"
-                                      pattern="[0-9]*"
-                                      autoComplete="off"
-                                      maxLength={PRICE_AMOUNT_MAX_LENGTH}
-                                      className="w-28 shrink-0"
-                                    />
-                                  )}
-                                </form.Field>
-                                <form.Field name={`services[${index}].priceCurrency`}>
-                                  {(field) => (
-                                    <>
-                                      <FieldLabel
-                                        htmlFor={`services-${index}-currency`}
-                                        className="sr-only">
-                                        Currency, service {index + 1}
-                                      </FieldLabel>
-                                      <CurrencySelect
-                                        id={`services-${index}-currency`}
+                                    <InputGroup className="w-32 shrink-0">
+                                      <InputGroupInput
+                                        name={field.name}
                                         value={field.state.value}
+                                        onBlur={field.handleBlur}
+                                        onChange={(event) => field.handleChange(event.target.value)}
                                         aria-invalid={
                                           field.state.meta.isTouched && !field.state.meta.isValid
                                         }
-                                        onChange={(currency) => {
-                                          field.handleChange(currency);
-                                          field.handleBlur();
-                                        }}
-                                        className="min-w-32 flex-1"
+                                        aria-label={`Price in ${form.getFieldValue("currency")}, service ${index + 1}`}
+                                        placeholder="Price"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        autoComplete="off"
+                                        maxLength={PRICE_AMOUNT_MAX_LENGTH}
                                       />
-                                    </>
+                                      <InputGroupAddon align="inline-end">
+                                        <InputGroupText>
+                                          {form.getFieldValue("currency")}
+                                        </InputGroupText>
+                                      </InputGroupAddon>
+                                    </InputGroup>
                                   )}
                                 </form.Field>
                               </div>
                               {/* Ошибки узких полей — под строкой: в самих полях они не поместятся */}
                               <form.Subscribe
                                 selector={(state) =>
-                                  (["durationMinutes", "priceAmount", "priceCurrency"] as const)
+                                  (["durationMinutes", "priceAmount"] as const)
                                     .map((key) => state.fieldMeta[`services[${index}].${key}`])
                                     .flatMap((meta) =>
                                       meta?.isTouched && !meta.isValid ? meta.errors : [],
@@ -1533,8 +1482,6 @@ export function ProfileForm({
                               description: "",
                               durationMinutes: "",
                               priceAmount: "",
-                              // Обычно услуги в той же валюте, что и цена сессии
-                              priceCurrency: form.getFieldValue("priceCurrency"),
                               highlighted: false,
                             })
                           }>
@@ -1930,6 +1877,97 @@ export function ProfileForm({
                             Your sign-in account didn’t share an email address. Add one if you’d
                             like us to be able to contact you about your account. It isn’t shown on
                             your page.
+                          </FieldDescription>
+                          {isInvalid ? (
+                            <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                          ) : null}
+                        </Field>
+                      );
+                    }}
+                  </form.Field>
+                </div>
+              ) : null}
+
+              {/* Место и валюта — данные практики: в онбординге их нет */}
+              {showPractice ? (
+                <div hidden={isSectionHidden("account")} className="contents">
+                  <FieldGroup>
+                    <form.Field name="country">
+                      {(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Country</FieldLabel>
+                            <CountrySelect
+                              id={field.name}
+                              value={field.state.value}
+                              aria-invalid={isInvalid}
+                              onChange={(country) => {
+                                // Город выбирается внутри страны: при смене страны он сбрасывается
+                                if (country !== field.state.value)
+                                  form.setFieldValue("cityId", null);
+                                field.handleChange(country);
+                                field.handleBlur();
+                              }}
+                            />
+                            {isInvalid ? (
+                              <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                            ) : null}
+                          </Field>
+                        );
+                      }}
+                    </form.Field>
+                    <form.Field name="cityId">
+                      {(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>City</FieldLabel>
+                            <form.Subscribe selector={(state) => state.values.country}>
+                              {(country) => (
+                                <CitySelect
+                                  id={field.name}
+                                  country={country}
+                                  value={findCity(field.state.value)}
+                                  aria-invalid={isInvalid}
+                                  aria-describedby={`${field.name}-description`}
+                                  onChange={(next) => {
+                                    if (next) setPickedCity(next);
+                                    field.handleChange(next?.id ?? null);
+                                    field.handleBlur();
+                                  }}
+                                />
+                              )}
+                            </form.Subscribe>
+                            <FieldDescription id={`${field.name}-description`}>
+                              Required for in-person sessions.
+                            </FieldDescription>
+                            {isInvalid ? (
+                              <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                            ) : null}
+                          </Field>
+                        );
+                      }}
+                    </form.Field>
+                  </FieldGroup>
+                  <form.Field name="currency">
+                    {(field) => {
+                      const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={field.name}>Currency</FieldLabel>
+                          <CurrencySelect
+                            id={field.name}
+                            value={field.state.value}
+                            aria-invalid={isInvalid}
+                            aria-describedby={`${field.name}-description`}
+                            onChange={(currency) => {
+                              field.handleChange(currency);
+                              field.handleBlur();
+                            }}
+                          />
+                          <FieldDescription id={`${field.name}-description`}>
+                            For the price per session and service prices on your page.
                           </FieldDescription>
                           {isInvalid ? (
                             <FieldError errors={toFieldErrors(field.state.meta.errors)} />

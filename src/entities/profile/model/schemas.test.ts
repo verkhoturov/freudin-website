@@ -20,7 +20,6 @@ const service = {
   description: "",
   durationMinutes: "90",
   priceAmount: "",
-  priceCurrency: "",
   highlighted: false,
 } as const;
 
@@ -49,15 +48,18 @@ describe("profileInputSchema", () => {
     ).toEqual([]);
   });
 
-  it("сумма и валюта цены указываются только вместе, сумма — без ведущих нулей", () => {
-    expect(issuePaths(input({ priceAmount: "60" }))).toEqual(["priceCurrency"]);
-    expect(issuePaths(input({ priceCurrency: "USD" }))).toEqual(["priceAmount"]);
-    expect(issuePaths(input({ priceAmount: "1.5", priceCurrency: "USD" }))).toEqual([
-      "priceAmount",
-    ]);
-    expect(issuePaths(input({ priceAmount: "0", priceCurrency: "USD" }))).toEqual(["priceAmount"]);
-    const data = profileInputSchema.parse(input({ priceAmount: " 060 ", priceCurrency: "USD" }));
+  it("цена сессии — целая сумма без ведущих нулей, валюта — общая для профиля", () => {
+    expect(issuePaths(input({ priceAmount: "60" }))).toEqual([]);
+    expect(issuePaths(input({ priceAmount: "1.5" }))).toEqual(["priceAmount"]);
+    expect(issuePaths(input({ priceAmount: "0" }))).toEqual(["priceAmount"]);
+    const data = profileInputSchema.parse(input({ priceAmount: " 060 " }));
     expect(data.priceAmount).toBe("60");
+  });
+
+  it("валюта профиля обязательна и берётся из справочника", () => {
+    expect(issuePaths(input({ currency: "GEL" }))).toEqual([]);
+    expect(issuePaths(input({ currency: "" }))).toEqual(["currency"]);
+    expect(issuePaths(input({ currency: "usd" }))).toEqual(["currency"]);
   });
 
   it("хранит списки без порядка в порядке справочника", () => {
@@ -77,11 +79,12 @@ describe("profileInputSchema", () => {
     ]);
   });
 
-  it("у карточки услуги сумма и валюта тоже указываются вместе", () => {
+  it("у карточки услуги — только сумма: валюта общая для профиля", () => {
     const services = [{ ...service, priceAmount: "100" }];
-    expect(issuePaths(input({ clientTypes: ["couples"], services }))).toEqual([
-      "services.0.priceCurrency",
-    ]);
+    expect(issuePaths(input({ clientTypes: ["couples"], services }))).toEqual([]);
+    expect(
+      issuePaths(input({ clientTypes: ["couples"], services: [{ ...service, priceAmount: "x" }] })),
+    ).toEqual(["services.0.priceAmount"]);
   });
 
   it("отбрасывает запросы пар без Couples и детские без Children или Teens", () => {
@@ -167,20 +170,29 @@ describe("profileUpdateSchema", () => {
   });
 
   it("требует связанные поля группой", () => {
-    const result = profileUpdateSchema.safeParse({ priceAmount: "50" });
+    const result = profileUpdateSchema.safeParse({ workFormats: ["online"] });
     expect(result.success).toBe(false);
-    expect(result.error?.issues.map((issue) => issue.path.join("."))).toEqual(["priceCurrency"]);
+    expect(result.error?.issues.map((issue) => issue.path.join("."))).toEqual([
+      "country",
+      "cityId",
+    ]);
+    // Цена и валюта не связаны: валюту меняют в Account, цену — в Public profile
+    expect(profileUpdateSchema.safeParse({ priceAmount: "50" }).success).toBe(true);
+    expect(profileUpdateSchema.safeParse({ currency: "GEL" }).success).toBe(true);
 
     const visibility = profileUpdateSchema.safeParse({ visibility: "password" });
     expect(visibility.error?.issues.map((issue) => issue.path.join("."))).toEqual(["pagePassword"]);
   });
 
   it("проверяет согласованность переданной группы", () => {
-    expect(profileUpdateSchema.safeParse({ priceAmount: "50", priceCurrency: "USD" }).success).toBe(
-      true,
-    );
-    expect(profileUpdateSchema.safeParse({ priceAmount: "50", priceCurrency: "" }).success).toBe(
-      false,
-    );
+    const location = { country: "GE", cityId: 611717, workFormats: ["in-person"] } as const;
+    expect(
+      profileUpdateSchema.safeParse({ ...location, workFormats: [...location.workFormats] })
+        .success,
+    ).toBe(true);
+    expect(
+      profileUpdateSchema.safeParse({ ...location, cityId: null, workFormats: ["in-person"] })
+        .success,
+    ).toBe(false);
   });
 });

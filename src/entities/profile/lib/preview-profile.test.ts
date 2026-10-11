@@ -27,7 +27,6 @@ const input: ProfileInput = {
       description: "",
       durationMinutes: "",
       priceAmount: "",
-      priceCurrency: "",
       highlighted: false,
     },
   ],
@@ -58,6 +57,17 @@ describe("toPreviewProfile", () => {
     expect(preview.preferredContact).toBeNull();
     // Карточка для категории, которой нет в Works with
     expect(preview.services).toEqual([]);
+  });
+
+  it("цены сессии и карточек — в валюте профиля", () => {
+    const service = { ...input.services[0], clientType: "individuals", priceAmount: "90" } as const;
+    const priced = toPreviewProfile(
+      { ...input, currency: "GEL", priceAmount: "60", services: [service] },
+      { avatarUrl: null, city: tbilisi },
+    );
+    expect(priced.currency).toBe("GEL");
+    expect(priced.price).toEqual({ amount: 60, currency: "GEL" });
+    expect(priced.services.map((item) => item.price)).toEqual([{ amount: 90, currency: "GEL" }]);
   });
 
   it("берёт город, только если он совпадает с выбранным и страна указана", () => {

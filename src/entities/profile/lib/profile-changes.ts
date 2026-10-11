@@ -1,3 +1,4 @@
+import { DEFAULT_CURRENCY } from "../config/currencies";
 import {
   linkedFieldGroups,
   type ProfileInput,
@@ -16,7 +17,7 @@ type SettingsInput = Pick<
   | "approaches"
   | "languages"
   | "priceAmount"
-  | "priceCurrency"
+  | "currency"
   | "sectionOrder"
   | "practiceStartedOn"
   | "education"
@@ -49,7 +50,7 @@ export function getEmptySettingsInput(): SettingsInput {
     approaches: [],
     languages: [],
     priceAmount: "",
-    priceCurrency: "",
+    currency: DEFAULT_CURRENCY,
     sectionOrder: [],
     practiceStartedOn: "",
     education: [],
@@ -93,7 +94,7 @@ export function toProfileInput(
     approaches: profile.approaches,
     languages: profile.languages,
     priceAmount: profile.price ? String(profile.price.amount) : "",
-    priceCurrency: profile.price?.currency ?? "",
+    currency: profile.currency,
     sectionOrder: profile.sectionOrder,
     practiceStartedOn: profile.practiceStartedOn ?? "",
     education: profile.education.map((entry) => ({

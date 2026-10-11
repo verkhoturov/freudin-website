@@ -16,11 +16,11 @@ type ProfileCanvasProps = {
  */
 export function ProfileCanvas({ theme, children }: ProfileCanvasProps) {
   // На телефоне (страница уже 32rem) карточка пресета — во всю ширину, без рамки, скругления
-  // и отступа от шапки. У Classic карточки нет (globals.css): там отступы контейнера остаются
+  // и отступов от шапки и подвала. У Classic карточки нет (globals.css): там отступы остаются
   const isEdgeToEdge = theme !== "classic";
   return (
     <div data-page-theme={theme} className="@container/page flex-1 bg-page-backdrop">
-      <Container className={cn("py-page", isEdgeToEdge && "@max-lg/page:px-0 @max-lg/page:pt-0")}>
+      <Container className={cn("py-page", isEdgeToEdge && "@max-lg/page:p-0")}>
         <div
           className={cn(
             "mx-auto max-w-[calc(var(--container-profile)+var(--page-surface-padding)*2)] rounded-2xl border border-page-surface-border bg-page-surface p-(--page-surface-padding) shadow-(--page-surface-shadow) [--background:var(--page-surface)]",

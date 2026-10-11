@@ -119,15 +119,7 @@ function renderSections(profile: PublicProfile, isPreview: boolean): ReactNode[]
       if (profile.faq.length > 0) add(section, <FaqList faq={profile.faq} isPreview={isPreview} />);
     } else if (section === "services") {
       if (profile.services.length > 0) {
-        add(
-          section,
-          <ServiceList
-            services={profile.services}
-            contactAction={getPreferredContactAction(profile)}
-            showIcons={profile.linkIcons}
-            isPreview={isPreview}
-          />,
-        );
+        add(section, <ServiceList services={profile.services} isPreview={isPreview} />);
       }
     } else {
       const details = getPracticeDetails(profile, section);

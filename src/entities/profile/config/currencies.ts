@@ -1,5 +1,8 @@
+/** Валюта цен профиля, пока психолог не выбрал свою в Settings → Account. */
+export const DEFAULT_CURRENCY = "USD";
+
 /**
- * Валюты цены сессии: действующие коды ISO 4217 из `Intl.supportedValuesOf("currency")`
+ * Валюты цен профиля: действующие коды ISO 4217 из `Intl.supportedValuesOf("currency")`
  * без выведенных из оборота (HRK, SLL, ANG, ZWL, CUC) и расчётных единиц (XDR, XSU).
  * Английские названия даёт `getCurrencyName`.
  */

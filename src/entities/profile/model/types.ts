@@ -10,7 +10,7 @@ import type { Approach, ClientType, WorkFormat } from "../config/practice";
 import type { ProfileSection } from "../config/sections";
 import type { ProfileVisibility } from "../config/visibility";
 
-/** Цена сессии «от»: целая сумма и код валюты ISO 4217. */
+/** Цена: целая сумма и код валюты ISO 4217 (валюта профиля). */
 export type ProfilePrice = { amount: number; currency: string };
 
 /**
@@ -76,6 +76,9 @@ export type PublicProfile = {
   approaches: Approach[];
   /** Коды языков ISO 639-1. */
   languages: string[];
+  /** Валюта всех цен профиля, ISO 4217: её выбирают в Settings → Account. */
+  currency: string;
+  /** Цена сессии «от» в валюте профиля. */
   price: ProfilePrice | null;
   documents: ProfileDocument[];
   /** Порядок блоков после фото и имени: полный список, без повторов. */

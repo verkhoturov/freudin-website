@@ -30,6 +30,11 @@ const filledSettings: ProfileInput = {
     { platform: "website", url: "https://example.com/", title: "Articles on anxiety" },
   ],
   clientTypes: ["individuals", "couples", "teens"],
+  workFormats: ["online", "in-person"],
+  country: "GE",
+  cityId: 611717,
+  priceAmount: "150",
+  currency: "GEL",
   practiceStartedOn: "2016-09-01",
   education: [
     { qualification: "MA in Clinical Psychology", institution: "Sample University", year: "2015" },
@@ -49,7 +54,6 @@ const filledSettings: ProfileInput = {
       description: "",
       durationMinutes: "80",
       priceAmount: "90",
-      priceCurrency: "USD",
       highlighted: true,
     },
   ],
@@ -78,6 +82,7 @@ const meta = {
     defaultAvatar: { type: "none" },
     accountPhotos: [],
     currentUsername: "anna",
+    currentCity: { id: 611717, name: "Tbilisi", region: "Tbilisi", countryCode: "GE" },
     showPractice: true,
     showSectionOrder: true,
     submitLabel: "Save",
@@ -95,7 +100,7 @@ export const Settings: Story = { args: { section: "profile" } };
 export const SettingsEmpty: Story = { args: { defaultValues: emptySettings, section: "profile" } };
 
 /**
- * Раздел Account: адрес страницы и контактная почта. Способы входа, выход и удаление на странице
+ * Раздел Account: адрес страницы, контактная почта, место и валюта цен. Способы входа, выход и удаление на странице
  * приходят слотом `accountBlock`.
  */
 export const AccountSection: Story = {

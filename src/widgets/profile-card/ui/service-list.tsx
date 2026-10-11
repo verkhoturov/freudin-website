@@ -1,13 +1,8 @@
 import { clientTypeLabels, formatPrice, type ProfileService } from "@/entities/profile";
 import { cn } from "@/shared/lib/utils";
-import { type ContactAction, ContactActionButton } from "./preferred-contact-button";
 
 type ServiceListProps = {
   services: ProfileService[];
-  /** Кнопка связи в карточке: тот же способ, что у главной кнопки страницы. */
-  contactAction: ContactAction | null;
-  /** Иконка способа связи на кнопке. */
-  showIcons?: boolean;
   isPreview?: boolean;
 };
 
@@ -20,14 +15,9 @@ function getServiceMeta(service: ProfileService): string {
 
 /**
  * Карточки услуг для разных категорий «Works with». Freudin не записывает и не принимает
- * оплату: кнопка ведёт к выбранному психологом способу связи.
+ * оплату. Своей кнопки связи у карточек нет: она повторяла бы главную кнопку страницы.
  */
-export function ServiceList({
-  services,
-  contactAction,
-  showIcons = false,
-  isPreview = false,
-}: ServiceListProps) {
+export function ServiceList({ services, isPreview = false }: ServiceListProps) {
   const Title = isPreview ? "p" : "h2";
   const CardTitle = isPreview ? "p" : "h3";
   return (
@@ -49,14 +39,6 @@ export function ServiceList({
             <p className="text-muted-foreground text-sm">{getServiceMeta(service)}</p>
             {service.description ? (
               <p className="whitespace-pre-line break-words text-sm">{service.description}</p>
-            ) : null}
-            {contactAction ? (
-              <ContactActionButton
-                action={contactAction}
-                showIcon={showIcons}
-                variant="outline"
-                className="max-w-full self-start"
-              />
             ) : null}
           </li>
         ))}

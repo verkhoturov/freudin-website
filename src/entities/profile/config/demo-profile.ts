@@ -26,6 +26,7 @@ export const demoProfile: PublicProfile = {
   clientTypes: ["individuals", "couples"],
   approaches: ["cbt", "act", "schema"],
   languages: ["en", "ru", "ka"],
+  currency: "USD",
   price: { amount: 60, currency: "USD" },
   // Файл лежит в public: у демо-профиля нет записи в Storage
   documents: [

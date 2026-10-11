@@ -11,7 +11,7 @@ const saved: ProfileInput = {
   contactEmail: "",
   ...getEmptySettingsInput(),
   priceAmount: "60",
-  priceCurrency: "USD",
+  currency: "USD",
 };
 
 describe("getProfileChanges", () => {
@@ -29,9 +29,10 @@ describe("getProfileChanges", () => {
   });
 
   it("связанные поля отправляет группой", () => {
-    expect(getProfileChanges(saved, { ...saved, priceAmount: "80" })).toEqual({
-      priceAmount: "80",
-      priceCurrency: "USD",
+    expect(getProfileChanges(saved, { ...saved, workFormats: ["online"] })).toEqual({
+      country: "",
+      cityId: null,
+      workFormats: ["online"],
     });
     expect(getProfileChanges(saved, { ...saved, clientTypes: ["individuals"] })).toEqual({
       clientTypes: ["individuals"],
@@ -45,6 +46,13 @@ describe("getProfileChanges", () => {
       contacts: { email: "", phone: "", whatsapp: "", telegram: "" },
       preferredContact: "https://t.me/anna",
     });
+  });
+
+  it("цену и валюту отправляет по отдельности: их меняют в разных разделах", () => {
+    expect(getProfileChanges(saved, { ...saved, priceAmount: "80" })).toEqual({
+      priceAmount: "80",
+    });
+    expect(getProfileChanges(saved, { ...saved, currency: "GEL" })).toEqual({ currency: "GEL" });
   });
 
   it("неверные данные отправляет целиком, чтобы сервер ответил ошибками по полям", () => {

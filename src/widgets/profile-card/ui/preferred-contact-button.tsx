@@ -59,17 +59,14 @@ function getContactAction(
   return { href: link.url, label, isExternal: true, target: link.platform };
 }
 
-/** Действие предпочтительного способа связи: главная кнопка и кнопки в карточках услуг. */
+/** Действие предпочтительного способа связи: главная кнопка страницы. */
 export function getPreferredContactAction(profile: PublicProfile): ContactAction | null {
   return profile.preferredContact
     ? getContactAction(profile.preferredContact, profile.contacts, profile.socialLinks)
     : null;
 }
 
-type ContactActionButtonProps = Pick<
-  ComponentProps<typeof Button>,
-  "variant" | "size" | "className"
-> & {
+type ContactActionButtonProps = Pick<ComponentProps<typeof Button>, "size" | "className"> & {
   action: ContactAction;
   /** Иконка способа связи перед подписью. */
   showIcon?: boolean;
@@ -81,7 +78,7 @@ function ContactActionIcon({ target }: { target: ContactAction["target"] }) {
   return <PlatformIcon platform={target} />;
 }
 
-export function ContactActionButton({
+function ContactActionButton({
   action,
   showIcon = false,
   ...buttonProps

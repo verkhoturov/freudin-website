@@ -134,10 +134,10 @@ const priceAmountSchema = z
 
 const currencyCodeSet = new Set(currencyCodes);
 
-/** Валюта цены: код ISO 4217 или пустая строка. Указывается вместе с суммой. */
-const priceCurrencySchema = z
+/** Валюта всех цен профиля (код ISO 4217): цена сессии и карточек услуг — в ней. */
+const currencySchema = z
   .string()
-  .refine((value) => value === "" || currencyCodeSet.has(value), "Choose a currency from the list");
+  .refine((value) => currencyCodeSet.has(value), "Choose a currency from the list");
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -303,33 +303,23 @@ const serviceDurationSchema = z
 
 /**
  * Карточка услуги: для какой категории «Works with», название, описание, длительность и цена.
- * Сумма и валюта — строками, как у цены сессии, и указываются вместе.
+ * Сумма — строкой, как у цены сессии, в валюте профиля.
  */
-const serviceSchema = z
-  .object({
-    clientType: z.enum(clientTypeIds, "Choose who this service is for"),
-    title: z
-      .string()
-      .trim()
-      .min(1, "Enter a service name")
-      .max(SERVICE_TITLE_MAX_LENGTH, maxLengthMessage(SERVICE_TITLE_MAX_LENGTH)),
-    description: z
-      .string()
-      .trim()
-      .max(SERVICE_DESCRIPTION_MAX_LENGTH, maxLengthMessage(SERVICE_DESCRIPTION_MAX_LENGTH)),
-    durationMinutes: serviceDurationSchema,
-    priceAmount: priceAmountSchema,
-    priceCurrency: priceCurrencySchema,
-    highlighted: z.boolean(),
-  })
-  .superRefine((service, ctx) => {
-    if (service.priceAmount && service.priceCurrency === "") {
-      ctx.addIssue({ code: "custom", path: ["priceCurrency"], message: "Choose a currency" });
-    }
-    if (service.priceAmount === "" && service.priceCurrency) {
-      ctx.addIssue({ code: "custom", path: ["priceAmount"], message: "Enter a price" });
-    }
-  });
+const serviceSchema = z.object({
+  clientType: z.enum(clientTypeIds, "Choose who this service is for"),
+  title: z
+    .string()
+    .trim()
+    .min(1, "Enter a service name")
+    .max(SERVICE_TITLE_MAX_LENGTH, maxLengthMessage(SERVICE_TITLE_MAX_LENGTH)),
+  description: z
+    .string()
+    .trim()
+    .max(SERVICE_DESCRIPTION_MAX_LENGTH, maxLengthMessage(SERVICE_DESCRIPTION_MAX_LENGTH)),
+  durationMinutes: serviceDurationSchema,
+  priceAmount: priceAmountSchema,
+  highlighted: z.boolean(),
+});
 
 const servicesSchema = z.array(serviceSchema).max(SERVICES_MAX, `Up to ${SERVICES_MAX} services`);
 
@@ -374,7 +364,7 @@ export const profileFieldsSchema = z.object({
   approaches: approachesSchema,
   languages: languagesSchema,
   priceAmount: priceAmountSchema,
-  priceCurrency: priceCurrencySchema,
+  currency: currencySchema,
   sectionOrder: sectionOrderSchema,
   practiceStartedOn: practiceStartedOnSchema,
   education: educationSchema,
@@ -404,7 +394,6 @@ type ProfileFields = z.output<typeof profileFieldsSchema>;
  */
 export const linkedFieldGroups = [
   ["country", "cityId", "workFormats"],
-  ["priceAmount", "priceCurrency"],
   ["socialLinks", "contacts", "preferredContact"],
   ["clientTypes", "concerns", "services"],
   // Режиму password нужен пароль: они проверяются вместе
@@ -428,14 +417,8 @@ function checkLinkedFields(data: Partial<ProfileFields>, ctx: z.RefinementCtx) {
     ctx.addIssue({
       code: "custom",
       path: ["cityId"],
-      message: "Choose the city where you see clients in person",
+      message: "You offer in-person sessions: choose the city where you see clients",
     });
-  }
-  if (data.priceAmount && data.priceCurrency === "") {
-    ctx.addIssue({ code: "custom", path: ["priceCurrency"], message: "Choose a currency" });
-  }
-  if (data.priceAmount === "" && data.priceCurrency) {
-    ctx.addIssue({ code: "custom", path: ["priceAmount"], message: "Enter a price" });
   }
   // Карточку не удаляем молча, когда категорию сняли в «Works with»: психолог выберет другую
   const { services, clientTypes } = data;
@@ -548,15 +531,20 @@ export const storedEducationSchema = z.object({
 /** Вопрос в jsonb-колонке `profiles.faq`. */
 export const storedFaqItemSchema = z.object({ question: z.string(), answer: z.string() });
 
-/** Карточка услуги в jsonb-колонке `profiles.services`: числа — числами, цена — объектом. */
+/**
+ * Карточка услуги в jsonb-колонке `profiles.services`: числа — числами, цена — суммой
+ * в валюте профиля. Валюту в цене старых карточек схема отбрасывает.
+ */
 export const storedServiceSchema = z.object({
   clientType: z.enum(clientTypeIds),
   title: z.string(),
   description: z.string(),
   durationMinutes: z.number().int().nullable(),
-  price: z.object({ amount: z.number().int(), currency: z.string() }).nullable(),
+  price: z.object({ amount: z.number().int() }).nullable(),
   highlighted: z.boolean(),
 });
+
+export type StoredService = z.infer<typeof storedServiceSchema>;
 
 /** Документ в jsonb-колонке `profiles.documents`: `width` и `height` — полного изображения. */
 export const storedDocumentSchema = z.object({

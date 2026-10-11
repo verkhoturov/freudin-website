@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
 import { Checkbox } from "@/shared/ui/checkbox";
 import {
@@ -18,13 +19,14 @@ type CheckboxGroupProps<T extends string> = {
   legend: string;
   /** Например, `sr-only`, когда группу уже называет заголовок вокруг. */
   legendClassName?: string;
-  options: readonly { value: T; label: string }[];
+  /** `disabled` — галочку нельзя поставить; уже поставленную можно снять. */
+  options: readonly { value: T; label: string; disabled?: boolean }[];
   value: readonly T[];
   onChange: (value: T[]) => void;
   onBlur?: () => void;
   /** Сколько можно отметить: когда отмечено столько, остальные галочки неактивны. */
   max?: number;
-  description?: string;
+  description?: ReactNode;
   /** Ошибки поля; пустой список — поле в порядке. */
   errors: { message: string }[];
   className?: string;
@@ -58,7 +60,7 @@ export function CheckboxGroup<T extends string>({
         {options.map((option) => {
           const id = `${name}-${option.value}`;
           const checked = value.includes(option.value);
-          const disabled = !checked && isFull;
+          const disabled = !checked && (isFull || option.disabled === true);
           return (
             <Field key={option.value} orientation="horizontal" data-disabled={disabled}>
               <Checkbox

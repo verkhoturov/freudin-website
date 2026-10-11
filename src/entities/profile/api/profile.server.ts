@@ -6,6 +6,7 @@ import type { Json, SupabaseClient, Tables, TablesUpdate } from "@/shared/api/in
 import { contactTypeIds, isContactType } from "../config/contacts";
 import { coverIds } from "../config/cover";
 import { ctaPlacementIds } from "../config/cta-placement";
+import { DEFAULT_CURRENCY } from "../config/currencies";
 import { demoProfile } from "../config/demo-profile";
 import { languageCodes } from "../config/languages";
 import { DEMO_USERNAME, USERNAME_MAX_LENGTH } from "../config/limits";
@@ -16,7 +17,7 @@ import { AVATARS_BUCKET, DOCUMENTS_BUCKET } from "../config/storage";
 import { visibilityIds } from "../config/visibility";
 import { pickKnown } from "../lib/pick-known";
 import { normalizeSectionOrder } from "../lib/section-order";
-import { toProfileService } from "../lib/services";
+import { toProfileService, toStoredService } from "../lib/services";
 import {
   type ProfileData,
   type ProfileUpdateData,
@@ -130,6 +131,8 @@ export function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow)
   const documentsBucket = supabase.storage.from(DOCUMENTS_BUCKET);
   const socialLinks = parseSocialLinks(row.social_links);
   const contacts = parseContacts(row.contacts);
+  // NULL пишет онбординг, выложенный до шага 54
+  const currency = row.price_currency ?? DEFAULT_CURRENCY;
   return {
     username: row.username,
     displayName: row.display_name,
@@ -144,10 +147,8 @@ export function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow)
     clientTypes: pickKnown(row.client_types, clientTypeIds),
     approaches: pickKnown(row.approaches, approachIds),
     languages: row.languages.filter((code) => languageCodeSet.has(code)),
-    price:
-      row.price_amount !== null && row.price_currency !== null
-        ? { amount: row.price_amount, currency: row.price_currency }
-        : null,
+    currency,
+    price: row.price_amount === null ? null : { amount: row.price_amount, currency },
     documents: parseStoredDocuments(row.documents).map((document) => ({
       id: document.id,
       url: documentsBucket.getPublicUrl(document.path).data.publicUrl,
@@ -162,7 +163,9 @@ export function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow)
     contacts,
     preferredContact: parsePreferredContact(row.preferred_contact, contacts, socialLinks),
     faq: parseList(row.faq, storedFaqItemSchema),
-    services: parseList(row.services, storedServiceSchema),
+    services: parseList(row.services, storedServiceSchema).map((service) =>
+      toProfileService(service, currency),
+    ),
     highlightedSections: pickKnown(row.highlighted_sections, profileSectionIds),
     cover: pickKnown([row.cover], coverIds)[0] ?? "classic",
     pageTheme: pickKnown([row.page_theme], pageThemeIds)[0] ?? "classic",
@@ -191,7 +194,8 @@ function toProfileRow(data: ProfileUpdateData): TablesUpdate<"profiles"> {
         : data.priceAmount
           ? Number(data.priceAmount)
           : null,
-    price_currency: data.priceCurrency === undefined ? undefined : data.priceCurrency || null,
+    // Колонка с прежним именем — валюта всех цен профиля (шаг 54)
+    price_currency: data.currency,
     section_order: data.sectionOrder,
     practice_started_on:
       data.practiceStartedOn === undefined ? undefined : data.practiceStartedOn || null,
@@ -208,7 +212,7 @@ function toProfileRow(data: ProfileUpdateData): TablesUpdate<"profiles"> {
     preferred_contact:
       data.preferredContact === undefined ? undefined : data.preferredContact || null,
     faq: data.faq,
-    services: data.services?.map(toProfileService),
+    services: data.services?.map(toStoredService),
     highlighted_sections: data.highlightedSections,
     cover: data.cover,
     page_theme: data.pageTheme,
