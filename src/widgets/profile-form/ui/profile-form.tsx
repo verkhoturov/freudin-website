@@ -2038,16 +2038,24 @@ export function ProfileForm({
                               <Field data-invalid={isInvalid}>
                                 <FieldLabel htmlFor={field.name}>Password</FieldLabel>
                                 <InputGroup>
+                                  {/* Не type="password": с ним браузер при каждом Save предлагает
+                                      сохранить пароль страницы как пароль от аккаунта. Символы
+                                      скрывает стиль */}
                                   <InputGroupInput
                                     id={field.name}
                                     name={field.name}
-                                    type={isPagePasswordShown ? "text" : "password"}
+                                    type="text"
+                                    className={
+                                      isPagePasswordShown
+                                        ? undefined
+                                        : "[-webkit-text-security:disc]"
+                                    }
                                     value={field.state.value}
                                     onBlur={field.handleBlur}
                                     onChange={(event) => field.handleChange(event.target.value)}
                                     aria-invalid={isInvalid}
                                     aria-describedby={`${field.name}-description`}
-                                    autoComplete="new-password"
+                                    autoComplete="off"
                                     autoCapitalize="none"
                                     autoCorrect="off"
                                     spellCheck={false}
