@@ -1,6 +1,6 @@
 # Этап D. Профиль
 
-[Индекс плана](../PLAN.md) · [История выполнения](HISTORY.md) · [Правила шага](../workflows/plan-step.md)
+[Индекс плана](../PLAN.md) · [История выполнения](history/stage-d.md) · [Правила шага](../workflows/plan-step.md)
 
 Открытые задачи этапа. Точки входа помогают найти код и не задают полный список правок.
 Подшаги и «Готово, когда» определяют объём работы; результаты выполненного — в истории.
@@ -11,7 +11,7 @@
 
 **Точки входа:** [`src/entities/profile/api/page-access.server.ts`](../../src/entities/profile/api/page-access.server.ts), [`src/entities/profile/api/visitor-profile.server.ts`](../../src/entities/profile/api/visitor-profile.server.ts), [`supabase/migrations`](../../supabase/migrations).
 
-Выполненные подшаги и результаты проверок — в [истории](../plan/HISTORY.md#step-49).
+Выполненные подшаги и результаты проверок — в [истории](history/stage-d.md#step-49).
 
 Запрос пользователя 02.10.2026: в Account — «Скрыть личную страницу». Режимы: видит только автор
 (остальным — сообщение, что страница скрыта автором) или видят те, у кого есть пароль (4–8

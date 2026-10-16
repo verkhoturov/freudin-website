@@ -74,7 +74,8 @@ export function AvatarField({
   };
 
   return (
-    <FieldSet>
+    // id — цель ссылки чек-листа `/settings#photo`
+    <FieldSet id="photo">
       <FieldLegend variant="label">Photo</FieldLegend>
       <div className="flex items-center gap-4">
         <ProfileAvatar displayName={displayName} avatarUrl={previewUrl} />

@@ -1,83 +1,84 @@
-# UI: формы, стили и тема
+# UI: forms, styles and theme
 
-Читай при изменении интерфейса, форм, визуальных состояний, темы или токенов.
-Это обязательные правила из [`AGENTS.md`](../../AGENTS.md); процесс — в [`process.md`](process.md).
+Read when changing the interface, forms, visual states, the theme or tokens.
+These are required rules from [`AGENTS.md`](../../AGENTS.md); the process is in [`process.md`](process.md).
 
-## Формы
+## Forms
 
-- TanStack Form + zod + компоненты shadcn `Field`. react-hook-form не используем: он конфликтует
-  с React Compiler (решение 4).
-- Схему сущности подключаем валидатором формы (`validators: { onChange: schema }`), асинхронные
-  проверки (свободен ли адрес) — валидатором поля с `onChangeAsyncDebounceMs`. Ошибку поля
-  показываем, когда `meta.isTouched && !meta.isValid`, через `FieldError` и `toFieldErrors`.
-- `ApiError.fields` с сервера кладём в `errorMap.onSubmit` полей (путь `a.0.b` → `a[0].b`):
-  TanStack Form сам снимает такую ошибку, когда поле исправят.
-- Одна zod-схема обслуживает и форму, и API-роут. Она лежит в `model` сущности.
+- TanStack Form + zod + shadcn `Field` components. react-hook-form conflicts with the React
+  Compiler (decision 4).
+- Attach the entity schema as the form validator (`validators: { onChange: schema }`); async
+  checks (is the address free) — as a field validator with `onChangeAsyncDebounceMs`. Show a
+  field error when `meta.isTouched && !meta.isValid`, through `FieldError` and `toFieldErrors`.
+- Put `ApiError.fields` from the server into the fields' `errorMap.onSubmit` (path `a.0.b` →
+  `a[0].b`): TanStack Form clears such an error itself when the field is fixed.
+- One zod schema serves both the form and the API route. It lives in the entity's `model`.
 
-## Стили и UI
+## Styles and UI
 
-- **Дизайн пока минималистичный (решение 11):** стандартные компоненты shadcn без
-  кастомизации и минимум контента — только то, что нужно для навигации и полей ввода.
-  Декоративные элементы, иллюстрации, поясняющие тексты и акцентные цвета без запроса
-  не добавляем.
-- Tailwind CSS 4. Токены темы — CSS-переменные в `src/app/globals.css`: светлая тема в `:root`,
-  тёмная в `.dark`. Меняя цвета, проверяй контраст по WCAG AA (обычный текст — не меньше 4.5:1).
-- Палитра (решение 19) лежит в токенах, свои цвета в классах не пишем.
-  Главная кнопка (`Button` без `variant`) — `bg-cta text-cta-foreground` (розовый), второстепенная —
-  `variant="secondary"` (фиолетовый). Активные элементы (чекбоксы, ползунок, обводка фокуса) —
-  `primary` и `ring`: розовый для них не годится, на фоне страницы он даёт 2.4:1. Выбранный
-  элемент — `accent`. Ссылку внутри текста красим `text-link`, ссылки навигации и подвала — нет.
-  Тип тоста виден по цвету: `toast.success` — `success`, `toast.error` — `error` (их подключает
-  `Toaster` через `richColors`), `toast.info` — как обычный тост.
-- **Тосты** берём из `@/shared/ui/sonner`, а не из `sonner` (правило Biome): там обычный тост
-  держится 4 с, ошибка и предупреждение — 8 с (решение 20), а тост с тем же текстом
-  заменяет прежний, а не встаёт в стопку. Текст ошибки — «Couldn’t … Please try again.» или
-  совет, что сделать; у успеха точки нет («Changes saved»).
-- **Ожидание:** кнопка с запросом неактивна, в ней `Spinner` и текст с многоточием
-  («Saving…», «Deleting…»). Переход к провайдеру показывает «Redirecting…» и сбрасывается на
-  `pageshow` с `persisted` (иначе «Назад» достанет из bfcache крутящийся спиннер). Действие из
-  меню, которое закрывается сразу (выход), показывает `toast.loading`. Загрузку данных страницы
-  закрывают скелетоны, ошибку — `ErrorState`.
-- **Тема — только токенами** (решение 18). `globals.css` разбит на разделы: палитра
-  (примитивы, светлая и тёмная тема), шрифты, типографика, размеры и отступы, радиусы.
-  Заголовок страницы — `font-heading text-page-title`, раздела — `font-heading
-  text-section-title`, юридического документа — `text-document-*`. Отступ контента страницы —
-  `py-page`, ширина — проп `width` у `Container` (`site` по умолчанию, `form`, `document`,
-  `sign-in`), карточка личной страницы — `max-w-profile`. Новый токен добавляй в `@theme`
-  и на страницу токенов в ките. Имена `--spacing-*` не повторяй в `--container-*`: `max-w-*`
-  возьмёт значение из `--spacing-*`. Сырые цвета (`bg-white`, `text-red-500`, hex) допустимы
-  только в `globals.css`, в логотипах брендов (`auth-provider-icon.tsx`) и в содержимом картинок
-  (фон при сжатии фото, QR-код). Biome классы Tailwind не проверяет, поэтому при ревью ищи их
-  поиском по коду.
-- Шрифты подключаются только в `src/app/fonts.ts` (его же берёт Storybook). Значения, которым
-  CSS-переменные недоступны (`themeColor` в metadata и цвета `manifest.ts`), лежат
-  в `shared/config/theme.ts` с пометкой, от какого токена они взяты.
-- В `globals.css` два слоя цвета. Примитивы — шкалы `--violet-*`, `--pink-*`, `--neutral-*`,
-  `--red-*` (50–950): их не используют ни компоненты, ни `@theme`. Семантические токены
-  (`--primary: var(--violet-700)`) ссылаются на примитивы, а `.dark` переопределяет только
-  семантику. Новый цвет берём из шкалы. Меняя пару, проверь контраст в обеих темах: текст не
-  ниже 4.5:1 (в том числе `muted-foreground` на `muted` и `accent`, `destructive` на своей
-  подсветке `/20`), `input`, `primary` и `ring` — не ниже 3:1. Рамки `border` декоративные.
-- Классы объединяем через `cn` из `@/shared/lib/utils` (файлы shadcn берут его прямо из пакета
-  `cn`, как пишет CLI). `cn` убирает конфликтующие классы Tailwind, но наших токенов не знает.
-  Поэтому ширину колонки задаёт проп `width` у `Container`, а не класс `max-w-*` в `className`.
-  Токен заголовка (`text-page-title`) не смешиваем в одном `cn` с цветом текста
-  (`text-muted-foreground`): `cn` примет токен за цвет и выбросит его. Собирать имя класса
-  из частей (`max-w-${x}`) нельзя: Tailwind его не увидит.
-- Варианты оформления компонента (`variant`, `size`) описываем `cva` из `@/shared/lib/cva`:
-  своя замена `class-variance-authority` с тем же API.
-- Корневой layout уже рендерит skip-link, шапку (`@/widgets/header`), единственный
-  `<main id="content">` и подвал (`@/widgets/footer`). На `/settings` шапка и подвал не
-  рисуются (проверяют `usePathname()` сами): там редактор на весь экран со своим сайдбаром.
-  View не создаёт свой `<main>`, а контент выравнивает по `Container`
-  из `@/shared/ui/container` с отступом `py-page`.
-- Иконки интерфейса — lucide-react, логотипы брендов — SVG в коде. Иконки сайта рисуются
-  одинаково: меняя цвета бренда, обнови `src/app/icon.svg` и пересобери из него PNG и ICO
-  (в том числе иконки манифеста в `public`).
-- Вёрстка mobile-first, светлая и тёмная темы, доступность (семантика, aria, фокус).
+- **The design is minimal for now (decision 11):** standard shadcn components without
+  customisation and minimal content — only what navigation and input fields need. Add
+  decorative elements, illustrations, explanatory text and accent colours only on request.
+- Tailwind CSS 4. Theme tokens are CSS variables in `src/app/globals.css`: the light theme in
+  `:root`, the dark one in `.dark`. When changing colours, check WCAG AA contrast (normal text
+  at least 4.5:1).
+- The palette (decision 19) lives in tokens; do not write your own colours in classes. The
+  primary button (`Button` without `variant`) is `bg-cta text-cta-foreground` (pink), the
+  secondary one `variant="secondary"` (violet). Active controls (checkboxes, slider, focus
+  ring) use `primary` and `ring`: pink does not work for them, it gives 2.4:1 on the page
+  background. A selected item is `accent`. A link inside text is `text-link`; navigation and
+  footer links are not. The toast type shows by colour: `toast.success` — `success`,
+  `toast.error` — `error` (the `Toaster` wires them through `richColors`), `toast.info` —
+  like a plain toast.
+- **Toasts** come from `@/shared/ui/sonner`, not from `sonner` (Biome enforces this): there a
+  plain toast stays 4 s, an error or warning 8 s (decision 20), and a toast with the same text
+  replaces the previous one instead of stacking. Error text — «Couldn’t … Please try again.»
+  or advice on what to do; success has no full stop («Changes saved»).
+- **Waiting:** a button with a request is disabled and shows a `Spinner` and text with an
+  ellipsis («Saving…», «Deleting…»). Going to a provider shows «Redirecting…» and resets on
+  `pageshow` with `persisted` (otherwise Back restores a spinning button from bfcache). A menu
+  action that closes immediately (sign-out) shows `toast.loading`. Page data loading is covered
+  by skeletons, errors by `ErrorState`.
+- **Theme only through tokens** (decision 18). `globals.css` is split into sections: palette
+  (primitives, light and dark theme), fonts, typography, sizes and spacing, radii. Page title —
+  `font-heading text-page-title`, section title — `font-heading text-section-title`, legal
+  document — `text-document-*`. Page content padding — `py-page`, width — the `width` prop of
+  `Container` (`site` by default, `form`, `document`, `sign-in`), the profile card —
+  `max-w-profile`. Add a new token to `@theme` and to the tokens page of the kit. Do not reuse
+  `--spacing-*` names in `--container-*`: `max-w-*` would take the `--spacing-*` value. Raw
+  colours (`bg-white`, `text-red-500`, hex) are allowed only in `globals.css`, in brand logos
+  (`auth-provider-icon.tsx`) and in image content (background when compressing a photo, QR
+  code). Biome does not check Tailwind classes, so search the code for them during review.
+- Fonts are loaded only in `src/app/fonts.ts` (Storybook uses it too). Values that cannot use
+  CSS variables (`themeColor` in metadata and `manifest.ts` colours) live in
+  `shared/config/theme.ts`, noting which token each comes from.
+- `globals.css` has two colour layers. Primitives — the `--violet-*`, `--pink-*`,
+  `--neutral-*`, `--red-*` scales (50–950): neither components nor `@theme` use them directly.
+  Semantic tokens (`--primary: var(--violet-700)`) refer to primitives, and `.dark` overrides
+  only the semantics. Take a new colour from a scale. When changing a pair, check contrast in
+  both themes: text at least 4.5:1 (including `muted-foreground` on `muted` and `accent`,
+  `destructive` on its `/20` tint), `input`, `primary` and `ring` at least 3:1. `border` is
+  decorative.
+- Combine classes with `cn` from `@/shared/lib/utils` (shadcn files take it from the `cn`
+  package directly, as the CLI writes). `cn` removes conflicting Tailwind classes but does not
+  know our tokens. So column width comes from the `width` prop of `Container`, not a `max-w-*`
+  class in `className`. Do not mix a heading token (`text-page-title`) with a text colour
+  (`text-muted-foreground`) in one `cn`: `cn` takes the token for a colour and drops it. Do not
+  build class names from parts (`max-w-${x}`): Tailwind will not see them.
+- Describe component variants (`variant`, `size`) with `cva` from `@/shared/lib/cva`: our own
+  replacement for `class-variance-authority` with the same API.
+- The root layout already renders the skip link, the header (`@/widgets/header`), the only
+  `<main id="content">` and the footer (`@/widgets/footer`). On `/settings` the header and
+  footer are not drawn (they check `usePathname()` themselves): it is a full-screen editor with
+  its own sidebar. A view does not create its own `<main>` and aligns content with `Container`
+  from `@/shared/ui/container` with `py-page`.
+- UI icons are lucide-react, brand logos are SVG in code. Site icons share one design: when
+  changing brand colours, update `src/app/icon.svg` and rebuild the PNG and ICO from it
+  (including the manifest icons in `public`).
+- Mobile-first layout, light and dark themes, accessibility (semantics, aria, focus).
 
-## Связанные проверки
+## Related checks
 
-При вёрстке любого UI следуй [чек-листу SEO](seo-checklist.md) (правило 8 `process.md`).
-Добавляешь компонент shadcn, историю, новый визуальный элемент или токен — также прочитай
-[`ui-kit.md`](ui-kit.md): установка компонентов и обязательность историй описаны там.
+For any UI work, follow the [SEO checklist](seo-checklist.md) (rule 8 of `process.md`).
+When adding a shadcn component, a story, a new visual element or a token, also read
+[`ui-kit.md`](ui-kit.md): component installation and required stories are described there.

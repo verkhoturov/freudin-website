@@ -1,48 +1,49 @@
-# UI kit: компоненты shadcn и Storybook
+# UI kit: shadcn components and Storybook
 
-Читай, когда добавляешь компонент shadcn, историю Storybook или новый визуальный элемент.
-Правила форм, стилей и темы — в [`ui.md`](ui.md).
+Read when adding a shadcn component, a Storybook story or a new visual element.
+Form, style and theme rules are in [`ui.md`](ui.md).
 
-## Компоненты shadcn
+## shadcn components
 
-- shadcn/ui на базе **Radix** (композиция через `asChild`): стиль `radix-nova`, шрифт Geist,
-  иконки lucide; нейтральную палитру shadcn заменили наши токены. Компоненты живут
-  в `src/shared/ui` и добавляются командой `npx shadcn add <component>` (алиасы
-  в `components.json`). Файлы shadcn правим только при необходимости.
-- После `npx shadcn add` или `npx shadcn apply` проверь три вещи. Первое — пересобери lock-файл
-  через npm 11 (правило 6 [`process.md`](process.md)). Второе — CLI перезаписывает компоненты:
-  если `npm run lint:fix` находит в них ошибки, исправь точечно (как в `field.tsx`
-  и `input-group.tsx`).
-  Варианты классов CLI пишет на `class-variance-authority`: меняй импорт `cva`
-  и `VariantProps` на `@/shared/lib/cva` (тот же API) и удаляй эту зависимость из `package.json`.
-  Третье — `apply` умеет дописать шрифты в `src/app/layout.tsx`: переноси их в
-  `src/app/fonts.ts`, у Geist должны остаться `subsets: ["latin", "cyrillic"]`.
-- Перед запуском сохрани исходные версии затрагиваемых компонентов, `package.json` и lock-файла
-  вне репозитория, включая существующие незакоммиченные правки (правила 6 и 10 `process.md`).
-  Если CLI предлагает перезаписать уже установленные `button`, `input`, `dialog`, откажись:
-  в них есть исправления проекта. Если неинтерактивная установка требует `--overwrite`,
-  сгенерируй компонент во временной копии проекта с теми же настройками shadcn, затем перенеси
-  только нужные новые файлы и зависимости. Не восстанавливай компоненты из HEAD.
-  После установки сравни результат со снимком: исходные правки должны сохраниться.
+- shadcn/ui on **Radix** (composition through `asChild`): `radix-nova` style, Geist font,
+  lucide icons; our tokens replaced the neutral shadcn palette. Components live in
+  `src/shared/ui` and are added with `npx shadcn add <component>` (aliases in
+  `components.json`). Edit shadcn files only when needed.
+- After `npx shadcn add` or `npx shadcn apply`, check three things. First, rebuild the lock
+  file with npm 11 (rule 6 of [`process.md`](process.md)). Second, the CLI overwrites
+  components: if `npm run lint:fix` finds errors in them, fix them in place (as in `field.tsx`
+  and `input-group.tsx`). The CLI writes class variants with `class-variance-authority`: switch
+  the `cva` and `VariantProps` import to `@/shared/lib/cva` (same API) and remove that
+  dependency from `package.json`. Third, `apply` may add fonts to `src/app/layout.tsx`: move
+  them to `src/app/fonts.ts`; Geist must keep `subsets: ["latin", "cyrillic"]`.
+- Before running it, save the original versions of the affected components, `package.json`
+  and the lock file outside the repository, including existing uncommitted changes (rules 6
+  and 10 of `process.md`). If the CLI offers to overwrite the installed `button`, `input`,
+  `dialog`, decline: they contain project fixes. If a non-interactive install requires
+  `--overwrite`, generate the component in a temporary copy of the project with the same
+  shadcn settings, then move over only the needed new files and dependencies. Do not restore
+  components from HEAD. After installing, compare the result with the snapshot: the original
+  changes must survive.
 
 ## Storybook
 
-- Кит запускается командой `npm run storybook` и опубликован на `freudin-storybook.vercel.app`:
-  отдельный проект Vercel, пересобирается с каждым коммитом в `main`, открывается только под
-  аккаунтом Vercel владельца.
-- Истории лежат рядом с компонентом: `src/shared/ui/<компонент>.stories.tsx`. Заголовки —
-  `Components/…` для shadcn, `Freudin/…` для своих, `Foundations/Tokens` — палитра, типографика,
-  ширины и отступы, радиусы (`tokens.stories.tsx`).
-- Истории виджетов — в сегменте `ui` виджета
-  (`src/widgets/profile-card/ui/profile-card.stories.tsx`), заголовки `Widgets/…`; экраны — так же
-  в `ui` view, `Views/…`. Данные — фикстуры в самой истории. Виджету с TanStack Query история даёт
-  свой `QueryClientProvider`: запросы к API в ките не проходят.
-- **Новый компонент в `shared/ui` добавляем вместе с историей**, новый токен цвета —
-  в `tokens.stories.tsx`.
-- **Новый визуальный элемент вне `shared/ui`** (в `widgets`, `entities`, `views`: новый вид
-  блока, вариант, состояние) предлагаем пользователю показать в ките. Если сейчас не делаем,
-  заносим в карточку нужного этапа пункт «показать в Storybook» с названием элемента
-  и обновляем индекс `docs/PLAN.md` по [`plan-step.md`](plan-step.md).
-- Тексты историй — как на сайте, на английском.
-- Настройки — в `.storybook/`: `preview.tsx` подключает `globals.css`, шрифты
-  из `src/app/fonts.ts` и тему через next-themes (тулбар Storybook).
+- The kit runs with `npm run storybook` and is published at `freudin-storybook.vercel.app`: a
+  separate Vercel project, rebuilt on every commit to `main`, opened only under the owner's
+  Vercel account.
+- Stories sit next to the component: `src/shared/ui/<component>.stories.tsx`. Titles —
+  `Components/…` for shadcn, `Freudin/…` for our own, `Foundations/Tokens` — palette,
+  typography, widths and spacing, radii (`tokens.stories.tsx`).
+- Widget stories go in the widget's `ui` segment
+  (`src/widgets/profile-card/ui/profile-card.stories.tsx`), titled `Widgets/…`; screens the same
+  way in the view's `ui`, `Views/…`. Data comes from fixtures in the story itself. A widget
+  with TanStack Query gets its own `QueryClientProvider` from the story: API requests do not
+  work in the kit.
+- **A new component in `shared/ui` comes with a story**, a new colour token — with an entry
+  in `tokens.stories.tsx`.
+- **A new visual element outside `shared/ui`** (in `widgets`, `entities`, `views`: a new kind
+  of block, variant or state) — offer the user to show it in the kit. If not now, add a «show
+  in Storybook» item naming the element to the matching stage card and update the
+  `docs/PLAN.md` index per [`plan-step.md`](plan-step.md).
+- Story texts are in English, like the site.
+- Settings are in `.storybook/`: `preview.tsx` loads `globals.css`, the fonts from
+  `src/app/fonts.ts` and the theme through next-themes (the Storybook toolbar).

@@ -32,16 +32,13 @@ import {
   getAvatarSource,
   ProfileForm,
   type ProfileFormSection,
+  profileFormSectionLabels as sectionLabels,
 } from "@/widgets/profile-form";
 import { DEFAULT_COLLAPSED_BLOCKS, useCollapsedBlocksStore } from "../model/collapsed-blocks-store";
+import { useSettingsDraftStore } from "../model/draft-store";
 
 const SITE_HOST = new URL(siteConfig.url).host;
 
-const sectionLabels: Record<ProfileFormSection, string> = {
-  account: "Account",
-  profile: "Public profile",
-  search: "Search details",
-};
 const sectionIds = Object.keys(sectionLabels) as ProfileFormSection[];
 
 // Кто видит страницу по ссылке — по сохранённому режиму, а не по правкам в форме
@@ -94,7 +91,7 @@ function SettingsContent() {
         .
       </>
     ) : section === "search" ? (
-      "These details are private and saved for future search and matching. The directory and AI matching aren’t available yet."
+      "Only you can see these details: they aren’t shown on your page. They’re saved for future search and matching, which aren’t available yet."
     ) : null;
 
   return (
@@ -155,8 +152,15 @@ function ProfileSettingsForm({
   const setAvatar = useSetAvatarMutation();
   const deleteAvatar = useDeleteAvatarMutation();
   // После сохранения форма монтируется заново: начальные значения берутся из нового профиля.
-  // Смена раздела тоже пересоздаёт её: несохранённые правки прежнего раздела сбрасываются
+  // Смена раздела её не пересоздаёт: правки всех разделов живут до Save или Discard
   const [formVersion, setFormVersion] = useState(0);
+  const userId = viewer.user.id;
+  // Черновик читаем при монтировании формы: форма сама отдаёт его, когда закрывается
+  const [draftValues] = useState(() => {
+    const { draft } = useSettingsDraftStore.getState();
+    return draft?.userId === userId ? draft.values : null;
+  });
+  const setDraft = useSettingsDraftStore((state) => state.setDraft);
   const { email, contactEmail } = viewer.user;
   const savedValues = toProfileInput(profile, contactEmail, viewer.privateDetails);
 
@@ -179,7 +183,7 @@ function ProfileSettingsForm({
 
   return (
     <ProfileForm
-      key={`${section}-${formVersion}`}
+      key={formVersion}
       mode="edit"
       defaultValues={savedValues}
       defaultAvatar={{ type: "current" }}
@@ -206,6 +210,9 @@ function ProfileSettingsForm({
       )}
       submitLabel="Save"
       onSubmit={submit}
+      // После сохранения прежний черновик уже в профиле
+      draftValues={formVersion === 0 ? draftValues : null}
+      onDraftChange={(values) => setDraft(values ? { userId, values } : null)}
     />
   );
 }

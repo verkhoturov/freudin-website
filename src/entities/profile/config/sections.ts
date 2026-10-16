@@ -21,6 +21,28 @@ export const profileSectionIds = [
 
 export type ProfileSection = (typeof profileSectionIds)[number];
 
+/**
+ * Порядок блоков новой страницы: условия работы — сразу после Bio (решение владельца
+ * 16.10.2026). Существующие страницы с пустым `section_order` сохраняют порядок
+ * `profileSectionIds`.
+ */
+export const newProfileSectionOrder: readonly ProfileSection[] = [
+  "bio",
+  "work-formats",
+  "location",
+  "languages",
+  "price",
+  "services",
+  "experience",
+  "approaches",
+  "client-types",
+  "education",
+  "contacts",
+  "links",
+  "faq",
+  "documents",
+];
+
 /** Названия блоков: в настройках и в подписях данных практики на странице. */
 export const profileSectionLabels: Record<ProfileSection, string> = {
   bio: "Bio",

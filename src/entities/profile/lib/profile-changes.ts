@@ -1,4 +1,5 @@
 import { DEFAULT_CURRENCY } from "../config/currencies";
+import { newProfileSectionOrder } from "../config/sections";
 import {
   linkedFieldGroups,
   type ProfileInput,
@@ -51,7 +52,7 @@ export function getEmptySettingsInput(): SettingsInput {
     languages: [],
     priceAmount: "",
     currency: DEFAULT_CURRENCY,
-    sectionOrder: [],
+    sectionOrder: [...newProfileSectionOrder],
     practiceStartedOn: "",
     education: [],
     contacts: { email: "", phone: "", whatsapp: "", telegram: "" },

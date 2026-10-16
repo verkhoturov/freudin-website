@@ -1,42 +1,40 @@
-# Карта поиска по коду — Freudin
+# Code lookup map — Freudin
 
-Навигация по сценариям, FSD-слайсам, public API и реализации. Этот документ не является
-уровнем C4. Статические компоненты и их связи — [L3](architecture/3.components.md),
-внутреннее устройство выбранных компонентов — [L4](architecture/4.code.md),
-сквозные сценарии — [динамические представления](architecture/dynamic.md).
+Navigation by scenario, FSD slice, public API and implementation. This document is not a C4
+level. Static components and their links — [L3](architecture/3.components.md), internals of
+selected components — [L4](architecture/4.code.md), end-to-end scenarios —
+[dynamic views](architecture/dynamic.md).
 
-## Где искать изменение
+## Where to look for a change
 
-Выбери сценарий, открой карточку модуля и нужный файл. Это точки входа для чтения;
-межслайсовые импорты по-прежнему идут только через public API, см. [правила](workflows/code.md).
+Pick the scenario, open the module card and the needed file. These are entry points for
+reading; cross-slice imports still go only through the public API, see the [rules](workflows/code.md).
 
-| Сценарий | Модули и порядок чтения |
+| Scenario | Modules and reading order |
 |---|---|
-| Save профиля, ошибка или частичный успех | [settings](#views-settings) → [мутации viewer](#entities-viewer) → [запись profile](#entities-profile); [поток сохранения](architecture/dynamic.md#сохранение-профиля) |
-| Несохранённое превью | [profile-form](#widgets-profile-form) → [preview-profile.ts](../src/entities/profile/lib/preview-profile.ts) → [profile-card](#widgets-profile-card) |
-| Навигация и черновики | [settings](#views-settings), [onboarding](#views-onboarding), [use-unsaved-changes-warning.ts](../src/shared/lib/use-unsaved-changes-warning.ts) |
-| Гостевой доступ, пароль, настоящий 404 | [views/profile](#views-profile) → [visitor-profile.server.ts](../src/entities/profile/api/visitor-profile.server.ts); [поток доступа](architecture/dynamic.md#скрытая-страница) |
-| Вход, привязка, отвязка и удаление аккаунта | [viewer](#entities-viewer) и [account-settings](#widgets-account-settings); [поток входа](architecture/dynamic.md#вход-через-google-и-telegram) |
-| Поля практики, связанные значения и цены | [схемы profile](#entities-profile), [форма](#widgets-profile-form), [карточка](#widgets-profile-card) |
-| Фото и документы | [сервер profile](#entities-profile), [profile-documents](#widgets-profile-documents); [поток файлов](architecture/dynamic.md#фото-и-документы) |
-| Страны, города и поиск по справочнику | [location](#entities-location); ключ поиска — [transliterate.ts](../src/shared/lib/transliterate.ts) |
-| Обложка, тема, порядок блоков и Highlight | [profile-form](#widgets-profile-form), [profile-card](#widgets-profile-card), [UI и токены](#shared-ui) |
-| Ошибки API, сессия и валидация HTTP | [api/_lib](../src/app/api/_lib/index.ts), [shared/api](#shared-api); [поток API](architecture/dynamic.md#запрос-из-браузера-к-api) |
-| Маршрут, env, реквизиты и адрес сайта | [shared/config](#shared-config), [роуты README](../README.md#роуты) |
+| Profile Save, an error or partial success | [settings](#views-settings) → [viewer mutations](#entities-viewer) → [profile writes](#entities-profile); [saving flow](architecture/dynamic.md#saving-the-profile) |
+| Unsaved preview | [profile-form](#widgets-profile-form) → [preview-profile.ts](../src/entities/profile/lib/preview-profile.ts) → [profile-card](#widgets-profile-card) |
+| Navigation and drafts | [settings](#views-settings), [onboarding](#views-onboarding), [use-unsaved-changes-warning.ts](../src/shared/lib/use-unsaved-changes-warning.ts) |
+| Guest access, password, a real 404 | [views/profile](#views-profile) → [visitor-profile.server.ts](../src/entities/profile/api/visitor-profile.server.ts); [access flow](architecture/dynamic.md#hidden-page) |
+| Sign-in, linking, unlinking and account deletion | [viewer](#entities-viewer) and [account-settings](#widgets-account-settings); [sign-in flow](architecture/dynamic.md#sign-in-with-google-and-telegram) |
+| Practice fields, related values and prices | [profile schemas](#entities-profile), [form](#widgets-profile-form), [card](#widgets-profile-card) |
+| Photos and documents | [profile server](#entities-profile), [profile-documents](#widgets-profile-documents); [file flow](architecture/dynamic.md#photos-and-documents) |
+| Countries, cities and directory search | [location](#entities-location); search key — [transliterate.ts](../src/shared/lib/transliterate.ts) |
+| Cover, theme, block order and Highlight | [profile-form](#widgets-profile-form), [profile-card](#widgets-profile-card), [UI and tokens](#shared-ui) |
+| API errors, session and HTTP validation | [api/_lib](../src/app/api/_lib/index.ts), [shared/api](#shared-api); [API flow](architecture/dynamic.md#request-from-the-browser-to-the-api) |
+| Route, env, operator details and site address | [shared/config](#shared-config), [README routes](../README.md#роуты) |
 
-## Слои кода
+## Code layers
 
-Браузерное приложение и Next.js-сервер собираются из одного кода `src/`, организованного по
-Feature-Sliced Design с поправками: вместо `pages` — `views`, слоя `features` нет (сценарии
-собираются в `widgets`, их мутации живут в `entities`). Модуль импортирует только слои ниже
-своего; Biome проверяет это правилом `noRestrictedImports`.
+The browser application and the Next.js server are built from the same `src/`, organised by
+Feature-Sliced Design with the amendments and import rules in [code.md](workflows/code.md).
 
 ```mermaid
 graph TB
-    App["app — роутинг Next.js, layout, провайдеры, API"]
-    Views["views — экраны"]
-    Widgets["widgets — блоки и сценарии"]
-    Entities["entities — бизнес-сущности"]
+    App["app — Next.js routing, layout, providers, API"]
+    Views["views — screens"]
+    Widgets["widgets — blocks and scenarios"]
+    Entities["entities — business entities"]
     Shared["shared — ui, lib, api, config"]
 
     App --> Views
@@ -51,28 +49,28 @@ graph TB
     Widgets --> Shared
 ```
 
-Слайсы с клиентской и серверной частями разделяют public API: `index.ts` и
-`index.server.ts` (`import "server-only"`). У `entities/social-link` серверного API нет;
-`views/profile` предоставляет только `index.server.ts`. У юридических view `index.ts`
-экспортирует серверные компоненты. Фактические границы перечислены в каталоге ниже.
+Slices with client and server parts split their public API into `index.ts` and
+`index.server.ts` (`import "server-only"`). `entities/social-link` has no server API;
+`views/profile` provides only `index.server.ts`. For the legal views, `index.ts` exports server
+components. The actual boundaries are listed in the catalog below.
 
-## Связывание файлов Next.js
+## Wiring of Next.js files
 
-Схема организации исходников и реэкспортов; это не компонентная диаграмма C4.
+How sources and re-exports are organised; this is not a C4 component diagram.
 
 ```mermaid
 graph LR
     subgraph Routing["src/app"]
-        Pages["page.tsx — реэкспорт view"]
+        Pages["page.tsx — view re-export"]
         SSR["views/profile index.server<br/>ProfilePage, generateMetadata"]
-        Legal["views privacy, terms<br/>серверные компоненты"]
+        Legal["views privacy, terms<br/>server components"]
         Meta["robots, sitemap, manifest"]
         API["api/**/route.ts"]
         Lib["api/_lib"]
     end
 
     EntServer["entities/*/index.server"]
-    SharedServer["shared/api/index.server<br/>клиенты Supabase"]
+    SharedServer["shared/api/index.server<br/>Supabase clients"]
     Env["shared/config/index.server<br/>getServerEnv"]
 
     Pages --> SSR
@@ -85,187 +83,197 @@ graph LR
     SharedServer --> Env
 ```
 
-## Каталог слайсов
+## Slice catalog
 
-Каталог отвечает, **где искать поведение и какие границы сохранить**. Полный набор экспортов,
-типов, пропов, лимитов и значений смотри в указанных файлах; здесь они не дублируются.
+The catalog answers **where to look for behaviour and which boundaries to keep**. For the full
+set of exports, types, props, limits and values, see the listed files; they are not copied here.
 
-Обновляй карточку, если поменялись ответственность, public API-путь, ключевая точка входа
-или существенное ограничение. Добавление обычного экспорта не требует переписывать каталог.
-Изменение ответственности и связей компонентов отражай в [L3](architecture/3.components.md),
-внутренней структуры выбранного компонента — в [L4](architecture/4.code.md),
-последовательности взаимодействий — в [динамических представлениях](architecture/dynamic.md).
-Символ ищи в public API через `rg -n`, затем открывай указанный там файл реализации;
-для связи сущностей сначала проверь `@x`, не создавай второй модуль с той же задачей.
+Update a card when its responsibility, public API path, key entry point or an essential
+constraint changes. Adding an ordinary export does not require rewriting the catalog.
+Reflect changes of component responsibilities and links in [L3](architecture/3.components.md),
+of a selected component's internal structure in [L4](architecture/4.code.md), and of
+interaction sequences in the [dynamic views](architecture/dynamic.md).
+Look a symbol up in the public API with `rg -n`, then open the implementation file listed
+there; for links between entities check `@x` first, and do not create a second module for
+the same job.
 
-### Сущности
+### Entities
 
 <a id="entities-viewer"></a>
 
 #### entities/viewer
 
-- **Зона:** текущий пользователь, вход и способы входа, мутации аккаунта и профиля.
+- **Area:** the current user, sign-in and sign-in methods, account and profile mutations.
 - **API:** [index.ts](../src/entities/viewer/index.ts),
   [index.server.ts](../src/entities/viewer/index.server.ts).
-- **Искать:** [OIDC](../src/entities/viewer/api/oidc-sign-in.server.ts),
-  [OAuth и удаление](../src/entities/viewer/api/auth.server.ts),
-  [привязки](../src/entities/viewer/api/identities.server.ts),
-  [мутации профиля и их кеш](../src/entities/viewer/api/use-profile-mutations.ts).
-- **Граница:** мутации профиля находятся здесь, запись данных — в `entities/profile`.
-  Список доступных провайдеров — [auth-providers.ts](../src/entities/viewer/config/auth-providers.ts);
-  отвязку последнего доступного способа запрещает
+- **Look in:** [OIDC](../src/entities/viewer/api/oidc-sign-in.server.ts),
+  [OAuth and deletion](../src/entities/viewer/api/auth.server.ts),
+  [linking](../src/entities/viewer/api/identities.server.ts),
+  [profile mutations and their cache](../src/entities/viewer/api/use-profile-mutations.ts).
+- **Boundary:** profile mutations live here, data writes in `entities/profile`. The list of
+  available providers — [auth-providers.ts](../src/entities/viewer/config/auth-providers.ts);
+  unlinking the last available method is blocked by
   [can-unlink-sign-in-method.ts](../src/entities/viewer/lib/can-unlink-sign-in-method.ts).
 
 <a id="entities-profile"></a>
 
 #### entities/profile
 
-- **Зона:** профиль и username, публичные и приватные данные, файлы, видимость страницы.
+- **Area:** profile and username, public and private data, files, page visibility.
 - **API:** [index.ts](../src/entities/profile/index.ts),
   [index.server.ts](../src/entities/profile/index.server.ts),
-  [связи с другими сущностями](../src/entities/profile/@x).
-- **Поля и контракт:** [schemas.ts](../src/entities/profile/model/schemas.ts),
+  [links to other entities](../src/entities/profile/@x).
+- **Fields and contract:** [schemas.ts](../src/entities/profile/model/schemas.ts),
   [types.ts](../src/entities/profile/model/types.ts),
   [username.ts](../src/entities/profile/model/username.ts),
-  [справочники и лимиты](../src/entities/profile/config).
-- **Сохранение и превью:** [profile-changes.ts](../src/entities/profile/lib/profile-changes.ts),
+  [reference data and limits](../src/entities/profile/config).
+- **Saving and preview:** [profile-changes.ts](../src/entities/profile/lib/profile-changes.ts),
   [preview-profile.ts](../src/entities/profile/lib/preview-profile.ts),
   [profile.server.ts](../src/entities/profile/api/profile.server.ts).
-- **Доступ и файлы:** [visitor-profile.server.ts](../src/entities/profile/api/visitor-profile.server.ts),
+- **Access and files:** [visitor-profile.server.ts](../src/entities/profile/api/visitor-profile.server.ts),
   [page-access.server.ts](../src/entities/profile/api/page-access.server.ts),
   [avatar.server.ts](../src/entities/profile/api/avatar.server.ts),
   [document.server.ts](../src/entities/profile/api/document.server.ts).
-- **Граница:** `PUBLIC_PROFILE_COLUMNS` ограничивает гостевое чтение. Приватные данные и пароль
-  не попадают в превью; документы в нём подставляет view отдельно. Группы PATCH определяет
-  `linkedFieldGroups` в схемах; правила БД — [database.md](workflows/database.md).
-  Текущий порядок записи и частичный успех фото описаны в [потоке сохранения](architecture/dynamic.md#сохранение-профиля).
+- **Boundary:** `PUBLIC_PROFILE_COLUMNS` limits guest reads. Private data and the password do
+  not reach the preview; the view adds documents to it separately. PATCH groups are defined by
+  `linkedFieldGroups` in the schemas; DB rules — [database.md](workflows/database.md). The
+  current write order and the partial success of photos are described in the
+  [saving flow](architecture/dynamic.md#saving-the-profile).
 
 <a id="entities-location"></a>
 
 #### entities/location
 
-- **Зона:** справочник стран и поиск городов.
+- **Area:** the country directory and city search.
 - **API:** [index.ts](../src/entities/location/index.ts),
   [index.server.ts](../src/entities/location/index.server.ts),
   [@x/profile.ts](../src/entities/location/@x/profile.ts).
-- **Искать:** [city-queries.ts](../src/entities/location/api/city-queries.ts),
+- **Look in:** [city-queries.ts](../src/entities/location/api/city-queries.ts),
   [city.server.ts](../src/entities/location/api/city.server.ts),
   [countries.ts](../src/entities/location/config/countries.ts).
-- **Граница:** город берётся из справочника; поиск использует `cities.search_name` и
-  [toSearchKey](../src/shared/lib/transliterate.ts). Пересборка справочника — по правилам БД.
+- **Boundary:** the city comes from the directory; search uses `cities.search_name` and
+  [toSearchKey](../src/shared/lib/transliterate.ts). Rebuilding the directory follows the DB rules.
 
 <a id="entities-social-link"></a>
 
 #### entities/social-link
 
-- **Зона:** платформы, нормализация ссылок, подписи и кнопки ссылок.
+- **Area:** platforms, link normalisation, link labels and buttons.
 - **API:** [index.ts](../src/entities/social-link/index.ts),
-  [@x/profile.ts](../src/entities/social-link/@x/profile.ts); серверного API нет.
-- **Искать:** [schema.ts](../src/entities/social-link/model/schema.ts),
+  [@x/profile.ts](../src/entities/social-link/@x/profile.ts); no server API.
+- **Look in:** [schema.ts](../src/entities/social-link/model/schema.ts),
   [normalize.ts](../src/entities/social-link/model/normalize.ts),
   [social-link-button.tsx](../src/entities/social-link/ui/social-link-button.tsx),
   [platform-icon.tsx](../src/entities/social-link/ui/platform-icon.tsx).
-- **Граница:** свой заголовок необязателен; старые записи без него продолжают читаться.
-  Логотипы платформ — SVG в коде (simple-icons, CC0), отдельная библиотека для них не установлена.
+- **Boundary:** a custom title is optional; old records without it still read. Platform logos
+  are SVG in code (simple-icons, CC0); no separate library is installed for them.
 
-### Виджеты
+### Widgets
 
 <a id="widgets-profile-form"></a>
 
 #### widgets/profile-form
 
-- **Зона:** общая форма онбординга и настроек, разделы, сворачивание, Save и превью.
+- **Area:** the shared onboarding and settings form, sections, collapsing, Save and preview.
 - **API:** [index.ts](../src/widgets/profile-form/index.ts).
-- **Искать:** [profile-form.tsx](../src/widgets/profile-form/ui/profile-form.tsx),
+- **Look in:** [profile-form.tsx](../src/widgets/profile-form/ui/profile-form.tsx),
   [sortable-blocks.tsx](../src/widgets/profile-form/ui/sortable-blocks.tsx),
   [appearance-block.tsx](../src/widgets/profile-form/ui/appearance-block.tsx),
   [block-summary.ts](../src/widgets/profile-form/lib/block-summary.ts),
   [avatar-value.ts](../src/widgets/profile-form/model/avatar-value.ts).
-- **Граница:** скрытые разделы и свёрнутые блоки остаются в DOM; ошибка раскрывает нужный блок.
-  Закрытые поля не попадают в сводку. В Account свой Save; немедленные операции документов
-  и аккаунта — отдельные виджеты. Пересоздание формы при смене раздела управляется `views/settings`.
+- **Boundary:** hidden sections and collapsed blocks stay in the DOM; an error expands the
+  right block. Closed fields do not get into the summary. Account has its own Save; immediate
+  operations on documents and the account are separate widgets. The form survives a section
+  change: edits of all sections are saved together. A link away from the page with unsaved
+  edits opens Save and continue / Discard changes / Stay; an error in a hidden section names
+  the field and leads to it. Focusing a block scrolls the preview to `[data-preview-section]`.
+  Concerns of Search details — [concerns-field.tsx](../src/widgets/profile-form/ui/concerns-field.tsx).
 
 <a id="widgets-profile-card"></a>
 
 #### widgets/profile-card
 
-- **Зона:** содержимое визитки и холст её оформления, общие для страницы и превью.
+- **Area:** the page card content and its appearance canvas, shared by the page and the preview.
 - **API:** [index.ts](../src/widgets/profile-card/index.ts).
-- **Сборка:** [profile-card.tsx](../src/widgets/profile-card/ui/profile-card.tsx),
+- **Assembly:** [profile-card.tsx](../src/widgets/profile-card/ui/profile-card.tsx),
   [profile-canvas.tsx](../src/widgets/profile-card/ui/profile-canvas.tsx),
   [page-cover.tsx](../src/widgets/profile-card/ui/page-cover.tsx).
-- **Блоки и действия:** [практика](../src/widgets/profile-card/ui/practice-details.tsx),
-  [услуги](../src/widgets/profile-card/ui/service-list.tsx),
+- **Blocks and actions:** [practice](../src/widgets/profile-card/ui/practice-details.tsx),
+  [services](../src/widgets/profile-card/ui/service-list.tsx),
   [FAQ](../src/widgets/profile-card/ui/faq-list.tsx),
-  [документы](../src/widgets/profile-card/ui/document-gallery.tsx),
-  [контактная кнопка](../src/widgets/profile-card/ui/preferred-contact-button.tsx),
-  [чек-лист](../src/widgets/profile-card/ui/owner-checklist.tsx),
-  [Share и QR](../src/widgets/profile-card/ui/share-profile-button.tsx).
-- **Граница:** `isPreview` скрывает Share, Edit и чек-лист владельца, имя не становится `h1`.
-  Скрытие чек-листа хранится отдельно в [model](../src/widgets/profile-card/model/checklist-store.ts).
-  Порядок задаёт профиль, пустые блоки скрываются; закрытые ответы FAQ сейчас не входят в серверный HTML.
-  Пресет меняет холст, но не рамку сайта; фиксированная контактная кнопка учитывает рамку превью.
+  [documents](../src/widgets/profile-card/ui/document-gallery.tsx),
+  [contact button](../src/widgets/profile-card/ui/preferred-contact-button.tsx),
+  [checklist](../src/widgets/profile-card/ui/owner-checklist.tsx),
+  [Share and QR](../src/widgets/profile-card/ui/share-profile-button.tsx).
+- **Boundary:** `isPreview` hides Share, Edit and the owner checklist, and the name does not
+  become an `h1`. Hiding the checklist is stored separately in
+  [model](../src/widgets/profile-card/model/checklist-store.ts). The profile sets the order,
+  empty blocks are hidden; collapsed FAQ answers are not in the server HTML for now. A preset
+  changes the canvas but not the site frame; the pinned contact button accounts for the preview
+  frame.
 
 <a id="widgets-profile-documents"></a>
 
 #### widgets/profile-documents
 
-- **Зона:** загрузка, список и удаление документов психолога.
+- **Area:** uploading, listing and deleting the psychologist's documents.
 - **API:** [index.ts](../src/widgets/profile-documents/index.ts).
-- **Искать:** [profile-documents.tsx](../src/widgets/profile-documents/ui/profile-documents.tsx),
+- **Look in:** [profile-documents.tsx](../src/widgets/profile-documents/ui/profile-documents.tsx),
   [prepare-document-images.ts](../src/widgets/profile-documents/lib/prepare-document-images.ts).
-- **Граница:** загрузка и удаление сохраняются сразу, независимо от Save формы профиля.
-  Полный файл и миниатюра готовятся отдельно; подпись обязательна, удаление требует подтверждения.
+- **Boundary:** upload and deletion are saved at once, independently of the profile form's
+  Save. The full file and the thumbnail are prepared separately; a caption is required,
+  deletion requires confirmation.
 
 <a id="widgets-account-settings"></a>
 
 #### widgets/account-settings
 
-- **Зона:** способы входа, выход и удаление аккаунта.
+- **Area:** sign-in methods, sign-out and account deletion.
 - **API:** [index.ts](../src/widgets/account-settings/index.ts).
-- **Искать:** [sign-in-methods.tsx](../src/widgets/account-settings/ui/sign-in-methods.tsx),
+- **Look in:** [sign-in-methods.tsx](../src/widgets/account-settings/ui/sign-in-methods.tsx),
   [delete-account-dialog.tsx](../src/widgets/account-settings/ui/delete-account-dialog.tsx).
-- **Граница:** видны только включённые провайдеры; удаление аккаунта с профилем подтверждается
-  username, для аккаунта без страницы username не нужен. Заголовок Account рисует view.
+- **Boundary:** only enabled providers are visible; deleting an account with a profile is
+  confirmed with the username, an account without a page needs no username. The view draws the
+  Account heading.
 
 <a id="widgets-sign-in-panel"></a>
 
 #### widgets/sign-in-panel
 
-- **Зона:** кнопки входа и состояние перехода к провайдеру.
+- **Area:** sign-in buttons and the state of going to a provider.
 - **API:** [index.ts](../src/widgets/sign-in-panel/index.ts).
-- **Искать:** [sign-in-panel.tsx](../src/widgets/sign-in-panel/ui/sign-in-panel.tsx).
-- **Граница:** доступные провайдеры, подписи ошибок и логотипы приходят из `entities/viewer`.
+- **Look in:** [sign-in-panel.tsx](../src/widgets/sign-in-panel/ui/sign-in-panel.tsx).
+- **Boundary:** available providers, error labels and logos come from `entities/viewer`.
 
 <a id="widgets-header-footer"></a>
 
-#### widgets/header и widgets/footer
+#### widgets/header and widgets/footer
 
-- **Зона:** шапка, меню пользователя, юридические ссылки, почта поддержки и реквизиты ИП.
+- **Area:** header, user menu, legal links, support email and the sole proprietor's details.
 - **API:** [header/index.ts](../src/widgets/header/index.ts),
   [footer/index.ts](../src/widgets/footer/index.ts).
-- **Искать:** [user-menu.tsx](../src/widgets/header/ui/user-menu.tsx),
+- **Look in:** [user-menu.tsx](../src/widgets/header/ui/user-menu.tsx),
   [header.tsx](../src/widgets/header/ui/header.tsx),
   [footer.tsx](../src/widgets/footer/ui/footer.tsx).
-- **Граница:** на `/settings` шапка и подвал не рисуются; реквизиты берутся из `legalConfig`,
-  годы copyright — из [use-copyright-years.ts](../src/widgets/footer/lib/use-copyright-years.ts).
+- **Boundary:** the header and footer are not drawn on `/settings`; the details come from
+  `legalConfig`, the copyright years from [use-copyright-years.ts](../src/widgets/footer/lib/use-copyright-years.ts).
 
 <a id="widgets-legal-document"></a>
 
 #### widgets/legal-document
 
-- **Зона:** оформление юридических страниц и реквизиты оператора.
+- **Area:** the layout of the legal pages and the operator's details.
 - **API:** [index.ts](../src/widgets/legal-document/index.ts).
-- **Искать:** [legal-document.tsx](../src/widgets/legal-document/ui/legal-document.tsx),
+- **Look in:** [legal-document.tsx](../src/widgets/legal-document/ui/legal-document.tsx),
   [operator-details.tsx](../src/widgets/legal-document/ui/operator-details.tsx).
-- **Граница:** серверные компоненты без клиентского JS; реквизиты из `shared/config`.
+- **Boundary:** server components without client JS; the details come from `shared/config`.
 
-### Экраны
+### Screens
 
-Тонкие файлы `src/app/**/page.tsx` реэкспортируют view. Public API перечислены в таблице;
-маршруты и доступ — в [README](../README.md#страницы), правила SSR — в [api.md](workflows/api.md).
+The thin `src/app/**/page.tsx` files re-export a view. Public APIs are listed in the table;
+routes and access — in the [README](../README.md#страницы), SSR rules — in [api.md](workflows/api.md).
 
-| View | Public API | Ключевая реализация |
+| View | Public API | Key implementation |
 |---|---|---|
 | `home` | [index.ts](../src/views/home/index.ts) | [home-view.tsx](../src/views/home/ui/home-view.tsx) |
 | `login` | [index.ts](../src/views/login/index.ts) | [login-view.tsx](../src/views/login/ui/login-view.tsx) |
@@ -279,82 +287,86 @@ graph LR
 
 <a id="views-settings"></a>
 
-- **settings:** [settings-view.tsx](../src/views/settings/ui/settings-view.tsx) —
-  сборка редактора, сохранение и синхронизация исходных значений формы.
-  Раздел — `?section=`; `key` пересоздаёт форму при смене раздела и после Save.
-  Сворачивание — [collapsed-blocks-store.ts](../src/views/settings/model/collapsed-blocks-store.ts),
-  localStorage по пользователю. Последовательность Profile → Avatar находится во view, не в форме.
+- **settings:** [settings-view.tsx](../src/views/settings/ui/settings-view.tsx) — assembles the
+  editor, saving and syncing the form's initial values. The section is `?section=`; `key`
+  recreates the form only after Save. Collapsing —
+  [collapsed-blocks-store.ts](../src/views/settings/model/collapsed-blocks-store.ts),
+  localStorage per user. Unsaved edits left with the browser Back button —
+  [draft-store.ts](../src/views/settings/model/draft-store.ts), in memory only. The Profile → Avatar sequence is in the view, not in the form.
 
 <a id="views-onboarding"></a>
 
 - **onboarding:** [onboarding-view.tsx](../src/views/onboarding/ui/onboarding-view.tsx) —
-  создание профиля с превью и возможностью удалить аккаунт без страницы;
-  черновик — [draft-store.ts](../src/views/onboarding/model/draft-store.ts), sessionStorage.
+  creating a profile with a preview and the option to delete an account without a page;
+  the draft — [draft-store.ts](../src/views/onboarding/model/draft-store.ts), sessionStorage.
 
 <a id="views-profile"></a>
 
 - **profile:** [profile-page.server.tsx](../src/views/profile/ui/profile-page.server.tsx) —
-  серверная загрузка и metadata →
-  [profile-view.tsx](../src/views/profile/ui/profile-view.tsx) с `initialData` TanStack Query.
-  Скрытая страница — [hidden-profile-view.tsx](../src/views/profile/ui/hidden-profile-view.tsx)
-  и [page-password-form.tsx](../src/views/profile/ui/page-password-form.tsx).
-  Сервер читает как гость; владелец видит скрытую страницу из `/api/me`. Metadata скрытой страницы
-  не раскрывает имя и фото, включает `noindex`. Полный поток — в [динамическом представлении](architecture/dynamic.md#личная-страница-username).
+  server loading and metadata → [profile-view.tsx](../src/views/profile/ui/profile-view.tsx)
+  with TanStack Query `initialData`. The hidden page —
+  [hidden-profile-view.tsx](../src/views/profile/ui/hidden-profile-view.tsx) and
+  [page-password-form.tsx](../src/views/profile/ui/page-password-form.tsx). The server reads as
+  a guest; the owner sees a hidden page from `/api/me`. A hidden page's metadata does not reveal
+  the name and photo and includes `noindex`. The full flow — in the
+  [dynamic view](architecture/dynamic.md#profile-page-username).
 
-- **privacy / terms:** серверные тексты без клиентского JS; общая обёртка — `legal-document`.
-- **error:** `error.tsx` и `global-error.tsx` передают `retry`; подробности —
-  [правила Next.js](workflows/code.md#nextjs-16-на-что-обратить-внимание).
+- **privacy / terms:** server texts without client JS; the shared wrapper is `legal-document`.
+- **error:** `error.tsx` and `global-error.tsx` pass `retry`; details —
+  [Next.js rules](workflows/code.md#nextjs-16-things-to-watch).
 
-### Общие модули
+### Shared modules
 
 <a id="shared-api"></a>
 
 #### shared/api
 
-- **Зона:** HTTP-клиент, ошибки и QueryClient; серверные клиенты Supabase и типы БД.
+- **Area:** HTTP client, errors and QueryClient; server Supabase clients and DB types.
 - **API:** [index.ts](../src/shared/api/index.ts), [index.server.ts](../src/shared/api/index.server.ts).
-- **Искать:** [api-client.ts](../src/shared/api/api-client.ts),
+- **Look in:** [api-client.ts](../src/shared/api/api-client.ts),
   [api-error.ts](../src/shared/api/api-error.ts), [query-client.ts](../src/shared/api/query-client.ts),
   [supabase/](../src/shared/api/supabase).
-- **Граница:** клиентский API тянет TanStack Query; на сервере — `index.server.ts` или `import type`.
-  Supabase импортируется только внутри `supabase/`; типы БД генерируются, не правятся вручную.
+- **Boundary:** the client API pulls in TanStack Query; on the server use `index.server.ts` or
+  `import type`. Supabase is imported only inside `supabase/`; DB types are generated, never
+  edited by hand.
 
 <a id="shared-config"></a>
 
 #### shared/config
 
-- **Зона:** пути, адрес и настройки сайта, реквизиты, зарезервированные username, серверный env.
+- **Area:** paths, site address and settings, operator details, reserved usernames, server env.
 - **API:** [index.ts](../src/shared/config/index.ts),
   [index.server.ts](../src/shared/config/index.server.ts).
-- **Искать:** [routes.ts](../src/shared/config/routes.ts), [site.ts](../src/shared/config/site.ts),
+- **Look in:** [routes.ts](../src/shared/config/routes.ts), [site.ts](../src/shared/config/site.ts),
   [legal.ts](../src/shared/config/legal.ts), [env.server.ts](../src/shared/config/env.server.ts).
-- **Граница:** env читается только на сервере; новый роут добавляется в `routes`, чтобы его
-  первый сегмент стал зарезервированным. Значения цветов вне CSS — [theme.ts](../src/shared/config/theme.ts).
+- **Boundary:** env is read only on the server; a new route is added to `routes` so its first
+  segment becomes reserved. Colour values outside CSS — [theme.ts](../src/shared/config/theme.ts).
 
 <a id="shared-ui"></a>
 
 #### shared/ui
 
-- **Зона:** shadcn и переиспользуемые компоненты без бизнес-логики; общего barrel API нет,
-  импорт по файлу. Компоненты и истории — [каталог ui](../src/shared/ui).
-- **Искать:** [container.tsx](../src/shared/ui/container.tsx),
+- **Area:** shadcn and reusable components without business logic; there is no shared barrel
+  API, import by file. Components and stories — the [ui folder](../src/shared/ui).
+- **Look in:** [container.tsx](../src/shared/ui/container.tsx),
   [section-nav.tsx](../src/shared/ui/section-nav.tsx),
   [disclosure-button.tsx](../src/shared/ui/disclosure-button.tsx),
   [combobox.tsx](../src/shared/ui/combobox.tsx), [sonner.tsx](../src/shared/ui/sonner.tsx).
-- **Граница:** сворачивание через `hidden` сохраняет поля в DOM; `Combobox` поддерживает серверный поиск.
-  Тема — [globals.css](../src/app/globals.css), шрифты — [fonts.ts](../src/app/fonts.ts),
-  показ токенов — [tokens.stories.tsx](../src/shared/ui/tokens.stories.tsx).
-  Правила компонентов и историй — [ui-kit.md](workflows/ui-kit.md), стилей — [ui.md](workflows/ui.md).
+- **Boundary:** collapsing through `hidden` keeps fields in the DOM; `Combobox` supports server
+  search. Theme — [globals.css](../src/app/globals.css), fonts — [fonts.ts](../src/app/fonts.ts),
+  token showcase — [tokens.stories.tsx](../src/shared/ui/tokens.stories.tsx). Component and
+  story rules — [ui-kit.md](workflows/ui-kit.md), style rules — [ui.md](workflows/ui.md).
 
 <a id="shared-lib"></a>
 
 #### shared/lib
 
-- **Зона:** утилиты без бизнес-логики; общего barrel API нет, импорт по файлу.
-- **Искать:** [cn](../src/shared/lib/utils.ts), [cva](../src/shared/lib/cva.ts),
-  [безопасный редирект](../src/shared/lib/safe-redirect.ts),
-  [ошибки форм](../src/shared/lib/field-errors.ts),
-  [кроп](../src/shared/lib/crop-image.ts), [canvas](../src/shared/lib/canvas-image.ts),
-  [транслитерация и ключ поиска](../src/shared/lib/transliterate.ts).
-- **Граница:** обработка картинок идёт через canvas до загрузки; особенности токенов `cn` и `cva` —
-  в [правилах UI](workflows/ui.md). Проверки адреса возврата нельзя обходить прямым `next`.
+- **Area:** utilities without business logic; there is no shared barrel API, import by file.
+- **Look in:** [cn](../src/shared/lib/utils.ts), [cva](../src/shared/lib/cva.ts),
+  [safe redirect](../src/shared/lib/safe-redirect.ts),
+  [form errors](../src/shared/lib/field-errors.ts),
+  [crop](../src/shared/lib/crop-image.ts), [canvas](../src/shared/lib/canvas-image.ts),
+  [transliteration and search key](../src/shared/lib/transliterate.ts).
+- **Boundary:** images are processed through canvas before upload; `cn` and `cva` token
+  specifics — in the [UI rules](workflows/ui.md). Return address checks must not be bypassed
+  with a direct `next`.

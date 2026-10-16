@@ -2,7 +2,7 @@
 
 Возврат к [обзору сервисов](../../README.md#внешние-сервисы); переменные окружения —
 в [README](../../README.md#переменные-окружения). Сценарии и ограничения серверного кода —
-в [динамических представлениях](../architecture/dynamic.md#вход-через-google-и-telegram)
+в [динамических представлениях](../architecture/dynamic.md#sign-in-with-google-and-telegram)
 и [api.md](../workflows/api.md).
 
 ## Вход через Google
@@ -25,7 +25,7 @@
 4. Те же Client ID и Client Secret задать в `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET`
    (`.env` и Vercel).
 
-Как устроен вход — в [`docs/architecture/dynamic.md`](../../docs/architecture/dynamic.md#вход-через-google-и-telegram).
+Как устроен вход — в [`docs/architecture/dynamic.md`](../../docs/architecture/dynamic.md#sign-in-with-google-and-telegram).
 
 ### Подтверждение домена в Google Search Console
 
@@ -65,7 +65,7 @@ DNS домена обслуживает Timeweb. Кроме подтвержде
 
 Включить провайдер — добавить его в `enabledAuthProviders`. Для Facebook сначала подтверди
 компанию в Meta и переведи приложение в Live (пункт 9 ниже). Как устроен вход —
-в [`docs/architecture/dynamic.md`](../../docs/architecture/dynamic.md#особенности-провайдеров).
+в [`docs/architecture/dynamic.md`](../../docs/architecture/dynamic.md#provider-specifics).
 
 Настройка приложения Meta:
 
@@ -107,7 +107,7 @@ DNS домена обслуживает Timeweb. Кроме подтвержде
 Telegram подключён через OpenID Connect как свой провайдер Supabase (`custom:telegram`).
 На проде он входит, как Google, через наш адрес возврата: на экране Telegram виден
 `www.freud.in`. На localhost вход идёт через OAuth Supabase: BotFather не принимает `http://`.
-Как устроен вход — в [`docs/architecture/dynamic.md`](../../docs/architecture/dynamic.md#вход-через-google-и-telegram).
+Как устроен вход — в [`docs/architecture/dynamic.md`](../../docs/architecture/dynamic.md#sign-in-with-google-and-telegram).
 
 1. @BotFather: `/newbot` — отдельный бот только для входа (`@freudin_bot`). В мини-приложении
    BotFather: бот → Bot Settings → Web Login → OpenID Connect Login. Переключение необратимо:

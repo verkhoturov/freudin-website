@@ -60,8 +60,16 @@ export function getPracticeDetails(profile: PublicProfile, section: PracticeSect
       return country ? getCountryName(country) : null;
     case "languages":
       return languages.length > 0 ? listFormat.format(languages.map(getLanguageName)) : null;
-    case "price":
-      return price ? `From ${formatPrice(price)} per session` : null;
+    case "price": {
+      if (price) return `From ${formatPrice(price)} per session`;
+      // Общей цены нет — самая низкая цена услуг: стоимость видна до карточек услуг
+      const servicePrices = profile.services.flatMap((service) =>
+        service.price ? [service.price] : [],
+      );
+      if (servicePrices.length === 0) return null;
+      const lowest = servicePrices.reduce((min, next) => (next.amount < min.amount ? next : min));
+      return `From ${formatPrice(lowest)}`;
+    }
     case "education":
       return profile.education.length > 0 ? (
         <ul className="flex flex-col gap-2">
@@ -107,7 +115,7 @@ export function PracticeDetails({ items }: { items: PracticeItem[] }) {
   return (
     <dl className="flex w-full flex-col gap-4">
       {items.map(({ section, details }) => (
-        <div key={section} className="flex flex-col gap-1">
+        <div key={section} data-preview-section={section} className="flex flex-col gap-1">
           <dt className="text-muted-foreground text-sm">{profileSectionLabels[section]}</dt>
           <dd className="break-words">{details}</dd>
         </div>

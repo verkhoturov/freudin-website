@@ -1,126 +1,150 @@
-# Код: FSD, роуты и Next.js
+# Code: FSD, routes and Next.js
 
-Читай перед изменением любого кода, включая конфигурацию и тесты.
-Это обязательные правила из [`AGENTS.md`](../../AGENTS.md); процесс — в [`process.md`](process.md).
+Read before changing any code, including configuration and tests.
+These are required rules from [`AGENTS.md`](../../AGENTS.md); the process is in [`process.md`](process.md).
 
-## Архитектура: Feature-Sliced Design с поправками
+## Architecture: Feature-Sliced Design with amendments
 
-Модуль может импортировать только слои ниже своего:
+A module may import only layers below its own:
 
-| Слой | Где | Что лежит |
+| Layer | Where | Contents |
 |------|-----|-----------|
-| `app` | `src/app` | Роутинг Next.js и одновременно FSD-слой app: layout, глобальные стили, провайдеры (`_providers/`), API (`api/`) |
-| `views` | `src/views` | Страницы (вместо FSD-слоя `pages`): один слайс — один экран |
-| `widgets` | `src/widgets` | Крупные самостоятельные блоки и пользовательские сценарии: шапка, форма профиля, панель входа |
-| `entities` | `src/entities` | Бизнес-сущности: типы, zod-схемы, API-хуки, серверные функции, простой UI |
-| `shared` | `src/shared` | Переиспользуемый код без бизнес-логики: `ui`, `lib`, `api`, `config` |
+| `app` | `src/app` | Next.js routing and the FSD app layer at once: layout, global styles, providers (`_providers/`), API (`api/`) |
+| `views` | `src/views` | Pages (instead of the FSD `pages` layer): one slice per screen |
+| `widgets` | `src/widgets` | Large self-contained blocks and user scenarios: header, profile form, sign-in panel |
+| `entities` | `src/entities` | Business entities: types, zod schemas, API hooks, server functions, simple UI |
+| `shared` | `src/shared` | Reusable code without business logic: `ui`, `lib`, `api`, `config` |
 
-Поправки к классическому FSD:
+Amendments to classic FSD:
 
-- **Слоя `pages` нет, вместо него `views`**: имя `pages` конфликтует с Pages Router Next.js.
-- **Слоя `features` нет.** Сценарии (вход, редактирование профиля, выход) собираются в `widgets`,
-  а мутации и хуки для них живут в `entities`.
-- `src/app` одновременно App Router и слой app. Служебные папки внутри него приватные,
-  с префиксом `_` (`_providers`, `api/_lib`), чтобы Next.js не сделал из них роуты.
+- **`views` instead of `pages`:** the name `pages` clashes with the Next.js Pages Router.
+- **No `features` layer.** Scenarios (sign-in, profile editing, sign-out) are assembled in
+  `widgets`, and their mutations and hooks live in `entities`.
+- `src/app` is both the App Router and the app layer. Its service folders are private, with
+  a `_` prefix (`_providers`, `api/_lib`), so Next.js does not turn them into routes.
 
-Правила импортов (их проверяет Biome: `noRestrictedImports` в `overrides` файла `biome.json`):
+Import rules. Biome enforces those marked (B) through `noRestrictedImports` in the `overrides`
+of `biome.json`: `npm run lint` reports a violation with a message explaining the fix.
 
-- Между слоями и слайсами импортируем только через алиас `@/`, внутри слайса — относительными путями.
-- Слайс импортируется только через public API: `@/views/<slice>`, `@/widgets/<slice>`,
-  `@/entities/<slice>`. Серверный public API: `@/entities/<slice>/index.server`.
-- Слайсы одного слоя не импортируют друг друга. Исключение — `entities` через `@x`:
+- Across layers and slices import through the `@/` alias, inside a slice use relative paths.
+- (B) A slice is imported only through its public API: `@/views/<slice>`, `@/widgets/<slice>`,
+  `@/entities/<slice>`. The server public API is `@/entities/<slice>/index.server`.
+- (B) Slices of one layer do not import each other. Exception — `entities` through `@x`:
   `@/entities/<slice>/@x/<consumer>`.
-- `shared/ui` и `shared/lib` импортируются по файлу (`@/shared/ui/button`,
-  `@/shared/lib/utils`), как принято в shadcn. `shared/config` и `shared/api` импортируются
-  через index: `@/shared/config`, `@/shared/config/index.server`, `@/shared/api`,
+- `shared/ui` and `shared/lib` are imported by file (`@/shared/ui/button`,
+  `@/shared/lib/utils`), as shadcn does. `shared/config` and `shared/api` are imported through
+  their index: `@/shared/config`, `@/shared/config/index.server`, `@/shared/api`,
   `@/shared/api/index.server`.
-- Клиентский код (`views`, `widgets`, `src/app` вне `api`) не импортирует `index.server`.
-  Исключения для серверного рендера: `page.tsx` берёт `@/views/<slice>/index.server`, а серверные
-  модули view (`*.server.ts(x)`) — `@/entities/<slice>/index.server` и `@/shared/api/index.server`.
-- `src/app/api` не импортирует UI (`views`, `widgets`, `shared/ui`) и клиентский public API
-  сущностей.
+- (B) Client code (`views`, `widgets`, `src/app` outside `api`) does not import `index.server`.
+  Exceptions for server rendering: `page.tsx` takes `@/views/<slice>/index.server`, and server
+  view modules (`*.server.ts(x)`) take `@/entities/<slice>/index.server` and
+  `@/shared/api/index.server`.
+- (B) `src/app/api` does not import UI (`views`, `widgets`, `shared/ui`) or the client public
+  API of entities.
 
-Структура слайса (создавай только нужные сегменты):
+Slice structure (create only the segments you need):
 
 ```
 src/entities/profile/
-├─ index.ts          # клиентский public API
-├─ index.server.ts   # серверный public API (import "server-only")
-├─ @x/               # public API для других сущностей
-├─ ui/               # компоненты
-├─ model/            # типы, zod-схемы, Zustand-сторы
-├─ api/              # query keys, хуки TanStack Query, серверные функции *.server.ts
-├─ lib/              # вспомогательные функции слайса
-└─ config/           # константы слайса
+├─ index.ts          # client public API
+├─ index.server.ts   # server public API (import "server-only")
+├─ @x/               # public API for other entities
+├─ ui/               # components
+├─ model/            # types, zod schemas, Zustand stores
+├─ api/              # query keys, TanStack Query hooks, server functions *.server.ts
+├─ lib/              # slice helpers
+└─ config/           # slice constants
 ```
 
-Страница собирается так:
+A page is assembled like this:
 
 ```ts
-// src/app/login/page.tsx — только реэкспорт
+// src/app/login/page.tsx — re-export only
 export { LoginView as default, metadata } from "@/views/login";
 ```
 
-- `src/views/login/ui/login-view.tsx`: компонент страницы с `"use client"`;
-- `src/views/login/config/metadata.ts`: статический `metadata` (обычный модуль без `"use client"`,
-  иначе Next.js его не примет);
-- `src/views/login/index.ts`: public API, реэкспортирует оба.
+- `src/views/login/ui/login-view.tsx`: the page component with `"use client"`;
+- `src/views/login/config/metadata.ts`: static `metadata` (a plain module without
+  `"use client"`, otherwise Next.js rejects it);
+- `src/views/login/index.ts`: the public API, re-exports both.
 
-Страница с серверным рендером (сейчас только `/<username>`) реэкспортирует серверный public API
-view: `export { generateMetadata, ProfilePage as default } from "@/views/profile/index.server";`.
+A server-rendered page (currently only `/<username>`) re-exports the view's server public API:
+`export { generateMetadata, ProfilePage as default } from "@/views/profile/index.server";`.
 
-Перед созданием нового модуля найди сценарий в [карте поиска](../code-map.md#где-искать-изменение)
-и открой карточку [каталога](../code-map.md#каталог-слайсов).
-Состав экспортов проверяй в её `index.ts`, `index.server.ts` или `@x`; ссылки на внутренние
-файлы даны для чтения реализации и не разрешают обход public API при импорте.
+Before creating a new module, find the scenario in the
+[lookup map](../code-map.md#where-to-look-for-a-change) and open the
+[catalog](../code-map.md#slice-catalog) card. Check the exports in its `index.ts`,
+`index.server.ts` or `@x`; links to internal files are for reading the implementation and do
+not permit bypassing the public API in imports.
 
-## Роуты
+## Routes
 
-Таблицы страниц, служебных файлов и API — в `README.md`, раздел
-[«Роуты»](../../README.md#роуты).
+Page, service file and API tables are in `README.md`, section [«Роуты»](../../README.md#роуты).
 
-- Пути в коде строим только через `routes` (страницы) и `apiRoutes` (API) из `@/shared/config`.
-- `/<username>` — динамический роут верхнего уровня. Статические роуты имеют приоритет, поэтому
-  занятые ими адреса нельзя отдавать пользователям. Список лежит в
-  `src/shared/config/reserved-usernames.ts`: первые сегменты путей из `routes` попадают туда
-  автоматически, поэтому **каждую новую страницу добавляй в `routes`**. Прочие служебные слова
-  дописывай в `reservedWords` вручную.
+- Build paths in code only through `routes` (pages) and `apiRoutes` (API) from `@/shared/config`.
+- `/<username>` is a top-level dynamic route. Static routes take priority, so their addresses
+  must not be given to users. The list lives in `src/shared/config/reserved-usernames.ts`: the
+  first path segments from `routes` are added automatically, so **add every new page to
+  `routes`**. Add other reserved words to `reservedWords` by hand.
 
-## Код-стайл
+## Code style
 
-- Biome: `npm run lint` проверяет, `npm run lint:fix` исправляет и форматирует. Ширина строки — 100.
-- TypeScript strict, без `any` и `@ts-ignore`.
-- Имена файлов и папок — kebab-case, компоненты — PascalCase. Экспорты именованные
-  (`export function LoginView`), default-экспорт только там, где его требует Next.js.
-- Комментарии пишем, только когда код неочевиден.
-- Тесты лежат рядом с модулем: `<модуль>.test.ts`, импорт из `vitest` явный (`describe`, `it`,
-  `expect`), названия тестов — по-русски. Конфиг — `vitest.config.mts`: окружение `node`, алиас `@/`
-  из `tsconfig`, `server-only` подменён пустым модулем, поэтому серверные функции без обращений
-  к Supabase и `cookies()` тестируются напрямую.
-- **Вес JS.** zod импортируем как `import * as z from "zod"`: `import { z }` тянет
-  на каждую страницу все локали (около 60 КБ gzip). В `package.json` стоит
-  `"sideEffects": ["*.css"]`: сборщик выбрасывает неиспользуемые реэкспорты из `index.ts`
-  слайсов, поэтому модули при импорте ничего не делают, а импорт ради побочного эффекта
-  (кроме CSS) не пишем. Тяжёлое и редкое (кроп фото, QR-код) грузим через `next/dynamic`
-  по действию пользователя, с заглушкой того же размера. На каждой странице есть `apiClient`,
-  поэтому в нём нет zod.
+- Biome: `npm run lint` checks, `npm run lint:fix` fixes and formats. Line width is 100.
+- TypeScript strict, no `any` or `@ts-ignore`.
+- File and folder names are kebab-case, components PascalCase. Use named exports
+  (`export function LoginView`); default exports only where Next.js requires them.
+- Comment only where the code is not self-evident.
+- Tests sit next to the module: `<module>.test.ts`, with explicit imports from `vitest`
+  (`describe`, `it`, `expect`) and test names in Russian. Config — `vitest.config.mts`: `node`
+  environment, the `@/` alias from `tsconfig`, `server-only` replaced with an empty module, so
+  server functions that do not touch Supabase or `cookies()` are tested directly.
+- **JS weight.** Import zod as `import * as z from "zod"`: `import { z }` pulls every locale
+  into each page (about 60 KB gzip). `package.json` has `"sideEffects": ["*.css"]`: the bundler
+  drops unused re-exports from slice `index.ts` files, so modules must do nothing on import;
+  do not write imports for side effects (except CSS). Load heavy, rarely used code (photo crop,
+  QR code) with `next/dynamic` on user action, with a placeholder of the same size. `apiClient`
+  is on every page, so it contains no zod.
 
-## Next.js 16: на что обратить внимание
+## Next.js 16: things to watch
 
-- Глобальные типы `PageProps`, `LayoutProps` и `RouteContext` генерирует `next typegen`.
-- `metadata` можно экспортировать только из серверных модулей.
-- В клиентских компонентах параметры роута читаем через `useParams()`, query — через
-  `useSearchParams()`. Компонент с `useSearchParams()` на статической странице оборачиваем
-  в `<Suspense>`, иначе сборка упадёт.
-- Строку адреса без навигации меняем через `window.history.replaceState(window.history.state, "", url)`.
-  С `null` вместо состояния Next теряет своё дерево роутов, и «Назад» показывает не ту страницу.
-  `router.replace` для этого не подходит: он заново выставляет заголовок вкладки из `metadata`.
-  Но `useSearchParams` такой `replaceState` не видит: query, от которого зависит рендер
-  (раздел настроек), меняем ссылкой или `router.replace`.
-- `notFound()` работает только в серверном коде (сейчас — в `ProfilePage`). Вызывай его до
-  первого `Suspense` и без `loading.tsx` в сегменте: после начала стриминга статус останется 200.
-  В клиентских view состояние 404 рисуем сами (`NotFoundState` из `@/shared/ui/not-found-state`). Ошибку загрузки данных — `ErrorState`
-  из `@/shared/ui/error-state`, ошибку рендера ловит `error.tsx`.
-- `error.tsx` и `global-error.tsx` получают `retry()` (перезапросить и перерисовать сегмент),
-  а не только `reset()`: повтор делаем через `retry`.
-- `next lint` удалён, линтим через Biome.
+- `next typegen` generates the global `PageProps`, `LayoutProps` and `RouteContext` types.
+- `metadata` can be exported only from server modules.
+- In client components read route params with `useParams()` and the query with
+  `useSearchParams()`. Wrap a component using `useSearchParams()` on a static page in
+  `<Suspense>`, otherwise the build fails.
+- Change the URL without navigation with `window.history.replaceState(window.history.state, "", url)`.
+  With `null` instead of the state, Next loses its route tree and Back shows the wrong page.
+  `router.replace` does not fit: it resets the tab title from `metadata`. But `useSearchParams`
+  does not see such a `replaceState`: a query that drives rendering (the settings section)
+  changes through a link or `router.replace`.
+- `notFound()` works only in server code (currently `ProfilePage`). Call it before the first
+  `Suspense` and without `loading.tsx` in the segment: once streaming starts, the status stays
+  200. Client views draw the 404 state themselves (`NotFoundState` from
+  `@/shared/ui/not-found-state`). A data loading error — `ErrorState` from
+  `@/shared/ui/error-state`; a render error is caught by `error.tsx`.
+- `error.tsx` and `global-error.tsx` receive `retry()` (refetch and re-render the segment), not
+  only `reset()`: retry through `retry`.
+- `next lint` is removed; linting goes through Biome.
+
+### Next.js docs index
+
+The managed block in `AGENTS.md` asks you to read the installed Next.js docs before writing
+code. Open only the file for the topic you touch; paths are relative to
+`node_modules/next/dist/docs/01-app/`.
+
+| Topic | File |
+|---|---|
+| What changed in 16 | `02-guides/upgrading/version-16.md` |
+| Server and client components, the boundary | `01-getting-started/05-server-and-client-components.md`, `02-guides/server-and-client-boundary.md` |
+| `metadata`, `generateMetadata`, Open Graph images | `01-getting-started/14-metadata-and-og-images.md`, `03-api-reference/04-functions/generate-metadata.md`, `03-api-reference/03-file-conventions/01-metadata/opengraph-image.md` |
+| `sitemap.ts` | `03-api-reference/03-file-conventions/01-metadata/sitemap.md` |
+| `page.tsx`, `layout.tsx`, `PageProps` | `03-api-reference/03-file-conventions/page.md`, `03-api-reference/03-file-conventions/layout.md` |
+| `notFound()` and `not-found.tsx` | `03-api-reference/04-functions/not-found.md`, `03-api-reference/03-file-conventions/not-found.md` |
+| `error.tsx`, `global-error.tsx`, `retry` | `03-api-reference/03-file-conventions/error.md` |
+| `useSearchParams`, `useParams`, `useRouter` | `03-api-reference/04-functions/use-search-params.md`, `use-params.md`, `use-router.md` in the same folder |
+| Route Handlers | `01-getting-started/15-route-handlers.md`, `03-api-reference/03-file-conventions/route.md` |
+| `proxy.ts` (needs approval) | `01-getting-started/16-proxy.md`, `03-api-reference/03-file-conventions/proxy.md` |
+| `next/dynamic` | `02-guides/lazy-loading.md` |
+| Caching | `01-getting-started/08-caching.md` |
+
+For anything else, find the file with `grep -ril '<term>' node_modules/next/dist/docs/01-app`.

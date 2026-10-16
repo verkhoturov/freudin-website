@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { ProfileSection, PublicProfile } from "@/entities/profile";
 import { SocialLinkButton } from "@/entities/social-link";
 import { routes } from "@/shared/config";
@@ -17,7 +17,7 @@ import { ShareProfileButton } from "./share-profile-button";
 
 type ProfileCardProps = {
   profile: PublicProfile;
-  /** Страницу смотрит её владелец: показываем «Редактировать» и подсказки, что заполнить. */
+  /** Страницу смотрит её владелец: Edit page и Share под именем, подсказки, что заполнить. */
   isOwner?: boolean;
   /**
    * Превью в редакторе: без Share, Edit и подсказок, имя и заголовок документов — не заголовки
@@ -36,9 +36,18 @@ export function ProfileCard({ profile, isOwner = false, isPreview = false }: Pro
   return (
     <article className="mx-auto flex w-full max-w-profile flex-col items-center gap-6 text-center">
       <PageCover profile={profile} />
-      <header className="flex flex-col gap-1">
+      <header className="flex flex-col items-center gap-1">
         <Name className="break-words font-heading text-page-title">{profile.displayName}</Name>
         <p className="text-muted-foreground text-sm">@{profile.username}</p>
+        {isOwner && !isPreview ? (
+          // Действия владельца — с первого экрана; посетитель видит только Share внизу
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button asChild variant="ghost">
+              <Link href={routes.settings}>Edit page</Link>
+            </Button>
+            <ShareProfileButton username={profile.username} displayName={profile.displayName} />
+          </div>
+        ) : null}
       </header>
       {isOwner && !isPreview ? <OwnerChecklist profile={profile} /> : null}
       <PreferredContactButton
@@ -46,15 +55,8 @@ export function ProfileCard({ profile, isOwner = false, isPreview = false }: Pro
         className={isCtaSticky ? "@max-lg/page:hidden" : undefined}
       />
       {renderSections(profile, isPreview)}
-      {isPreview ? null : (
-        <div className="flex flex-wrap justify-center gap-2">
-          <ShareProfileButton username={profile.username} displayName={profile.displayName} />
-          {isOwner ? (
-            <Button asChild variant="ghost">
-              <Link href={routes.settings}>Edit</Link>
-            </Button>
-          ) : null}
-        </div>
+      {isPreview || isOwner ? null : (
+        <ShareProfileButton username={profile.username} displayName={profile.displayName} />
       )}
       {isCtaSticky ? (
         // В конце карточки: при прокрутке прилипает к низу экрана (в превью — к низу рамки),
@@ -82,15 +84,21 @@ function renderSections(profile: PublicProfile, isPreview: boolean): ReactNode[]
     blocks.push(<PracticeDetails key={practice[0].section} items={practice} />);
     practice = [];
   };
+  // data-preview-section — по нему превью редактора прокручивается к выбранному блоку
   const add = (section: ProfileSection, block: ReactNode) => {
     flushPractice();
     blocks.push(
       highlighted.has(section) ? (
-        <div key={section} className="flex w-full flex-col items-center rounded-xl bg-accent p-4">
+        <div
+          key={section}
+          data-preview-section={section}
+          className="flex w-full flex-col items-center rounded-xl bg-accent p-4">
           {block}
         </div>
       ) : (
-        <Fragment key={section}>{block}</Fragment>
+        <div key={section} data-preview-section={section} className="contents">
+          {block}
+        </div>
       ),
     );
   };

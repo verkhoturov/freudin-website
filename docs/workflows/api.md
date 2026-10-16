@@ -1,107 +1,107 @@
-# Клиент, сервер и API
+# Client, server and API
 
-Читай при изменении загрузки данных, серверных модулей, API, авторизации или состояния.
-Это обязательные правила из [`AGENTS.md`](../../AGENTS.md); процесс — в [`process.md`](process.md).
+Read when changing data loading, server modules, the API, auth or state.
+These are required rules from [`AGENTS.md`](../../AGENTS.md); the process is in [`process.md`](process.md).
 
-## Клиент и сервер
+## Client and server
 
-Как это устроено — [контейнеры](../architecture/2.containers.md) и
-[потоки данных](../architecture/dynamic.md).
+How it works — [containers](../architecture/2.containers.md) and
+[data flows](../architecture/dynamic.md).
 
-- **Server Components избегаем.** Серверными остаются только файлы, без которых Next.js не
-  работает: корневой `src/app/layout.tsx` (html/body, шрифты, metadata, провайдеры) и тонкие
-  файлы роутинга `page.tsx` и `not-found.tsx`. В них нет хуков, загрузки данных и логики:
-  только реэкспорт view и статического `metadata`. Границы ошибок клиентские: `error.tsx`
-  (`"use client"` и реэкспорт view `error`) и `global-error.tsx` — он заменяет упавший корневой
-  layout, поэтому сам рисует html и body, подключает `globals.css`, шрифты и тему (без шапки
-  и данных). Кроме них в `src/app` лежат статические metadata-файлы без загрузки данных
-  (`robots.ts`, `sitemap.ts`, `manifest.ts`, `opengraph-image.jpg`, иконки), тема `globals.css`
-  и модуль шрифтов `fonts.ts`.
-- **Исключения — серверный рендер (решение 23).** Личная страница `/<username>` загружает
-  профиль на сервере: `ProfilePage` и `generateMetadata` из `@/views/profile/index.server`
-  (`ui/profile-page.server.tsx`) читают его серверной функцией сущности через
-  `createSupabasePublicClient()` и передают клиентской `ProfileView`. Юридические страницы
-  `/privacy` и `/terms` (view и виджет `legal-document`) — серверные компоненты без
-  `"use client"`. Новые исключения — только по согласованию.
-- В остальном интерфейс состоит из клиентских компонентов. `"use client"` обязателен в UI-файлах
-  слайсов `views` (это граница клиентского дерева) и в модулях, которые импортирует `src/app`
-  (например, провайдеры).
-- **HTTP-входные точки серверной логики — Route Handlers `src/app/api/**/route.ts`**
-  (кроме серверного рендера выше). Работа с данными — в серверных функциях сущностей.
-  Клиент получает данные только через эти роуты: `apiClient` и TanStack Query.
-- Не используем Server Actions, загрузку данных в серверных компонентах, `proxy.ts`
-  (в Next.js 16 так называется бывший `middleware.ts`) и `generateMetadata`, кроме исключений выше. Новые — только
-  по согласованию с пользователем (см. этап G в `docs/PLAN.md`).
-- Клиент никогда не обращается к Supabase напрямую. `@supabase/*` импортируется только
-  в `src/shared/api/supabase/`, остальной серверный код берёт клиенты и типы из
-  `@/shared/api/index.server`. Ключи Supabase лежат только в серверных env, без `NEXT_PUBLIC_`.
-- Серверные модули начинаются с `import "server-only";` и выходят наружу только через
-  `index.server.ts` слайса или сегмента.
-- Route handler занимается только HTTP: сессия, валидация zod, коды ответов. Работа с данными
-  идёт в серверных функциях сущностей (`@/entities/<slice>/index.server`).
-- Хелперы route handlers лежат в `@/app/api/_lib`: обработчик оборачиваем в `withErrorHandling`,
-  успешный ответ отдаём через `jsonOk<T>(data)`, ожидаемую ошибку — `throw new HttpError(status,
-  code, message)`, тело запроса читаем через `parseJsonBody(request, schema)`, query — через
-  `parseSearchParams(request, schema)` (ошибка валидации превращается в 400 с `fields`).
-  Картинку из `multipart/form-data` (поле `file`) читает `readImageUpload(request, { maxBytes,
-  maxDimension, noun })`: формат по сигнатуре, 413 за размер, 400 за формат и стороны.
-- Каждый роут оборачиваем в `withErrorHandling`: он же отклоняет изменяющий запрос с чужого
-  сайта (защита от CSRF). Роуты без обёртки не пишем.
-- Роут с сессией начинается с `const { supabase, claims } = await requireUser()` из
-  `@/app/api/_lib`: без сессии это 401, а обновлённая сессия пишется в cookies. Дальше работаем
-  через этот `supabase` (RLS действует). Публичные роуты без сессии читают данные через
-  `createSupabasePublicClient()` (роль `anon`, cookies не трогает). `createSupabaseAdminClient()`
-  обходит RLS, поэтому он только для служебных операций вроде удаления аккаунта.
-- Серверные функции сущностей принимают клиент типа `SupabaseClient` из
-  `@/shared/api/index.server` и не бросают `HttpError` (слой `app` им недоступен). Ожидаемый исход
-  вроде занятого username они возвращают как `{ ok: false, reason }`, а роут превращает его
-  в код ответа.
-- Ответ с данными пользователя отдаём с заголовком `Cache-Control: private, no-store`
-  (`NO_STORE_HEADERS` из `@/app/api/_lib`).
-- Роуты, куда браузер приходит переходом, а не через `apiClient` (`/api/auth/sign-in`,
-  `/api/auth/callback`, `/api/auth/callback/[provider]`), отвечают редиректом, а не JSON. Редирект
-  строим через `redirectTo`, после входа — через `redirectAfterSignIn`, ошибку отправляем
-  на страницу входа через `redirectToLogin(origin, code, next)`, итог привязки способа входа —
-  в раздел Account настроек через `redirectToSettings`. Коды ошибок и их тексты лежат
-  в `entities/viewer/config/auth-errors.ts`.
-- Cookies сессии Supabase — `httpOnly`: браузер их не читает, сессию видят только API-роуты.
-- Подключённые провайдеры входа перечислены в `enabledAuthProviders`
-  (`entities/viewer/config/auth-providers.ts`): только их кнопки видны на `/login`, остальные
-  `/api/auth/sign-in` отправляет на `auth_unavailable`. Включая провайдер в интерфейсе,
-  добавь его туда после настройки входа.
-- Google и Telegram входят и привязываются без OAuth Supabase (решение 27): `GOOGLE_*`
-  и `TELEGRAM_*` обязательны, общий код — `oidc-sign-in.server.ts`, поток —
-  в [динамическом представлении](../architecture/dynamic.md#вход-через-google-и-telegram).
-  Привязанные способы входа читает `getLinkedIdentities` через `auth.getUser()`: идентичностей
-  нет в JWT.
-- Формат ошибки API: `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }`
-  плюс корректный HTTP-статус. Коды: `bad_request` и `validation_error` (400), `unauthorized` (401),
-  `forbidden` (403), `not_found` (404), `conflict` (409), `payload_too_large` (413),
-  `internal_error` (500). На клиенте у `ApiError` бывают ещё `network_error` (status 0: нет
-  сети или ответа нет дольше 30 с, загрузки файлов — 120 с) и `unexpected_response`. Поле
-  `message` пишем для пользователя, на английском.
-- В серверном коде из `@/shared/api` импортируем только типы (`import type`): модуль клиентский
-  и тянет за собой TanStack Query.
-- Путь для редиректа из `?next=` пропускаем только через `getSafeRedirectPath` из
-  `@/shared/lib/safe-redirect` — защита от open redirect.
-- Серверные переменные окружения читаем только через `getServerEnv()` из
-  `@/shared/config/index.server`. Новую переменную добавляй в его zod-схему и в `.env.example`.
+- **Avoid Server Components.** Only files Next.js cannot work without stay on the server: the
+  root `src/app/layout.tsx` (html/body, fonts, metadata, providers) and the thin routing files
+  `page.tsx` and `not-found.tsx`. They contain no hooks, data loading or logic: only a view
+  re-export and static `metadata`. Error boundaries are client-side: `error.tsx`
+  (`"use client"` and a re-export of the `error` view) and `global-error.tsx` — it replaces a
+  crashed root layout, so it renders html and body itself and loads `globals.css`, fonts and
+  the theme (no header or data). Besides them, `src/app` holds static metadata files without
+  data loading (`robots.ts`, `sitemap.ts`, `manifest.ts`, `opengraph-image.jpg`, icons), the
+  `globals.css` theme and the `fonts.ts` font module.
+- **Exceptions — server rendering (decision 23).** The profile page `/<username>` loads the
+  profile on the server: `ProfilePage` and `generateMetadata` from
+  `@/views/profile/index.server` (`ui/profile-page.server.tsx`) read it with an entity server
+  function through `createSupabasePublicClient()` and pass it to the client `ProfileView`. The
+  legal pages `/privacy` and `/terms` (their views and the `legal-document` widget) are server
+  components without `"use client"`. New exceptions need the user's approval.
+- Everything else is client components. `"use client"` is required in UI files of `views`
+  slices (the client tree boundary) and in modules imported by `src/app` (providers, for example).
+- **HTTP entry points of server logic are Route Handlers `src/app/api/**/route.ts`** (apart
+  from the server rendering above). Data work lives in entity server functions. The client
+  gets data only through these routes: `apiClient` and TanStack Query.
+- Do not use Server Actions, data loading in server components, `proxy.ts` (the former
+  `middleware.ts` in Next.js 16) or `generateMetadata` beyond the exceptions above. New ones
+  need the user's approval (see stage G in `docs/PLAN.md`).
+- The client never calls Supabase directly. `@supabase/*` is imported only in
+  `src/shared/api/supabase/` (Biome enforces this); other server code takes clients and types
+  from `@/shared/api/index.server`. Supabase keys live only in server env, without `NEXT_PUBLIC_`.
+- Server modules start with `import "server-only";` and are exposed only through the
+  `index.server.ts` of their slice or segment.
+- A route handler does HTTP only: session, zod validation, status codes. Data work goes to
+  entity server functions (`@/entities/<slice>/index.server`).
+- Route handler helpers live in `@/app/api/_lib`: wrap the handler in `withErrorHandling`,
+  return success through `jsonOk<T>(data)`, an expected error through
+  `throw new HttpError(status, code, message)`, read the body with
+  `parseJsonBody(request, schema)` and the query with `parseSearchParams(request, schema)`
+  (a validation error becomes a 400 with `fields`). An image from `multipart/form-data` (field
+  `file`) is read by `readImageUpload(request, { maxBytes, maxDimension, noun })`: format by
+  signature, 413 for size, 400 for format and dimensions.
+- Wrap every route in `withErrorHandling`: it also rejects a mutating request from another
+  site (CSRF protection). Do not write routes without it.
+- A route with a session starts with `const { supabase, claims } = await requireUser()` from
+  `@/app/api/_lib`: without a session it is a 401, and a refreshed session is written to
+  cookies. Then work through this `supabase` (RLS applies). Public routes without a session read
+  data through `createSupabasePublicClient()` (the `anon` role, no cookies).
+  `createSupabaseAdminClient()` bypasses RLS, so it is only for service operations such as
+  account deletion.
+- Entity server functions take a `SupabaseClient` from `@/shared/api/index.server` and do not
+  throw `HttpError` (the `app` layer is out of their reach). An expected outcome such as a taken
+  username is returned as `{ ok: false, reason }`, and the route turns it into a status code.
+- Responses with user data carry `Cache-Control: private, no-store` (`NO_STORE_HEADERS` from
+  `@/app/api/_lib`).
+- Routes the browser reaches by navigation rather than through `apiClient`
+  (`/api/auth/sign-in`, `/api/auth/callback`, `/api/auth/callback/[provider]`) respond with a
+  redirect, not JSON. Build redirects with `redirectTo`, after sign-in with
+  `redirectAfterSignIn`; send errors to the sign-in page with `redirectToLogin(origin, code, next)`
+  and the result of linking a sign-in method to the Account section of settings with
+  `redirectToSettings`. Error codes and texts live in `entities/viewer/config/auth-errors.ts`.
+- Supabase session cookies are `httpOnly`: the browser cannot read them; only API routes see
+  the session.
+- Enabled sign-in providers are listed in `enabledAuthProviders`
+  (`entities/viewer/config/auth-providers.ts`): only their buttons show on `/login`, and
+  `/api/auth/sign-in` sends the rest to `auth_unavailable`. When enabling a provider in the UI,
+  add it there after configuring sign-in.
+- Google and Telegram sign in and link without Supabase OAuth (decision 27): `GOOGLE_*` and
+  `TELEGRAM_*` are required, the shared code is `oidc-sign-in.server.ts`, the flow is in the
+  [dynamic view](../architecture/dynamic.md#sign-in-with-google-and-telegram). Linked sign-in
+  methods are read by `getLinkedIdentities` through `auth.getUser()`: identities are not in the JWT.
+- API error format: `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }`
+  plus the right HTTP status. Codes: `bad_request` and `validation_error` (400), `unauthorized`
+  (401), `forbidden` (403), `not_found` (404), `conflict` (409), `payload_too_large` (413),
+  `internal_error` (500). On the client `ApiError` also has `network_error` (status 0: no
+  network or no response for over 30 s, file uploads 120 s) and `unexpected_response`. Write
+  `message` for the user, in English.
+- Server code imports only types from `@/shared/api` (`import type`): the module is
+  client-side and pulls in TanStack Query.
+- Pass a redirect path from `?next=` only through `getSafeRedirectPath` from
+  `@/shared/lib/safe-redirect` — open redirect protection.
+- Read server environment variables only through `getServerEnv()` from
+  `@/shared/config/index.server`. Add a new variable to its zod schema and to `.env.example`.
 
-## Состояние и данные
+## State and data
 
-- Всё, что пришло из `/api`, — серверное состояние, и живёт оно только в TanStack Query.
-  Фабрики ключей запросов лежат в сегменте `api` сущности. Мутации инвалидируют или обновляют
-  связанные запросы.
-- Zustand хранит только клиентское состояние: UI и черновики форм. Серверные данные в стор
-  не копируем. Стор лежит в сегменте `model` слайса.
-- Локальное состояние компонента — `useState`.
-- Текущий пользователь — `useViewerQuery()` из `@/entities/viewer`: гость — `null`, а не ошибка.
-  Приватная страница оборачивает содержимое в `ViewerGuard` с нужным `access`: он показывает
-  скелетон, пока проверяется сессия, и перенаправляет, если страница пользователю недоступна.
-  Защита на клиенте — это UX, а доступ к данным проверяют API-роуты.
-- После выхода страница полностью перезагружается на главную: так сбрасываются кеш запросов
-  и состояние пользователя.
-- Из браузера ходим только через `apiClient` из `@/shared/api` (`get`, `post`, `patch`, `delete`),
-  без прямого `fetch` в компонентах.
-- Запросы описываем фабриками `queryOptions(...)` в сегменте `api` слайса и передаём `signal`
-  из `queryFn` в `apiClient`. Настройки QueryClient: `staleTime` 60 с, ошибки 4xx не ретраятся.
+- Everything that came from `/api` is server state and lives only in TanStack Query. Query key
+  factories sit in the entity's `api` segment. Mutations invalidate or update related queries.
+- Zustand holds only client state: UI and form drafts. Do not copy server data into a store.
+  A store lives in the slice's `model` segment.
+- Local component state — `useState`.
+- The current user — `useViewerQuery()` from `@/entities/viewer`: a guest is `null`, not an
+  error. A private page wraps its content in `ViewerGuard` with the right `access`: it shows a
+  skeleton while the session is checked and redirects if the page is not available to the
+  user. Client-side protection is UX; API routes check data access.
+- After sign-out the page fully reloads to the home page: this resets the query cache and the
+  user state.
+- From the browser, go only through `apiClient` from `@/shared/api` (`get`, `post`, `patch`,
+  `delete`), without direct `fetch` in components.
+- Describe queries with `queryOptions(...)` factories in the slice's `api` segment and pass
+  `signal` from `queryFn` to `apiClient`. QueryClient settings: `staleTime` 60 s, 4xx errors
+  are not retried.

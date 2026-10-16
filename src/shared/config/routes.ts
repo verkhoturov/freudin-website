@@ -7,10 +7,12 @@ export const routes = {
   /** Раздел настроек: `account`, `profile` или `search` (`ProfileFormSection` в `widgets/profile-form`). */
   settingsSection: (section: string) => `/settings?section=${encodeURIComponent(section)}`,
   /**
-   * Блок настроек: форма разворачивает его и прокручивает к нему. id блока — `block-<id>`
+   * Блок настроек: форма разворачивает его и ставит фокус на первое поле. id блока — `block-<id>`
    * (`getBlockElementId` в `widgets/profile-form`).
    */
   settingsBlock: (block: string) => `/settings#block-${encodeURIComponent(block)}`,
+  /** Поле раздела Public profile по его id (`photo`, `preferredContact`): фокус на нём. */
+  settingsField: (id: string) => `/settings#${encodeURIComponent(id)}`,
   privacy: "/privacy",
   terms: "/terms",
   profile: (username: string) => `/${encodeURIComponent(username)}`,

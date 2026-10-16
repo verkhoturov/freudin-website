@@ -1,6 +1,6 @@
 # Этап P. lighthouse 12 октября
 
-[Индекс плана](../PLAN.md) · [История выполнения](HISTORY.md) · [Правила шага](../workflows/plan-step.md)
+[Индекс плана](../PLAN.md) · [История выполнения](history/stage-p.md) · [Правила шага](../workflows/plan-step.md)
 
 Открытые задачи этапа. Точки входа помогают найти код и не задают полный список правок.
 Подшаги и «Готово, когда» определяют объём работы; результаты выполненного — в истории.
@@ -186,7 +186,7 @@ Hero остаётся чётким, уменьшение трафика подт
 
 **Точки входа:** [`src/widgets/profile-form/ui/appearance-block.tsx`](../../src/widgets/profile-form/ui/appearance-block.tsx), [`src/widgets/profile-form/ui/sortable-blocks.tsx`](../../src/widgets/profile-form/ui/sortable-blocks.tsx).
 
-Выполненные подшаги и результаты проверок — в [истории](../plan/HISTORY.md#step-79).
+Выполненные подшаги и результаты проверок — в [истории](history/stage-p.md#step-79).
 
 В отчёте Lighthouse от 12.10.2026 Accessibility настроек — 94: провалены имена шести
 переключателей Theme и трёх Cover, после `h1` идёт `h3` Appearance. В проверке Codex Astra

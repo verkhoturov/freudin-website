@@ -1,33 +1,33 @@
-# Чек-лист SEO
+# SEO checklist
 
-Проверяй по нему разметку при вёрстке любого UI (правило 8 [`process.md`](process.md)). Если SEO
-можно улучшить, **предложи пользователю правки** отдельным пунктом в ответе. Правки, которые
-требуют отступить от правил [`AGENTS.md`](../../AGENTS.md) (серверный рендер данных,
-`generateMetadata`), не делай сам — только предлагай.
+Check markup against it when building any UI (rule 8 of [`process.md`](process.md)). If SEO
+can be improved, suggest the changes to the user as a separate item in your answer. Changes
+that would depart from the [`AGENTS.md`](../../AGENTS.md) rules (server rendering of data,
+`generateMetadata`) are only suggested, not made.
 
-- У страницы есть осмысленные `title` и `description`: статический `metadata` view или шаблон
-  корневого layout.
-- На странице ровно один `<h1>`, уровни заголовков идут по порядку, без пропусков.
-- Используются семантические теги: `header`, `nav`, `main` (он один и уже есть в корневом layout),
-  `article`, `section`, `aside`, `footer`; перечисления оформлены списками.
-- Ссылки сделаны через `next/link` и имеют понятный текст; у кнопок без текста есть `aria-label`.
-- У изображений есть осмысленный `alt` (у декоративных — пустой) и заданы размеры (`next/image`).
-- Домен и базовые настройки лежат в `siteConfig` (`url: "https://www.freud.in"`, а `freud.in`
-  редиректит на `www`). Корневой layout задаёт `metadataBase`, Open Graph по умолчанию и карточку
-  Twitter.
-- Страница, которая задаёт свой `openGraph`, заменяет объект из layout целиком (слияние
-  поверхностное), поэтому повторяй в нём нужные поля по умолчанию. Вместе с ним пропадает
-  и картинка `opengraph-image.jpg`: в `generateMetadata` бери её из `(await parent).openGraph?.images`.
-- `opengraph-image.jpg` нарисована в цветах бренда: логотип `freud.in` и подзаголовок по центру.
-  Центр важен: мессенджеры в маленьком превью обрезают картинку до квадрата, X — до 2:1. Меняя
-  палитру, логотип или `siteConfig.description`, перерисуй картинку и обнови alt.
-- Картинка превью по умолчанию — `src/app/opengraph-image.jpg` (1200×630). Alt лежит
-  в `opengraph-image.alt.txt` без перевода строки в конце: Next.js его не обрезает.
-- У публичной страницы есть `alternates: { canonical: routes.<страница> }`, и сама она добавлена
-  в `publicPages` в `src/app/sitemap.ts`.
-- Служебные и приватные страницы не индексируются: в их `metadata` стоит
-  `robots: { index: false, follow: true }` (сейчас это `/login`, `/onboarding` и `/settings`).
-  В `robots.txt` их не закрываем, иначе поисковик не увидит `noindex`.
-- Контент, важный для поиска и превью ссылок, должен попадать в серверный HTML. Личные страницы
-  и юридические тексты рендерятся на сервере, остальные данные грузятся на клиенте: новую
-  публичную страницу с данными обсуждай с пользователем (этап G в `docs/PLAN.md`).
+- The page has meaningful `title` and `description`: the view's static `metadata` or the root
+  layout template.
+- There is exactly one `<h1>`, and heading levels go in order without gaps.
+- Semantic tags are used: `header`, `nav`, `main` (there is one, already in the root layout),
+  `article`, `section`, `aside`, `footer`; enumerations are lists.
+- Links use `next/link` with clear text; buttons without text have an `aria-label`.
+- Images have a meaningful `alt` (empty for decorative ones) and set dimensions (`next/image`).
+- The domain and base settings live in `siteConfig` (`url: "https://www.freud.in"`, while
+  `freud.in` redirects to `www`). The root layout sets `metadataBase`, default Open Graph and
+  the Twitter card.
+- A page that sets its own `openGraph` replaces the layout's object entirely (the merge is
+  shallow), so repeat the needed default fields in it. The `opengraph-image.jpg` image is lost
+  with it too: in `generateMetadata` take it from `(await parent).openGraph?.images`.
+- `opengraph-image.jpg` is drawn in brand colours: the `freud.in` logo and subtitle in the
+  centre. The centre matters: messengers crop the small preview to a square, X to 2:1. When
+  changing the palette, the logo or `siteConfig.description`, redraw the image and update its alt.
+- The default preview image is `src/app/opengraph-image.jpg` (1200×630). Its alt is in
+  `opengraph-image.alt.txt` without a trailing newline: Next.js does not trim it.
+- A public page has `alternates: { canonical: routes.<page> }` and is listed in `publicPages`
+  in `src/app/sitemap.ts`.
+- Service and private pages are not indexed: their `metadata` has
+  `robots: { index: false, follow: true }` (currently `/login`, `/onboarding` and `/settings`).
+  Do not block them in `robots.txt`, otherwise search engines will not see `noindex`.
+- Content important for search and link previews must reach the server HTML. Profile pages
+  and legal texts are server-rendered, other data loads on the client: discuss a new public
+  page with data with the user (stage G in `docs/PLAN.md`).

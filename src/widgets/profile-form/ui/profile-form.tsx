@@ -13,6 +13,7 @@ import {
   XIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import type { City } from "@/entities/location";
 import {
@@ -24,8 +25,6 @@ import {
   type ContactType,
   clientTypeIds,
   clientTypeLabels,
-  concernGroups,
-  concernIds,
   contactTypeIds,
   contactTypeLabels,
   DISPLAY_NAME_MAX_LENGTH,
@@ -39,7 +38,6 @@ import {
   genderLabels,
   getCurrencyName,
   hiddenVisibilityLabels,
-  isConcernGroupAvailable,
   LANGUAGES_MAX,
   MIN_AGE,
   normalizeSectionOrder,
@@ -75,6 +73,15 @@ import { routes, siteConfig } from "@/shared/config";
 import { toFieldErrors, toFormFieldName } from "@/shared/lib/field-errors";
 import { useUnsavedChangesWarning } from "@/shared/lib/use-unsaved-changes-warning";
 import { cn } from "@/shared/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/ui/alert-dialog";
 import { Button } from "@/shared/ui/button";
 import { Checkbox } from "@/shared/ui/checkbox";
 import {
@@ -105,9 +112,10 @@ import { type AvatarValue, getAvatarUrl } from "../model/avatar-value";
 import { AppearanceBlock } from "./appearance-block";
 import { AvatarField } from "./avatar-field";
 import { CheckboxGroup } from "./checkbox-group";
+import { ConcernsField } from "./concerns-field";
 import { HighlightCheckbox } from "./highlight-checkbox";
 import { CitySelect, CountrySelect, CurrencySelect, LanguagesSelect } from "./practice-selects";
-import { getBlockElementId, SortableBlocks } from "./sortable-blocks";
+import { SortableBlocks } from "./sortable-blocks";
 
 const USERNAME_CHECK_DEBOUNCE_MS = 400;
 const VALUES_CHANGE_DEBOUNCE_MS = 300;
@@ -117,13 +125,6 @@ const PRICE_AMOUNT_MAX_LENGTH = String(PRICE_AMOUNT_MAX).length;
 const workFormatOptions = workFormatIds.map((id) => ({ value: id, label: workFormatLabels[id] }));
 const clientTypeOptions = clientTypeIds.map((id) => ({ value: id, label: clientTypeLabels[id] }));
 const approachOptions = approachIds.map((id) => ({ value: id, label: approachLabels[id] }));
-const concernGroupOptions = concernGroups.map((group) => ({
-  ...group,
-  options: Object.entries(group.concerns).map(([value, label]) => ({
-    value: value as (typeof concernIds)[number],
-    label,
-  })),
-}));
 
 // Пустое значение в Select нельзя: «не выбрано» — отдельный пункт
 const NOT_SELECTED = "none";
@@ -184,6 +185,12 @@ const faqSuggestions = [
 /** Раздел настроек: Account, Public profile или Search details. */
 export type ProfileFormSection = "account" | "profile" | "search";
 
+export const profileFormSectionLabels: Record<ProfileFormSection, string> = {
+  account: "Account",
+  profile: "Public profile",
+  search: "Search details",
+};
+
 // Поля разделов Account и Search details, остальные — в Public profile
 const accountFields = new Set<string>([
   "username",
@@ -201,40 +208,44 @@ function getFieldSection(field: string): ProfileFormSection {
   return searchFields.has(field) ? "search" : "profile";
 }
 
-// Блок, в котором стоит поле: его разворачиваем, если в поле ошибка. Тип требует указать блок
-// для каждого поля схемы, поэтому новое поле не забудется
-const fieldBlocks: Record<keyof ProfileInput, string | null> = {
-  username: null,
-  displayName: null,
-  contactEmail: null,
-  sectionOrder: null,
-  bio: "bio",
-  socialLinks: "links",
-  practiceStartedOn: "experience",
-  approaches: "approaches",
-  clientTypes: "client-types",
-  workFormats: "work-formats",
-  country: null,
-  cityId: null,
-  languages: "languages",
-  priceAmount: "price",
-  currency: null,
-  education: "education",
-  contacts: "contacts",
-  preferredContact: "contacts",
-  faq: "faq",
-  services: "services",
-  highlightedSections: null,
-  cover: "appearance",
-  pageTheme: "appearance",
-  linkIcons: "appearance",
-  ctaPlacement: "appearance",
-  visibility: null,
-  pagePassword: null,
-  birthDate: null,
-  gender: null,
-  concerns: null,
+// Подпись поля для сообщения об ошибке в другом разделе и блок, в котором оно стоит: его
+// разворачиваем, если в поле ошибка. Тип требует указать их для каждого поля схемы, поэтому
+// новое поле не забудется
+const fieldInfo: Record<keyof ProfileInput, { label: string; block: string | null }> = {
+  username: { label: "Username", block: null },
+  displayName: { label: "Name", block: null },
+  contactEmail: { label: "Email", block: null },
+  sectionOrder: { label: "Block order", block: null },
+  bio: { label: "Bio", block: "bio" },
+  socialLinks: { label: "Social links", block: "links" },
+  practiceStartedOn: { label: "Practicing since", block: "experience" },
+  approaches: { label: "Approaches", block: "approaches" },
+  clientTypes: { label: "Works with", block: "client-types" },
+  workFormats: { label: "Work format", block: "work-formats" },
+  country: { label: "Country", block: null },
+  cityId: { label: "City", block: null },
+  languages: { label: "Languages", block: "languages" },
+  priceAmount: { label: "Starting price per session", block: "price" },
+  currency: { label: "Currency", block: null },
+  education: { label: "Education", block: "education" },
+  contacts: { label: "Contacts", block: "contacts" },
+  preferredContact: { label: "Preferred way to contact", block: "contacts" },
+  faq: { label: "FAQ", block: "faq" },
+  services: { label: "Services", block: "services" },
+  highlightedSections: { label: "Highlighted blocks", block: null },
+  cover: { label: "Cover", block: "appearance" },
+  pageTheme: { label: "Theme", block: "appearance" },
+  linkIcons: { label: "Show icons on buttons", block: "appearance" },
+  ctaPlacement: { label: "Contact button on phones", block: "appearance" },
+  visibility: { label: "Hide my page", block: null },
+  pagePassword: { label: "Password", block: null },
+  birthDate: { label: "Date of birth", block: null },
+  gender: { label: "Gender", block: null },
+  concerns: { label: "Client concerns", block: null },
 };
+
+// Поля, на которые ставим фокус при переходе к блоку или полю
+const FOCUSABLE = "input:not([type=file]), textarea, button:not(:disabled)";
 
 // Ширина превью в редакторе: Phone — ширина iPhone, на ней видна страница с телефона
 type PreviewWidth = "desktop" | "phone";
@@ -289,16 +300,16 @@ type ProfileFormProps = {
   collapsedBlocks?: readonly string[];
   onCollapsedChange?: (blockId: string, collapsed: boolean) => void;
   /**
-   * Раздел настроек: видна только его часть формы, остальные скрыты атрибутом `hidden`. Правки
-   * живут только в открытом разделе: при смене раздела страница пересоздаёт форму. В Account
+   * Раздел настроек: видна только его часть формы, остальные скрыты атрибутом `hidden`. Форма
+   * при смене раздела остаётся: правки всех разделов сохраняются вместе по Save. В Account
    * кнопка Save стоит под полями, в остальных разделах — в липкой панели. Без раздела видна
    * вся форма: онбординг.
    */
   section?: ProfileFormSection;
   /**
    * `inline` — превью колонкой рядом с формой (онбординг). `workspace` — редактор на весь экран
-   * (настройки): колонка формы фиксированной ширины и холст превью на всю остальную ширину,
-   * превью видно во всех разделах.
+   * (настройки): колонка формы фиксированной ширины и холст превью на всю остальную ширину.
+   * В Search details превью нет: закрытые данные на странице не видны, форма занимает всю ширину.
    */
   layout?: "inline" | "workspace";
   /** Шапка над формой в её колонке: заголовок и подпись раздела. */
@@ -315,6 +326,13 @@ type ProfileFormProps = {
   onSubmit: (values: ProfileInput, avatar: AvatarValue) => Promise<void>;
   /** Вызывается после правок с задержкой: например, для сохранения черновика. */
   onValuesChange?: (values: ProfileInput) => void;
+  /** Несохранённые значения, оставшиеся с прошлого открытия: форма подставит их поверх сохранённых. */
+  draftValues?: ProfileInput | null;
+  /**
+   * Форма закрывается: несохранённые значения или `null`, если правок нет или они сохранены.
+   * Так правки переживают уход со страницы кнопкой «Назад», которую нельзя перехватить.
+   */
+  onDraftChange?: (values: ProfileInput | null) => void;
 };
 
 // Раскладки формы и превью. Колонка редактора — 28rem: длинные тексты на компьютере шире,
@@ -334,7 +352,7 @@ const layoutClasses = {
   },
   workspace: {
     // Превью высотой в экран растягивает строку сетки: колонка формы не короче экрана
-    root: "@container flex flex-col",
+    root: "@container flex grow flex-col",
     columns: "@3xl:grid @3xl:grid-cols-[--spacing(112)_minmax(0,1fr)]",
     formColumn: "flex flex-col gap-10 bg-background px-4 py-6 sm:px-6 @3xl:border-r",
     // Рамка превью — вся область справа, как окно браузера: панель с подписью и выбором ширины,
@@ -406,8 +424,24 @@ export function ProfileForm({
   submitLabel,
   onSubmit,
   onValuesChange,
+  draftValues,
+  onDraftChange,
 }: ProfileFormProps) {
   const formId = useId();
+  const router = useRouter();
+  const previewBodyRef = useRef<HTMLDivElement>(null);
+  // Результат последнего сохранения: Save and continue уводит со страницы только после успеха
+  const isSavedRef = useRef(false);
+  // Адрес ссылки, переход по которой ждёт ответа в диалоге несохранённых правок
+  const [leaveUrl, setLeaveUrl] = useState<URL | null>(null);
+  // Блок, который выбрали в форме последним: к нему прокручивается превью
+  const selectedBlockRef = useRef<string | null>(null);
+  const pendingPreviewBlockRef = useRef<string | null>(null);
+  // Положение прокрутки формы и превью на телефоне: у каждого своё
+  const scrollPositionsRef = useRef<{ form: number; preview: number | null }>({
+    form: 0,
+    preview: null,
+  });
   const rootRef = useRef<HTMLDivElement>(null);
   const [reveal, setReveal] = useState<RevealTarget | null>(null);
   // Превью на телефоне: форма прячется, но остаётся в DOM, и введённое не теряется
@@ -445,6 +479,7 @@ export function ProfileForm({
     onSubmit: async ({ value, formApi }) => {
       try {
         await onSubmit(value, avatar);
+        isSavedRef.current = true;
       } catch (error) {
         if (!(error instanceof ApiError)) {
           toast.error("Couldn’t save. Please try again.");
@@ -471,7 +506,24 @@ export function ProfileForm({
   const isFormDefault = useStore(form.store, (state) => state.isDefaultValue);
   const hasChanges = !isFormDefault || avatar !== initialAvatar;
   const isEditMode = mode === "edit";
-  useUnsavedChangesWarning(isEditMode && hasChanges);
+  useUnsavedChangesWarning(isEditMode && hasChanges, setLeaveUrl);
+
+  // Черновик с прошлого открытия — поверх сохранённых значений, при закрытии формы — обратно.
+  // Только при монтировании: форма пересоздаётся после каждого сохранения
+  // biome-ignore lint/correctness/useExhaustiveDependencies: черновик подставляем один раз
+  useEffect(() => {
+    if (draftValues) {
+      for (const key of Object.keys(draftValues) as (keyof ProfileInput)[]) {
+        if (JSON.stringify(draftValues[key]) !== JSON.stringify(form.state.values[key])) {
+          form.setFieldValue(key, draftValues[key]);
+        }
+      }
+    }
+    return () => {
+      const isDraft = !isSavedRef.current && !form.state.isDefaultValue;
+      onDraftChange?.(isDraft ? form.state.values : null);
+    };
+  }, []);
 
   // Шапка блока в конструкторе уже называет его: совпадающую подпись поля оставляем только
   // для скринридера
@@ -480,70 +532,171 @@ export function ProfileForm({
   const isCollapsed = (blockId: string) =>
     Boolean(onCollapsedChange) && collapsedBlocks.includes(blockId);
   const isSectionHidden = (id: ProfileFormSection) => section !== undefined && section !== id;
-  // В онбординге и разделе Public profile превью есть всегда, в остальных разделах — в редакторе
-  // на весь экран
+  // В онбординге и разделе Public profile превью есть всегда, в редакторе на весь экран — во всех
+  // разделах, кроме Search details: его закрытых данных на странице нет
   const hasPreview =
-    Boolean(renderPreview) && (layout === "workspace" || !isSectionHidden("profile"));
+    Boolean(renderPreview) &&
+    (layout === "workspace" ? section !== "search" : !isSectionHidden("profile"));
   const isPreviewOpen = hasPreview && isPreviewShown;
   const avatarUrl = getAvatarUrl(avatar, currentAvatarUrl, accountPhotos);
   const getPreview = (values: ProfileInput) =>
     toPreviewProfile(values, { avatarUrl, city: findCity(values.cityId) });
 
-  // Прокрутка и фокус — после отрисовки: развёрнутого блока или формы вместо превью. Поля
-  // скрытых разделов пропускаем
+  // Прокрутка и фокус — после отрисовки: развёрнутого блока, другого раздела или формы вместо
+  // превью. Поля скрытых разделов пропускаем: цель ждёт, пока её раздел откроется
+  // biome-ignore lint/correctness/useExhaustiveDependencies: после смены раздела цель становится видна
   useEffect(() => {
     if (!reveal) return;
     const candidates = rootRef.current?.querySelectorAll<HTMLElement>(reveal.selector) ?? [];
     const target = Array.from(candidates).find((element) => element.getClientRects().length > 0);
-    target?.scrollIntoView({ block: "center" });
-    target?.focus({ preventScroll: true });
-  }, [reveal]);
+    if (!target) return;
+    target.scrollIntoView({ block: "center" });
+    target.focus({ preventScroll: true });
+    setReveal(null);
+  }, [reveal, section]);
 
-  // Ссылка `/settings#block-contacts` (подсказки на странице владельца): разворачиваем блок
-  // и ведём к нему. Хеш убираем, чтобы форма, пересозданная после сохранения, не прыгала снова
+  // Ссылки чек-листа на странице владельца: `/settings#block-contacts` разворачивает блок
+  // и ставит фокус на первое поле, `/settings#photo` — на поле с этим id. Хеш убираем, чтобы
+  // форма, пересозданная после сохранения, не прыгала снова
   useEffect(() => {
     if (!onCollapsedChange) return;
     const hash = decodeURIComponent(window.location.hash.slice(1));
-    const prefix = getBlockElementId("");
-    if (!hash.startsWith(prefix)) return;
-    onCollapsedChange(hash.slice(prefix.length), false);
-    setReveal({ selector: `#${CSS.escape(hash)} [aria-expanded]` });
+    const element = hash ? document.getElementById(hash) : null;
+    if (!element || !rootRef.current?.contains(element)) return;
+    const block = element.closest<HTMLElement>("[data-block]");
+    if (block?.dataset.block) onCollapsedChange(block.dataset.block, false);
+    const id = `#${CSS.escape(hash)}`;
+    // Фокус — на самом поле или на первом поле внутри: у блока — внутри содержимого, не на шапке
+    const scope = element === block ? `${id} fieldset` : id;
+    setReveal({ selector: element.matches(FOCUSABLE) ? id : `${scope} :is(${FOCUSABLE})` });
     const { pathname, search } = window.location;
     window.history.replaceState(window.history.state, "", pathname + search);
   }, [onCollapsedChange]);
 
-  const submit = async () => {
+  // Ведёт к полю: разворачивает его блок, открывает раздел и ставит фокус
+  const revealField = (selector: string, blockId: string | null, target?: ProfileFormSection) => {
+    if (blockId && isCollapsed(blockId)) onCollapsedChange?.(blockId, false);
+    if (target && target !== section) router.push(routes.settingsSection(target));
+    setIsPreviewShown(false);
+    setReveal({ selector });
+  };
+
+  /** Сохраняет форму; `true` — сохранение прошло. */
+  const submit = async (): Promise<boolean> => {
+    isSavedRef.current = false;
     await form.handleSubmit();
-    // Неверное поле может оказаться в свёрнутом блоке, под превью или далеко от панели Save:
-    // разворачиваем такие блоки и ведём к первому неверному полю
+    // Неверное поле может оказаться в свёрнутом блоке, в другом разделе, под превью или далеко
+    // от панели Save: разворачиваем такие блоки и ведём к первому неверному полю
     const invalidFields = Object.entries(form.state.fieldMeta).filter(
       ([, meta]) => meta && !meta.isValid,
     );
-    if (invalidFields.length === 0) return;
-    const invalidSections = new Set<ProfileFormSection>();
+    if (invalidFields.length === 0) return isSavedRef.current;
+    const invalid: { field: keyof ProfileInput; section: ProfileFormSection }[] = [];
     for (const [name] of invalidFields) {
       // Ошибка связанного поля (город при очном формате, пароль для режима password) могла
       // появиться без касания поля: TanStack Form тогда не отправляет форму и не показывает её
       form.setFieldMeta(name as DeepKeys<ProfileInput>, (meta) => ({ ...meta, isTouched: true }));
-      const field = name.split(/[.[]/)[0];
-      invalidSections.add(getFieldSection(field));
-      const blockId = fieldBlocks[field as keyof ProfileInput];
+      const field = name.split(/[.[]/)[0] as keyof ProfileInput;
+      invalid.push({ field, section: getFieldSection(field) });
+      const blockId = fieldInfo[field].block;
       if (blockId && isCollapsed(blockId)) onCollapsedChange?.(blockId, false);
     }
-    // Другие разделы не правились, но сохранённые значения могли перестать проходить схему
-    if (section && !invalidSections.has(section)) {
-      toast.error("Couldn’t save. Some fields in another section need fixing.");
-      return;
+    const other = invalid.find((item) => item.section !== section);
+    if (section && other && !invalid.some((item) => item.section === section)) {
+      // Ошибка только в скрытом разделе: называем поле и даём перейти к нему, правки остаются
+      const { label, block } = fieldInfo[other.field];
+      toast.error(`Couldn’t save. Check ${label} in ${profileFormSectionLabels[other.section]}.`, {
+        action: {
+          label: "Go to field",
+          onClick: () => revealField('[aria-invalid="true"]', block, other.section),
+        },
+      });
+      return false;
     }
     setIsPreviewShown(false);
     setReveal({ selector: '[aria-invalid="true"]' });
+    return false;
+  };
+
+  const leave = (url: URL) => {
+    setLeaveUrl(null);
+    if (url.origin === window.location.origin) router.push(url.pathname + url.search + url.hash);
+    else window.location.assign(url);
+  };
+
+  const discardAndLeave = (url: URL) => {
+    form.reset();
+    setAvatar(initialAvatar);
+    leave(url);
+  };
+
+  const saveAndLeave = async (url: URL) => {
+    setLeaveUrl(null);
+    if (await submit()) leave(url);
+  };
+
+  // Прокрутка превью к блоку на странице: на широком экране прокручивается холст превью, на
+  // телефоне — вся страница. Пустого блока на странице нет, тогда превью остаётся на месте
+  const scrollPreviewTo = (blockId: string) => {
+    const body = previewBodyRef.current;
+    const anchor = body?.querySelector<HTMLElement>(
+      `[data-preview-section="${CSS.escape(blockId)}"]`,
+    );
+    // У обёртки `display: contents` нет своей рамки: меряем первый элемент блока
+    const target = anchor?.getClientRects().length ? anchor : anchor?.firstElementChild;
+    if (!body || !target) return false;
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? "auto"
+      : "smooth";
+    const offset = 16;
+    if (getComputedStyle(body).overflowY === "auto") {
+      const top = target.getBoundingClientRect().top - body.getBoundingClientRect().top;
+      body.scrollTo({ top: body.scrollTop + top - offset, behavior });
+    } else {
+      window.scrollTo({ top: window.scrollY + target.getBoundingClientRect().top - offset });
+    }
+    return true;
+  };
+
+  // Явный выбор блока — фокус на его поле, заголовке или кнопках: превью показывает этот блок.
+  // Ввод внутри того же блока превью не двигает
+  const selectBlock = (event: React.SyntheticEvent, reselect = false) => {
+    const blockId =
+      event.target instanceof Element
+        ? event.target.closest<HTMLElement>("[data-block]")?.dataset.block
+        : undefined;
+    if (!blockId || (!reselect && blockId === selectedBlockRef.current)) return;
+    selectedBlockRef.current = blockId;
+    // Превью рядом с формой видно сразу; на телефоне оно откроется по кнопке Preview
+    if (previewBodyRef.current?.getClientRects().length) scrollPreviewTo(blockId);
+    else pendingPreviewBlockRef.current = blockId;
   };
 
   const togglePreview = () => {
+    scrollPositionsRef.current[isPreviewOpen ? "preview" : "form"] = window.scrollY;
     setIsPreviewShown(!isPreviewOpen);
-    // И форма, и превью начинаются сверху: иначе после переключения виден случайный кусок
-    rootRef.current?.scrollIntoView({ block: "start" });
   };
+
+  // Переключение Preview ↔ Edit на телефоне: форма возвращается туда, где её оставили, превью —
+  // к выбранному с прошлого раза блоку или на прежнее место
+  const wasPreviewOpenRef = useRef(isPreviewOpen);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: только при переключении
+  useEffect(() => {
+    if (wasPreviewOpenRef.current === isPreviewOpen) return;
+    wasPreviewOpenRef.current = isPreviewOpen;
+    // Ошибка при сохранении сама ведёт к неверному полю
+    if (reveal) return;
+    const positions = scrollPositionsRef.current;
+    if (!isPreviewOpen) {
+      window.scrollTo({ top: positions.form });
+      return;
+    }
+    const blockId = pendingPreviewBlockRef.current;
+    pendingPreviewBlockRef.current = null;
+    if (blockId && scrollPreviewTo(blockId)) return;
+    if (positions.preview === null) rootRef.current?.scrollIntoView({ block: "start" });
+    else window.scrollTo({ top: positions.preview });
+  }, [isPreviewOpen]);
 
   const renderSummary = (section: ProfileSection): ReactNode => (
     <form.Subscribe selector={(state) => state.values}>
@@ -1572,6 +1725,9 @@ export function ProfileForm({
   // открывается кнопкой Preview
   const classes = layoutClasses[layout];
   const columnsClassName = hasPreview ? classes.columns : undefined;
+  // Без превью колонка формы — на всю ширину и высоту, но строки полей не растягиваются
+  // на весь экран
+  const isFormWide = layout === "workspace" && !hasPreview;
 
   const saveButton = (
     <form.Subscribe selector={(state) => state.isSubmitting}>
@@ -1594,12 +1750,27 @@ export function ProfileForm({
 
   return (
     <div ref={rootRef} className={classes.root}>
-      <div className={columnsClassName}>
-        <div className={cn(classes.formColumn, isPreviewOpen && "@max-3xl:hidden")}>
+      <div className={isFormWide ? "flex grow flex-col" : columnsClassName}>
+        <div
+          className={cn(
+            classes.formColumn,
+            isFormWide && "grow @3xl:*:max-w-4xl",
+            isPreviewOpen && "@max-3xl:hidden",
+          )}>
           {header}
           <form
             id={formId}
             noValidate
+            onFocus={selectBlock}
+            onClickCapture={(event) => {
+              // Повторное раскрытие — явный выбор блока, даже если фокус уже внутри него.
+              if (
+                event.target instanceof Element &&
+                event.target.closest('[data-block] h2 button[aria-expanded="false"]')
+              ) {
+                selectBlock(event, true);
+              }
+            }}
             onSubmit={(event) => {
               event.preventDefault();
               void submit();
@@ -1750,6 +1921,9 @@ export function ProfileForm({
                                         ctaPlacement={
                                           hasPreferredContact ? ctaField.state.value : null
                                         }
+                                        onChooseMainButton={() =>
+                                          revealField("#preferredContact", "contacts")
+                                        }
                                         onCtaPlacementChange={(placement) => {
                                           ctaField.handleChange(placement);
                                           ctaField.handleBlur();
@@ -1843,48 +2017,21 @@ export function ProfileForm({
                   </form.Field>
                   <form.Field name="concerns">
                     {(field) => (
-                      <FieldSet>
-                        <FieldLegend variant="label">Client concerns you work with</FieldLegend>
-                        <form.Subscribe selector={(state) => state.values.clientTypes}>
-                          {(clientTypes) =>
-                            concernGroupOptions
-                              // Запросы пар — только если отмечено «Couples»: остальные схема отбросит
-                              .filter((group) => isConcernGroupAvailable(group, clientTypes))
-                              .map((group) => {
-                                const groupIds = new Set<string>(
-                                  group.options.map((option) => option.value),
-                                );
-                                return (
-                                  <CheckboxGroup
-                                    key={group.id}
-                                    name={`concerns-${group.id}`}
-                                    legend={group.label}
-                                    legendClassName="font-normal text-muted-foreground"
-                                    options={group.options}
-                                    value={field.state.value.filter((id) => groupIds.has(id))}
-                                    // Храним в порядке справочника: иначе снятая и снова отмеченная галочка
-                                    // считалась бы изменением
-                                    onChange={(groupValue) =>
-                                      field.handleChange(
-                                        concernIds.filter((id) =>
-                                          groupIds.has(id)
-                                            ? (groupValue as string[]).includes(id)
-                                            : field.state.value.includes(id),
-                                        ),
-                                      )
-                                    }
-                                    onBlur={field.handleBlur}
-                                    className="sm:grid sm:grid-cols-2"
-                                    errors={[]}
-                                  />
-                                );
-                              })
-                          }
-                        </form.Subscribe>
-                        {field.state.meta.isTouched && !field.state.meta.isValid ? (
-                          <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                        ) : null}
-                      </FieldSet>
+                      <form.Subscribe selector={(state) => state.values.clientTypes}>
+                        {(clientTypes) => (
+                          <ConcernsField
+                            value={field.state.value}
+                            onChange={field.handleChange}
+                            onBlur={field.handleBlur}
+                            clientTypes={clientTypes}
+                            errors={
+                              field.state.meta.isTouched && !field.state.meta.isValid
+                                ? toFieldErrors(field.state.meta.errors)
+                                : []
+                            }
+                          />
+                        )}
+                      </form.Subscribe>
                     )}
                   </form.Field>
                 </div>
@@ -2181,6 +2328,7 @@ export function ProfileForm({
                 ) : null}
               </div>
               <div
+                ref={previewBodyRef}
                 className={cn(
                   classes.previewBody,
                   layout === "workspace" && previewWidth === "phone" && "@3xl:bg-muted",
@@ -2224,6 +2372,26 @@ export function ProfileForm({
           </div>
         </div>
       )}
+
+      <AlertDialog open={leaveUrl !== null} onOpenChange={(open) => !open && setLeaveUrl(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Save your changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes on this page. Save them before you leave, or discard them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay</AlertDialogCancel>
+            <Button variant="outline" onClick={() => leaveUrl && discardAndLeave(leaveUrl)}>
+              Discard changes
+            </Button>
+            <Button onClick={() => leaveUrl && void saveAndLeave(leaveUrl)}>
+              Save and continue
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

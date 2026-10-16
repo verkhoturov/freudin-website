@@ -9,6 +9,7 @@ import {
   pageThemeIds,
   pageThemeLabels,
 } from "@/entities/profile";
+import { Button } from "@/shared/ui/button";
 import { Checkbox } from "@/shared/ui/checkbox";
 import { DisclosureButton } from "@/shared/ui/disclosure-button";
 import { Field, FieldDescription, FieldLabel, FieldLegend, FieldSet } from "@/shared/ui/field";
@@ -24,9 +25,14 @@ type AppearanceBlockProps = {
   onCoverChange: (cover: ProfileCover) => void;
   linkIcons: boolean;
   onLinkIconsChange: (linkIcons: boolean) => void;
-  /** Место главной кнопки на телефоне; `null` — главной кнопки нет, выбор не показываем. */
+  /**
+   * Место главной кнопки на телефоне; `null` — главной кнопки нет: вместо выбора пояснение
+   * и переход к Preferred way to contact.
+   */
   ctaPlacement: CtaPlacement | null;
   onCtaPlacementChange: (placement: CtaPlacement) => void;
+  /** Раскрыть Contacts и поставить фокус на Preferred way to contact; правки формы остаются. */
+  onChooseMainButton: () => void;
   collapsed: boolean;
   /** Без него блок не сворачивается. */
   onCollapsedChange?: (collapsed: boolean) => void;
@@ -46,6 +52,7 @@ export function AppearanceBlock({
   onLinkIconsChange,
   ctaPlacement,
   onCtaPlacementChange,
+  onChooseMainButton,
   collapsed,
   onCollapsedChange,
 }: AppearanceBlockProps) {
@@ -56,6 +63,7 @@ export function AppearanceBlock({
   return (
     <section
       id={getBlockElementId(BLOCK_ID)}
+      data-block={BLOCK_ID}
       aria-labelledby={titleId}
       className="flex flex-col gap-3 rounded-xl border bg-background p-3">
       <h2 id={titleId} className="flex min-w-0 font-medium text-sm">
@@ -149,7 +157,22 @@ export function AppearanceBlock({
               A pinned button stays at the bottom of the screen while visitors scroll.
             </FieldDescription>
           </FieldSet>
-        ) : null}
+        ) : (
+          <FieldSet>
+            <FieldLegend variant="label">Contact button on phones</FieldLegend>
+            <FieldDescription>
+              Your page has no main contact button yet. Choose a preferred way to contact in
+              Contacts to set where it appears.
+            </FieldDescription>
+            <Button
+              type="button"
+              variant="outline"
+              className="self-start"
+              onClick={onChooseMainButton}>
+              Go to Contacts
+            </Button>
+          </FieldSet>
+        )}
       </div>
     </section>
   );

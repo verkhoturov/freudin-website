@@ -1,45 +1,76 @@
-# Работа над шагом плана
+# Working on a plan step
 
-Дополнительные правила, когда задача поставлена в рамках `docs/PLAN.md` («возьми шаг 22
-из `docs/PLAN.md`»). Остальные правила — 4–14 в [`process.md`](process.md) — действуют для любой
-задачи, в том числе для шага плана. [`docs/PLAN.md`](../PLAN.md) — индекс; подробные карточки
-и чекбоксы находятся в файлах `docs/plan/stage-*.md` по ссылкам из индекса.
+Extra rules for a task given within `docs/PLAN.md` («take step 22 from `docs/PLAN.md`»). The
+other rules — 4–14 in [`process.md`](process.md) — apply to every task, plan steps included.
+[`docs/PLAN.md`](../PLAN.md) is an index; detailed cards and checkboxes live in
+`docs/plan/stage-*.md`, linked from the index.
 
-1. Найди шаг в индексе `docs/PLAN.md`, открой его карточку в файле этапа и прочитай контекст
-   этапа, условия и связанные задачи. Читай блок до следующего заголовка шага, а не весь
-   файл этапа; историю открывай только для нужного завершённого пункта. Подшаги и «Готово,
-   когда» в карточке определяют объём работы. Точки входа — подсказки для поиска кода,
-   а не закрытый список файлов, которые разрешено менять.
-2. **После каждой итерации сверь затронутые сведения документов с кодом** и обнови их
-   по [таблице в process.md](process.md#когда-обновлять-документацию). Она действует и для задач
-   вне плана. Если факты в README не изменились, его правка не нужна; подробные настройки
-   сервисов поддерживай в `docs/operations/`.
-3. Обнови карточку и краткое состояние в индексе. Выполненные пункты отметь `[x]`
-   в карточке и перенеси вместе с результатами проверок в
-   [`docs/plan/HISTORY.md`](../plan/HISTORY.md), сохраняя номера. Полностью выполненный шаг
-   переноси целиком, а его строку убирай из активного индекса. В частично выполненном оставляй
-   незавершённые пункты и ссылку на историю; строка индекса остаётся с актуальным состоянием.
-   Историю читай только для нужного шага, не целиком по умолчанию.
+1. Find the step in the `docs/PLAN.md` index, open its card in the stage file and read the
+   stage context, the conditions and the related tasks. Read the block up to the next step
+   heading, not the whole stage file. Sub-steps and «Готово, когда» in the card define the
+   scope. Entry points are search hints, not a closed list of files you may change.
+2. **After each iteration, check the affected document facts against the code** and update
+   them per the [table in process.md](process.md#documents-and-when-to-update-them). It also
+   applies to tasks outside the plan. If README facts did not change, it needs no edit; keep
+   detailed service setup in `docs/operations/`.
+3. Update the card and the short status in the index. Mark completed items `[x]` in the card
+   and move them with their check results to the stage's history file
+   `docs/plan/history/stage-<stage>.md` ([index](../plan/history/README.md)), keeping the
+   numbers. Move a fully completed step entirely and remove its row from the active index. In a
+   partly completed step, keep the open items and a link to the history; the index row stays
+   with the current status.
 
-## Как вести индекс и карточки
+## History
 
-- Новый шаг получает следующий свободный номер после максимального в индексе, карточках
-  и истории; номера не переиспользуй. Порядок этапов и согласованную очередь сохраняй.
-- В `PLAN.md` — одна строка на шаг: номер, название, ссылка на карточку и краткое состояние
-  или условие. Чекбоксы, сценарии и критерии не дублируй в индексе. Ненумерованные задачи
-  этапов G и H сохраняют свои названия и обозначения; новые номера задним числом не вводи.
-- Карточка содержит проблему или сценарий, требуемый результат, связи с другими задачами,
-  существующие точки входа в код, действия с исполнителем и проверяемое «Готово, когда».
-  Если связь или техническое решение ещё не определены, фиксируй вопрос для исследования,
-  не назначай выдуманную зависимость. Существующие формулировки и критерии сохраняй при переносе.
-- Подшаги нумеруются не глубже второго уровня (`18.3`, `H.2`). Номер отражает порядок
-  добавления, место в плане — тему. Новые задачи добавляй в файл соответствующего этапа.
-- Ссылки на активные карточки — `stage-<этап>.md#step-<номер>`; точки номера заменяются
-  дефисами (`18.9` → `step-18-9`, `H.2` → `step-h-2`). У подшага якорь ставь в его пункте.
-  Сохраняй якорь и номер при редактировании названия; при переносе меняй входящие ссылки.
-- Старые якоря заголовков в `PLAN.md` оставлены для перехода к строкам индекса. При закрытии
-  шага сохрани для его якорей ссылку на историю, чтобы прежние ссылки продолжали работать.
-- Результат проверки записывай вместе с выполненным пунктом в `HISTORY.md`: дата, что
-  проверено, среда и ограничения. Непройденные проверки не закрывай. Для UI действует QA-цикл.
-- Общие правила работы остаются в workflows. Сводки `plan/context.md` и источники
-  `plan/review-sources.md` читай по необходимости и актуализируй при изменении связанных сведений.
+- History is split by stage: `docs/plan/history/stage-<stage>.md`, plus `planning-context.md`
+  for the original planning context. Read only the needed step, never a whole file by default:
+  `grep -n 'id="step-49"\|^## Шаг 49\.' docs/plan/history/*.md`, then read from that line to the
+  next `## ` heading.
+- A completed item goes to its own stage's file under a `## Шаг N. …` heading; keep the
+  step's `<a id="step-N"></a>` anchor. The first completed item of a stage without a history
+  file creates the file (title, navigation line as in the other files) and a row in the
+  history index.
+- Links to history: `history/stage-<stage>.md#step-<number>` from a stage card.
+
+## Keeping the index and cards
+
+- A new step takes the next free number after the maximum in the index, the cards and the
+  history; never reuse numbers. Keep the stage order and the agreed queue.
+- `PLAN.md` has one row per step: number, title, card link and a short status or condition.
+  Do not copy checkboxes, scenarios or criteria into the index. The unnumbered tasks of stages
+  G and H keep their names and labels; do not introduce numbers retroactively.
+- A card holds the problem or scenario, the required result, links to other tasks, existing
+  code entry points, actions with their owner and a verifiable «Готово, когда». If a link or a
+  technical solution is not yet known, record a research question; do not invent a dependency.
+  Keep existing wording and criteria when moving items. Plan files are written in Russian.
+- Sub-steps go no deeper than two levels (`18.3`, `H.2`). The number reflects the order of
+  addition, the place in the plan reflects the topic. Add new tasks to the matching stage file.
+- Links to active cards — `stage-<stage>.md#step-<number>`; dots become hyphens (`18.9` →
+  `step-18-9`, `H.2` → `step-h-2`). A sub-step gets its anchor in its item. Keep the anchor
+  and the number when renaming; when moving, update incoming links.
+- The old heading anchors in `PLAN.md` lead to the index rows. When closing a step, keep a
+  history link for its anchors so old links keep working.
+- Record a check result together with the completed item in the history: date, what was
+  checked, environment and limitations. Do not close failed checks. UI steps go through the
+  QA cycle.
+- General working rules stay in the workflows. Read the summaries in `plan/context.md` and the
+  sources in `plan/review-sources.md` when needed, and update them when related facts change.
+
+A new card, in the format of the stage files:
+
+<example>
+<a id="step-101"></a>
+
+#### Шаг 101. Подсказка формата ссылки на Telegram
+
+**Точки входа:** [`src/entities/social-link/model/normalize.ts`](../../src/entities/social-link/model/normalize.ts).
+
+**Связи:** нормализация ссылок из шага 11 (история этапа D).
+
+Психолог вводит `t.me/name` с пробелом и получает ошибку без объяснения. Источник: ревью 16 октября.
+- [ ] <a id="step-101-1"></a>**101.1. 🤖 ИИ:** убрать пробелы по краям до проверки и показать пример
+      допустимого формата в тексте ошибки.
+- [ ] <a id="step-101-2"></a>**101.2. 🧑‍💻 Разработчик:** проверить текст ошибки на телефоне.
+
+**Готово, когда:** `t.me/name ` с пробелом сохраняется, а неверный адрес показывает пример формата.
+</example>

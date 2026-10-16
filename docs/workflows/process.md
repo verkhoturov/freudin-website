@@ -1,104 +1,129 @@
-# Процесс работы
+# Working process
 
-Правила для **любой** задачи в проекте: из `docs/PLAN.md` или поставленной напрямую. Читай их
-перед началом работы ([`AGENTS.md`](../../AGENTS.md) отправляет сюда).
+Rules for every task in the project, whether it comes from `docs/PLAN.md` or directly from the
+user. Read them before starting ([`AGENTS.md`](../../AGENTS.md) sends you here).
 
-Пункты 1–3 касаются только задач из `docs/PLAN.md` и лежат в [`plan-step.md`](plan-step.md).
-Нумерация общая: на номера правил ссылаются план и [`docs/DECISIONS.md`](../DECISIONS.md).
+Rules 1–3 apply only to plan tasks and live in [`plan-step.md`](plan-step.md). Numbering is
+shared: the plan and [`docs/DECISIONS.md`](../DECISIONS.md) refer to rules by number.
 
-## Проверки по типу задачи
+## Checks by task type
 
-- **Анализ без изменений:** только чтение; не запускай автоисправление, генерацию файлов
-  и команды записи. Проверки кода запускай, если они нужны для ответа, и укажи их результат.
-- **Только документация:** проверь локальные ссылки, ссылки на разделы, согласованность
-  правил и diff. При переносе инструкций сверь их полноту и размер `AGENTS.md`.
-  `lint:fix`, генерация типов, тесты приложения и сборка только ради Markdown не нужны.
-- **Код, конфигурация или зависимости:** обязательны проверки правила 5. Если задача затрагивает
-  UI шага плана, перед закрытием дополнительно нужен QA по правилу 14.
-- **Подготовка коммита по запросу:** дополнительно `npm run build` (правило 5);
-  разрешения на Git — правило 10.
+- **Analysis without changes:** read only; do not run auto-fixes, file generation or commands
+  that write. Run code checks only if the answer needs them, and report their result.
+- **Documentation only:** check local links, section anchors, consistency of the rules and the
+  diff. When moving instructions, confirm nothing was lost and check the size of `AGENTS.md`.
+  `npm run check`, type generation and the build are not needed for Markdown alone.
+- **Code, configuration or dependencies:** the checks of rule 5. If the task changes the UI
+  of a plan step, also run QA per rule 14 before closing it.
+- **Preparing a commit on request:** also `npm run build` (rule 5); Git permissions — rule 10.
 
-## Когда обновлять документацию
+## Documents and when to update them
 
-Для любой задачи, в том числе вне плана, выбери строки по фактически изменённым сведениям.
-Обновляй нужный раздел в том же изменении; если сведения остались прежними, правка документа
-не нужна. Читай соответствующий раздел, а не все документы проекта подряд.
+For any task, including ones outside the plan, pick the rows matching the facts you actually
+changed. Update the matching section in the same change; if the facts are unchanged, the
+document needs no edit. Read the relevant section, not every project document.
 
-| Что изменилось | Где обновить |
+| What changed | Where to update |
 |---|---|
-| Возможности, зависимости, команды, env, роуты или деплой | Нужный раздел [`README.md`](../../README.md). Здесь только текущее состояние и управление: без планов, номеров шагов, дат и журнала правок |
-| Подключение, настройка или обслуживание внешнего сервиса | Нужная инструкция в [`operations/`](../operations/): [Supabase и бэкапы](../operations/supabase.md), [вход и домен](../operations/authentication.md), [почта поддержки](../operations/support-email.md). В README — краткое состояние и ссылка; секреты в инструкции не записывай |
-| Границы системы, контейнеры, обязанности или интерфейсы компонентов | Нужный уровень [`architecture/`](../architecture/); потоки выполнения — в [dynamic.md](../architecture/dynamic.md), внутреннее устройство выбранного компонента — в [4.code.md](../architecture/4.code.md) |
-| Место сценария, слайс, public API или путь ключевого файла | Нужная строка или карточка [`code-map.md`](../code-map.md). Списки всех экспортов и обычных внутренних хелперов не дублируй: источник — код |
-| Общее ограничение или правило работы | Краткое ограничение и навигация — [`AGENTS.md`](../../AGENTS.md), подробности — соответствующий workflow. В плане правила не копируй |
-| Пользователь принял или пересмотрел решение | [`DECISIONS.md`](../DECISIONS.md): причина, дата и автор; при пересмотре — прежний смысл и ссылка на замену. Сохраняй номера. Предложение агента само по себе не принятое решение |
-| Согласованное направление продукта или готовность функции | Нужная часть [`PRODUCT.md`](../PRODUCT.md): разделы 1–5 — только по решению владельца, готовность — раздел 6 с датой и основанием сверки; идеи и открытые вопросы помечай отдельно |
-| Задача плана, её условие или результат проверки | Карточка этапа и строка [`PLAN.md`](../PLAN.md); завершённые пункты и доказательства — в [`plan/HISTORY.md`](../plan/HISTORY.md), по [plan-step.md](plan-step.md). Историю не переписывай как текущую инструкцию |
-| Обработка персональных данных | Исходники действующих `/privacy` и `/terms`, по правилу 11 ниже. Юридический черновик не является опубликованным текстом |
+| Features, dependencies, commands, env, routes or deploy | The matching section of [`README.md`](../../README.md). Current state and operations only: no plans, step numbers, dates or change log |
+| Connecting, configuring or maintaining an external service | The matching guide in [`operations/`](../operations/): [Supabase and backups](../operations/supabase.md), [sign-in and domain](../operations/authentication.md), [support email](../operations/support-email.md). README gets a short status and a link; never write secrets into a guide |
+| System boundaries, containers, component responsibilities or interfaces | The matching level of [`architecture/`](../architecture/); runtime flows — [dynamic.md](../architecture/dynamic.md), internals of a selected component — [4.code.md](../architecture/4.code.md) |
+| Where a scenario lives, a slice, a public API or a key file path | The matching row or card in [`code-map.md`](../code-map.md). Do not copy full export lists or ordinary internal helpers: the code is the source |
+| A general constraint or working rule | A short constraint and navigation — [`AGENTS.md`](../../AGENTS.md), details — the matching workflow. Do not copy rules into the plan |
+| The user made or revised a decision | [`DECISIONS.md`](../DECISIONS.md): reason, date and author; when revising, the previous meaning and a link to the replacement. Keep the numbers. An agent's proposal is not a decision by itself |
+| Agreed product direction or feature readiness | The matching part of [`PRODUCT.md`](../PRODUCT.md): sections 1–5 only by the owner's decision, readiness — section 6 with the date and basis of the review; mark ideas and open questions separately |
+| A plan task, its conditions or a check result | The stage card and the [`PLAN.md`](../PLAN.md) row; completed items and evidence go to [`plan/history/`](../plan/history/), per [plan-step.md](plan-step.md). Do not rewrite history as current instructions |
+| Personal data processing | The sources of the live `/privacy` and `/terms`, per rule 11. A legal draft is not the published text |
 
-При переносе раздела поправь относительные ссылки и входящие ссылки из других документов.
-Если на прежний заголовок уже ссылаются, оставь под ним короткую ссылку на новое место.
-Сверь полноту переноса; не создавай вторую поддерживаемую копию инструкции.
+When moving a section, fix its relative links and the incoming links from other documents.
+Do not create a second maintained copy of an instruction.
 
-## Правила 4–14
+What each document is for:
 
-4. **Новые тесты пишем ТОЛЬКО по прямому запросу пользователя** (решение 21). По своей
-   инициативе не добавляй тесты (unit, integration, e2e), тестовые фреймворки и их конфиги.
-   Исключение — уже покрытая логика (шаг 24, список в разделе «Тесты» `README.md`): меняя её,
-   обнови её тесты в том же изменении, а новый сценарий этой функции покрой тестом.
-5. **При изменении кода, конфигурации или зависимостей запускай `npm run lint:fix`,
-   `npm run typecheck` и `npm test`.** Все три команды должны завершаться без ошибок.
-   **`npm test` запускай после каждого изменения кода**, даже если правка не касается покрытой
-   логики. Обновление и добавление тестов регулирует только правило 4. Разбери упавшие проверки:
-   исправь ошибки своего изменения, а исходные или внешние сбои явно укажи в отчёте.
-   Если поведение намеренно изменилось, обнови существующие тесты по правилу 4.
-   Не отключай и не пропускай тесты ради успешной проверки. Перед коммитом дополнительно
-   проверь `npm run build`. Итоги проверок сообщай по правилу 13.
-6. Зависимости ставь через **npm 11+** (`npx npm@11 install …`, если локально npm 10):
-   `package-lock.json` создан npm 11, а npm 10 переписывает его лишними изменениями. До установки
-   проверь версию npm и сохрани исходное содержимое изменяемых `package.json`, lock-файла
-   и компонентов вне репозитория. CLI shadcn ставит пакеты системным npm: после него выполни
-   `npx npm@11 install` и проверь diff зависимостей и lock-файла. При лишних изменениях восстанови
-   только результат своей команды по снимку и повтори установку через npm 11; не откатывай
-   файл целиком к HEAD и не теряй изменения, существовавшие до задачи. Установка shadcn —
-   также по [`ui-kit.md`](ui-kit.md).
-7. **Тексты интерфейса пишем на английском** (решение 16): подписи, тосты, `aria-label`, `alt`,
-   `metadata`, сообщения zod-схем, `message` ошибок API, юридические тексты. Апостроф в них
-   типографский: `Couldn’t`, `can’t`. Логи сервера тоже на английском. Документацию
-   и комментарии в коде пишем на русском. Кириллицу в шрифте Geist не убираем: имена и описания
-   пользователей бывают на любом языке.
-8. **При вёрстке UI проверяй, насколько разметка соответствует хорошей SEO-оптимизации, и
-   предлагай пользователю правки, если SEO можно улучшить** (чек-лист —
-   [`seo-checklist.md`](seo-checklist.md)).
-9. Каждый коммит в `main` сразу выкладывается в прод на `www.freud.in`, превью-деплоев нет.
-   Если коду нужны новые переменные окружения или настройки внешних сервисов, напомни
-   пользователю задать их для прода до мержа.
-10. **Чтение Git разрешено:** `git status`, `git diff`, `git log`, `git show`, `git ls-files`.
-    Перед изменениями проверь рабочее дерево и сохрани чужие staged и unstaged правки.
-    **В локальной сессии ветки, коммиты, push и переключение веток — только по прямому указанию
-    пользователя** (решение 30). В облачной сессии коммит и push в рабочую ветку разрешены.
-    Не сбрасывай и не восстанавливай файлы или индекс через Git без прямого указания пользователя.
-    Исправляя результат своей команды, используй снимок непосредственно перед ней или точечную
-    правку; снимок из HEAD не содержит незакоммиченные изменения пользователя.
-11. **Если меняется обработка персональных данных** (новый провайдер входа или сервис, cookies,
-    хранилище браузера, аналитика), обнови тексты `/privacy` и `/terms` и дату «Last updated».
-    Действующие тексты — [`privacy-view.tsx`](../../src/views/privacy/ui/privacy-view.tsx)
-    и [`terms-view.tsx`](../../src/views/terms/ui/terms-view.tsx), реквизиты —
-    [`legal.ts`](../../src/shared/config/legal.ts), почта — `siteConfig.supportEmail`.
-    [Исходный Privacy](../legal/privacy-with-analytics.draft.md) и
-    [исходный Terms](../legal/terms-with-analytics.draft.md) — архивные черновики с аналитикой,
-    не текущие условия сайта. При подключении аналитики переноси только применимые положения
-    после сверки с фактической обработкой данных; не возвращай старые домен, контакты и даты.
-12. **Отчёт по плану** (пользователь просит положение дел по `docs/PLAN.md`) — таблицы в чате
-    по формату [`plan-report.md`](plan-report.md).
-13. **Отчёт о проверках** (решение 25): что изменено, что проверено и что осталось непроверенным.
-    - Для запуска `npm test` укажи количество прошедших тестов, при сбое — какие упали и почему.
-      Если существующие тесты обновлены по правилу 4, скажи об этом.
-    - Если изменённая бизнес-логика не покрыта или покрыта не полностью, предложи конкретные
-      сценарии и файл тестов. Само предложение не разрешает писать новые тесты (правило 4).
-    - Отделяй статические проверки от Storybook, браузера, авторизованных сценариев, внешних
-      сервисов и реальных устройств. Для пропущенных проверок укажи причину; не называй их пройденными.
-14. **Шаг плана с интерфейсом закрывается через QA-агента** (решение 26). Сделав шаг или подшаг
-    🤖, который меняет поведение или вид интерфейса, не отмечай его сразу: пройди цикл из
-    [`qa-subagent.md`](qa-subagent.md) (бриф, запуск, разбор отчёта, отметка в плане). Шаги без
-    интерфейса QA не проходят: проверки выбирай по типу задачи в начале этого документа.
+- `AGENTS.md` and `docs/workflows/` — the current rules: general constraints and navigation
+  in `AGENTS.md`, detailed requirements and procedures in the workflows.
+- `docs/architecture/` — static C4 levels and separate dynamic views; `docs/code-map.md` —
+  lookup by scenario, slice, public API and files outside the C4 levels.
+- `README.md` — current state and operations, without plans, dates, change log or decisions.
+  `docs/operations/` — detailed service setup and maintenance guides.
+- `docs/PLAN.md` — index and queue of open tasks; `docs/plan/stage-*.md` — stage cards;
+  `docs/plan/history/` — completed items and past check results, one file per stage.
+- `docs/DECISIONS.md` — reasons and history of decisions; `docs/PRODUCT.md` — product
+  boundaries and agreed direction, with a separate readiness snapshot, proposals and questions.
+  `docs/legal/*.draft.md` — archived sources; the live legal texts are in the view code.
+
+## Rules 4–14
+
+4. **Write new tests only when the user asks directly** (decision 21). Do not add tests
+   (unit, integration, e2e), test frameworks or their configs on your own initiative.
+   Exception — logic that is already covered (step 24, listed under «Тесты» in `README.md`):
+   when you change it, update its tests in the same change and cover the new scenario of that
+   function.
+5. **After a change to code, configuration or dependencies, run `npm run check`** once the
+   change is complete and before the report — not after every edit. It runs `lint:fix`,
+   `typecheck` and the tests with a compact reporter, and it must pass. Investigate failures:
+   fix errors your change caused, and name pre-existing or external failures in the report.
+   After fixing, run it again. If behaviour changed on purpose, update existing tests per
+   rule 4. Do not disable or skip tests to get a green run. Before a commit, also run
+   `npm run build`. Report results per rule 13.
+6. Install dependencies with npm 11+ (`npx npm@11 install …` if the local npm is 10):
+   `package-lock.json` was created by npm 11, and npm 10 rewrites it with noise. Before
+   installing, check the npm version and save the current contents of the `package.json`,
+   lock file and components you will change outside the repository. The shadcn CLI installs
+   packages with the system npm: afterwards run `npx npm@11 install` and check the dependency
+   and lock file diff. If there is noise, restore only your command's result from the snapshot
+   and repeat the install with npm 11; do not reset the whole file to HEAD and do not lose
+   changes that existed before the task. shadcn installation — also [`ui-kit.md`](ui-kit.md).
+7. Languages (decisions 16 and 36):
+   - UI text is English: labels, toasts, `aria-label`, `alt`, `metadata`, zod messages, API
+     error `message`, legal texts. Apostrophes are typographic: `Couldn’t`, `can’t`. Server
+     logs are English too.
+   - Agent instructions are English: `AGENTS.md`, `docs/workflows/`, `docs/architecture/`,
+     `docs/code-map.md`. The other documents (README, plan, history, DECISIONS, PRODUCT,
+     operations) and code comments are Russian; test names are Russian.
+   - Keep Cyrillic in the Geist font: user names and descriptions can be in any language.
+8. When building UI, check the markup against the [SEO checklist](seo-checklist.md) and
+   suggest improvements to the user if SEO can be better.
+9. Every commit to `main` deploys to production at `www.freud.in`; there are no preview
+   deploys. If code needs new environment variables or external service settings, remind the
+   user to set them for production before merging.
+10. **Git.** Reading is allowed: `git status`, `git diff`, `git log`, `git show`,
+    `git ls-files`. Before editing, check the working tree and keep other people's staged and
+    unstaged changes. **In a local session, branches, commits, pushes and branch switches
+    happen only on the user's direct instruction** (decision 30). In a cloud session, commits
+    and pushes to the working branch are allowed. Do not reset or restore files or the index
+    through Git without the user's direct instruction. To fix the result of your own command,
+    use the snapshot taken right before it or a targeted edit: a HEAD snapshot lacks the
+    user's uncommitted changes.
+11. If personal data processing changes (a new sign-in provider or service, cookies, browser
+    storage, analytics), update the `/privacy` and `/terms` texts and their «Last updated»
+    date. Live texts — [`privacy-view.tsx`](../../src/views/privacy/ui/privacy-view.tsx) and
+    [`terms-view.tsx`](../../src/views/terms/ui/terms-view.tsx), operator details —
+    [`legal.ts`](../../src/shared/config/legal.ts), email — `siteConfig.supportEmail`.
+    The [Privacy source](../legal/privacy-with-analytics.draft.md) and
+    [Terms source](../legal/terms-with-analytics.draft.md) are archived drafts with analytics,
+    not the site's current terms. When analytics is connected, carry over only the applicable
+    clauses after checking the actual data processing; do not bring back the old domain,
+    contacts and dates.
+12. **Plan report** (the user asks for the status of `docs/PLAN.md`) — tables in chat in the
+    format of [`plan-report.md`](plan-report.md).
+13. **Check report** (decision 25): what changed, what was checked and what remains unchecked.
+    - For the tests, give the number that passed; on failure, which failed and why. Mention
+      existing tests updated per rule 4.
+    - If changed business logic is not covered, or only partly, suggest concrete scenarios
+      and a test file. The suggestion does not authorise writing new tests (rule 4).
+    - Keep static checks separate from Storybook, browser, signed-in flows, external services
+      and real devices. For skipped checks, give the reason; never call them passed.
+
+    <example>
+    Changed: `profile-changes.ts` — FAQ is now sent in one group with services.
+    Checked: `npm run check` — lint and typecheck clean, 112 tests passed;
+    `profile-changes.test.ts` updated for the new group (rule 4).
+    Not checked: browser and Storybook — no UI change; Save against the database was not run.
+    Uncovered: removing the whole FAQ list — a case for `profile-changes.test.ts`, not
+    written without your request.
+    </example>
+14. **A plan step with UI is closed through the QA agent** (decision 26). After finishing a 🤖
+    step or sub-step that changes the behaviour or look of the UI, do not mark it right away:
+    go through the cycle in [`qa-subagent.md`](qa-subagent.md) (brief, run, review, plan
+    update). Steps without UI skip QA: pick checks by task type at the top of this document.

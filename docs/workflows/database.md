@@ -1,42 +1,44 @@
-# База данных и Supabase
+# Database and Supabase
 
-Читай при изменении схемы, запросов к БД, RLS, публичных и приватных данных, Storage или миграций.
-Это обязательные правила из [`AGENTS.md`](../../AGENTS.md); процесс — в [`process.md`](process.md).
+Read when changing the schema, DB queries, RLS, public and private data, Storage or migrations.
+These are required rules from [`AGENTS.md`](../../AGENTS.md); the process is in [`process.md`](process.md).
 
-## База данных (Supabase)
+## Database (Supabase)
 
-- Один облачный проект `freudin_data` (eu-central-1), он же прод. Локального Supabase нет.
-- Схема меняется только миграциями в `supabase/migrations`. Новую создаём командой
-  `npx supabase migration new <name>`, уже применённые миграции не правим.
-- Миграции применяет пользователь (`npm run db:push`): это изменение боевой базы. Перед этим SQL
-  можно проверить в транзакции с откатом (`begin; … rollback;`) через `psql`. Перед `db:push`
-  напоминай пользователю сделать [резервную копию](../operations/supabase.md#резервные-копии)
-  (`npm run db:dump`):
-  на тарифе Free автоматических бэкапов нет.
-- После применения генерируем типы: `npm run db:types` пишет
-  `src/shared/api/supabase/database.types.ts`. Руками этот файл не правим.
-- CHECK-ограничения повторяют zod-схемы сущностей: меняя лимит, меняй и схему, и миграцию.
-  Зарезервированные username проверяет только сервер.
-- На каждой таблице включён RLS. Права ролям выдаём явно (`revoke all`, затем нужные `grant`):
-  по умолчанию Supabase открывает `anon` и `authenticated` всё.
-- Скрытые страницы (`visibility` не `public`) RLS не отдаёт ни гостю, ни другим пользователям,
-  только владельцу; гостю их режим и страницу по паролю отдают функции `security definer`
-  ([объекты БД](../architecture/4.code.md#postgresql-и-storage),
-  [поток доступа](../architecture/dynamic.md#скрытая-страница)). Пароль хранится открытым текстом (решение 24) и виден только
-  владельцу. Новый код, который читает чужие профили (поиск, sitemap), не должен открывать
-  скрытые.
-- `anon` читает из `profiles` только колонки публичной страницы (`PUBLIC_PROFILE_COLUMNS`):
-  `select *` и `select("id")` от гостя дают `permission denied`. Новую публичную колонку
-  добавляй и в `PUBLIC_PROFILE_COLUMNS`, и миграцией в `grant select (…) … to anon`.
-  Данные публичной страницы не выносим в таблицы, связанные с профилем по `id`: списки вроде
-  соцсетей и документов — jsonb-колонки `profiles` (решение 29).
-- Справочник городов `cities` (GeoNames, CC BY 4.0) заполняют миграции, собранные скриптом
-  `scripts/generate-cities-migration.mjs`: руками их не правим, обновление — новой миграцией
-  (команды в [инструкции Supabase](../operations/supabase.md)). Ключ поиска `search_name`
-  строит `toSearchKey` из `@/shared/lib/transliterate`: меняя её, пересобери справочник.
-- Приватные данные пользователя не кладём в `profiles`: её читают все (решение 28). Контактная
-  почта лежит в `account_contacts`, а данные психолога, которых нет на странице (дата рождения,
-  пол, запросы клиентов), — в `profile_private`. В обеих RLS пускает только владельца, у `anon`
-  прав нет. Контактную почту не пишем в email аккаунта Supabase Auth.
-- Подключение Supabase CLI и `psql` (`.env`, пулер вместо IPv6) —
-  [инструкция Supabase](../operations/supabase.md).
+- One cloud project, `freudin_data` (eu-central-1), which is also production. There is no
+  local Supabase.
+- The schema changes only through migrations in `supabase/migrations`. Create a new one with
+  `npx supabase migration new <name>`; never edit migrations that were already applied.
+- **The user applies migrations** (`npm run db:push`): it changes the production database.
+  Before that, SQL can be tried in a rolled-back transaction (`begin; … rollback;`) through
+  `psql`. Before `db:push`, remind the user to make a
+  [backup](../operations/supabase.md#резервные-копии) (`npm run db:dump`): the Free plan has no
+  automatic backups.
+- After applying, generate types: `npm run db:types` writes
+  `src/shared/api/supabase/database.types.ts`. Never edit this file by hand.
+- CHECK constraints mirror the entity zod schemas: when changing a limit, change both the
+  schema and the migration. Reserved usernames are checked only by the server.
+- RLS is on for every table. Grant role permissions explicitly (`revoke all`, then the needed
+  `grant`s): by default Supabase opens everything to `anon` and `authenticated`.
+- RLS returns hidden pages (`visibility` other than `public`) neither to guests nor to other
+  users, only to the owner; guests get the page mode and the password-protected page through
+  `security definer` functions ([DB objects](../architecture/4.code.md#postgresql-and-storage),
+  [access flow](../architecture/dynamic.md#hidden-page)). The password is stored in plain
+  text (decision 24) and visible only to the owner. New code that reads other users' profiles
+  (search, sitemap) must not expose hidden ones.
+- `anon` reads only the public page columns of `profiles` (`PUBLIC_PROFILE_COLUMNS`): a guest's
+  `select *` or `select("id")` gets `permission denied`. Add a new public column both to
+  `PUBLIC_PROFILE_COLUMNS` and, through a migration, to `grant select (…) … to anon`. Do not
+  move public page data into tables linked to the profile by `id`: lists such as social links
+  and documents are jsonb columns of `profiles` (decision 29).
+- The `cities` directory (GeoNames, CC BY 4.0) is filled by migrations generated by
+  `scripts/generate-cities-migration.mjs`: do not edit them by hand; update through a new
+  migration (commands in the [Supabase guide](../operations/supabase.md)). The search key
+  `search_name` is built by `toSearchKey` from `@/shared/lib/transliterate`: if you change it,
+  rebuild the directory.
+- Private user data does not go into `profiles`: everyone can read it (decision 28). The
+  contact email lives in `account_contacts`, and psychologist data not shown on the page
+  (date of birth, gender, client concerns) in `profile_private`. RLS lets only the owner into
+  both; `anon` has no rights. Do not write the contact email into the Supabase Auth account email.
+- Connecting the Supabase CLI and `psql` (`.env`, pooler instead of IPv6) — the
+  [Supabase guide](../operations/supabase.md).

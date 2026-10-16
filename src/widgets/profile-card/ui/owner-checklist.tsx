@@ -16,7 +16,12 @@ function getChecklistItems(profile: PublicProfile): ChecklistItem[] {
   const hasPrice =
     profile.price !== null || profile.services.some((service) => service.price !== null);
   return [
-    { id: "photo", label: "Add a photo", href: routes.settings, done: Boolean(profile.avatarUrl) },
+    {
+      id: "photo",
+      label: "Add a photo",
+      href: routes.settingsField("photo"),
+      done: Boolean(profile.avatarUrl),
+    },
     {
       id: "contact",
       label: "Add a way to contact you",
@@ -26,7 +31,7 @@ function getChecklistItems(profile: PublicProfile): ChecklistItem[] {
     {
       id: "main-button",
       label: "Choose your main contact button",
-      href: routes.settingsBlock("contacts"),
+      href: routes.settingsField("preferredContact"),
       done: Boolean(profile.preferredContact),
     },
     {

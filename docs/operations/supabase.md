@@ -22,7 +22,7 @@
   пулер, а для `psql` используй `aws-0-eu-central-1.pooler.supabase.com:5432` с пользователем
   `postgres.<ref>`.
 - Таблицы, функции базы и bucket'ы Storage описаны в
-  [`docs/architecture/4.code.md`](../../docs/architecture/4.code.md#postgresql-и-storage).
+  [`docs/architecture/4.code.md`](../../docs/architecture/4.code.md#postgresql-and-storage).
 - Справочник городов `cities` для профиля психолога — данные
   [GeoNames](https://www.geonames.org) (лицензия CC BY 4.0): города от 5000 жителей
   и административные центры, около 64 тыс. строк. Их загружает миграция `*_seed_cities.sql`,

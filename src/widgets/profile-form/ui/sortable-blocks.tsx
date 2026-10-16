@@ -159,6 +159,7 @@ function SortableBlock({
     <li
       ref={setNodeRef}
       id={getBlockElementId(section)}
+      data-block={section}
       // Список вертикальный: сдвигаем только по Y, без растяжения блока
       style={{
         transform: transform ? `translate3d(0, ${Math.round(transform.y)}px, 0)` : undefined,

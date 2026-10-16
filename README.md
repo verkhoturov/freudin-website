@@ -10,12 +10,15 @@
 
 - о продукте — [`docs/PRODUCT.md`](docs/PRODUCT.md);
 - индекс активных задач и ссылки на карточки этапов — [`docs/PLAN.md`](docs/PLAN.md);
-- завершённые задачи и результаты проверок — [`docs/plan/HISTORY.md`](docs/plan/HISTORY.md);
+- завершённые задачи и результаты проверок — [`docs/plan/history/`](docs/plan/history/README.md), по файлу на этап;
 - архитектура по модели C4 — [`docs/architecture/`](docs/architecture);
 - поиск модулей и файлов по сценарию — [`docs/code-map.md`](docs/code-map.md);
 - решения и их причины — [`docs/DECISIONS.md`](docs/DECISIONS.md);
 - правила для разработчиков и AI-агентов — [`AGENTS.md`](AGENTS.md) и
   [`docs/workflows/`](docs/workflows).
+
+Инструкции для агентов (`AGENTS.md`, `docs/workflows/`, `docs/architecture/`, `docs/code-map.md`)
+написаны на английском, остальная документация — на русском (решение 36).
 
 Быстрые переходы: [запуск](#быстрый-старт) · [env](#переменные-окружения) ·
 [скрипты](#скрипты) · [роуты](#роуты) · [сервисы](#внешние-сервисы) · [деплой](#деплой).
@@ -44,7 +47,7 @@
 | Запросы к API | TanStack Query (+ Devtools в dev) |
 | Валидация | zod |
 | Формы | TanStack Form |
-| Клиентское состояние | Zustand: черновик онбординга, свёрнутые блоки настроек, скрытые подсказки владельца |
+| Клиентское состояние | Zustand: черновик онбординга, черновик настроек в памяти вкладки, свёрнутые блоки настроек, скрытые подсказки владельца |
 | Кроп фото | react-easy-crop |
 | QR-код страницы | qrcode.react (рисуется в браузере, без внешних сервисов) |
 | БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI (миграции и типы) |
@@ -102,6 +105,7 @@ npm run dev
 | `npm run lint:fix` | то же с автоисправлением |
 | `npm run typecheck` | генерация типов роутов (`next typegen`) и проверка типов (`tsc --noEmit`) |
 | `npm test` | юнит-тесты Vitest (`vitest run`); в режиме наблюдения — `npx vitest` (см. «Тесты») |
+| `npm run check` | `lint:fix`, `typecheck` и тесты с компактным выводом — одна команда проверки после изменения кода |
 | `npm run storybook` | UI kit на http://localhost:6006: компоненты `shared/ui`, которые использует сайт, и токены темы; тема — в тулбаре |
 | `npm run build-storybook` | статическая сборка кита в `storybook-static/` (не в git) |
 | `npm run db:push` | применить новые миграции из `supabase/migrations` к базе проекта |
@@ -153,7 +157,7 @@ docs/
 │  ├─ stage-*.md       # карточки этапов: контекст, связи, точки входа, подшаги и критерии
 │  ├─ context.md       # сводка действий разработчика, риски и справочные ссылки
 │  ├─ review-sources.md # источники замечаний сводного ревью и привязка к задачам
-│  └─ HISTORY.md       # завершённые шаги и подшаги, результаты проверок
+│  └─ history/         # завершённые шаги и результаты проверок, по файлу на этап
 ├─ PRODUCT.md          # описание продукта
 ├─ DECISIONS.md        # реестр решений: что, когда и почему
 ├─ code-map.md         # карта сценариев, FSD-слайсы, public API и файлы реализации
@@ -203,10 +207,10 @@ docs/
 | `/` | главная | `src/app/page.tsx` | `home` | все | Минимальная |
 | `/login` | вход | `src/app/login/page.tsx` | `login` | гости; вошедшего уводим дальше | Google и Telegram (Facebook выключен) |
 | `/onboarding` | создание страницы после первого входа | `src/app/onboarding/page.tsx` | `onboarding` | вошедшие без профиля; с профилем уводим на `/<username>` | Превью страницы рядом с формой (на телефоне — кнопка Preview) |
-| `/settings` | настройки профиля и аккаунта | `src/app/settings/page.tsx` | `settings` | вошедшие с профилем | Редактор на весь экран без шапки и подвала сайта, превью несохранённой страницы во всех разделах (ширина Desktop или Phone). Разделы Account (адрес, почта, страна и город, валюта цен, способы входа), Public profile и Search details в сайдбаре (`?section=`, `routes.settingsSection`, по умолчанию Public profile); у каждого раздела свой Save — в Account под полями, в остальных в липкой панели; при переходе в другой раздел несохранённые правки сбрасываются после подтверждения. Блоки сворачиваются (состояние — в localStorage, по пользователю; без сохранённого выбора Appearance свёрнут); блок Appearance — пресет и обложка; `routes.settingsBlock(id)` (`#block-<id>`) разворачивает блок и ведёт к нему |
+| `/settings` | настройки профиля и аккаунта | `src/app/settings/page.tsx` | `settings` | вошедшие с профилем | Редактор на весь экран без шапки и подвала сайта, превью несохранённой страницы в Account и Public profile (ширина Desktop или Phone). Разделы Account (адрес, почта, страна и город, валюта цен, способы входа), Public profile и Search details в сайдбаре (`?section=`, `routes.settingsSection`, по умолчанию Public profile); Save — в Account под полями, в остальных в липкой панели — сохраняет правки всех разделов: при переходе между разделами и «Назад»/«Вперёд» они остаются, а уход по ссылке спрашивает Save and continue / Discard changes / Stay. В Search details превью нет. Блоки сворачиваются (состояние — в localStorage, по пользователю; без сохранённого выбора Appearance свёрнут); блок Appearance — пресет и обложка; `routes.settingsBlock(id)` (`#block-<id>`) разворачивает блок и ставит фокус на его первое поле, `routes.settingsField(id)` (`#<id>`) — на поле с этим id |
 | `/privacy` | политика конфиденциальности (Privacy Policy) | `src/app/privacy/page.tsx` | `privacy` | все | На английском, у разделов якоря (`#account-and-data-deletion`) |
 | `/terms` | условия использования (Terms of Service) | `src/app/terms/page.tsx` | `terms` | все | На английском |
-| `/<username>` | личная страница пользователя | `src/app/[username]/page.tsx` | `profile` | все | Серверный рендер (данные из БД, `/demo` — демо-профиль); владельцу — подсказки «Finish your page» со ссылками на блоки настроек; нет профиля — 404, адрес с заглавными — редирект 308 на нижний регистр (`/Anna` → `/anna`) |
+| `/<username>` | личная страница пользователя | `src/app/[username]/page.tsx` | `profile` | все | Серверный рендер (данные из БД, `/demo` — демо-профиль); владельцу — Edit page и Share под именем и подсказки «Finish your page» со ссылками на нужные поля настроек, посетителю — Share внизу карточки; у новых страниц условия работы (формат, место, языки, цена) идут сразу после Bio, без общей цены Price показывает самую низкую цену услуг; нет профиля — 404, адрес с заглавными — редирект 308 на нижний регистр (`/Anna` → `/anna`) |
 | 404 | страница не найдена | `src/app/not-found.tsx` | `not-found` | все | — |
 | Ошибка | ошибка рендера страницы | `src/app/error.tsx`, `src/app/global-error.tsx` | `error` | все | Try again (`retry`) и почта поддержки; `global-error.tsx` — при падении корневого layout |
 
@@ -278,7 +282,7 @@ docs/
   (см. «Деплой»).
 - Вёрстка mobile-first, есть ссылка Skip to content для навигации с клавиатуры.
 - Cookies и хранилище браузера перечислены в `/privacy` (раздел 2) и в
-  [`docs/architecture/2.containers.md`](docs/architecture/2.containers.md#хранилище-браузера).
+  [`docs/architecture/2.containers.md`](docs/architecture/2.containers.md#browser-storage).
 
 ### Тема
 

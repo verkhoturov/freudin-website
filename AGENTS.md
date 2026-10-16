@@ -8,91 +8,77 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Freudin: правила проекта
+# Freudin: project rules
 
-Freudin — сайт для психологов и их будущих клиентов. Психолог входит через Google или Telegram
-и делает страницу-визитку `/<username>`, клиент открывает её без регистрации. Freudin не
-проверяет психологов, не участвует в общении с клиентами и не принимает оплату.
+Freudin is a website for psychologists and their future clients. A psychologist signs in with
+Google or Telegram and builds a profile page `/<username>`; clients open it without an account.
+Freudin does not vet psychologists, take part in client communication or accept payments.
 
-## Как работать с инструкциями
+## How to use these instructions
 
-1. Перед любой задачей прочитай [`process.md`](docs/workflows/process.md): проверки, тесты,
-   Git, языки и персональные данные. Начни с `git status --short`, сохрани чужие правки.
-2. Перед изменением кода прочитай [`code.md`](docs/workflows/code.md), затем все workflows,
-   подходящие по таблице ниже. Ссылки — обязательное чтение при указанном условии, даже если
-   среда не загружает эти файлы автоматически. Для анализа читай только относящиеся к нему разделы.
-3. Выполняй поставленную задачу в согласованных границах. Анализ и план без запроса на правки
-   остаются без изменений файлов; реализацию доводи до проверок и отчёта по `process.md`.
+1. Before any task, read [`process.md`](docs/workflows/process.md): checks, tests, Git,
+   languages and personal data. Start with `git status --short` and keep other people's changes.
+2. Before changing code, read [`code.md`](docs/workflows/code.md), then every workflow that
+   matches the table below. A linked document is required reading when its condition applies,
+   even if your environment does not load it automatically. For analysis, read only the
+   relevant sections.
+3. Stay within the agreed scope. Analysis or a plan without a request for edits changes no
+   files; an implementation ends with the checks and report from `process.md`.
 
-## Что читать по задаче
+## What to read for a task
 
-| Задача | Обязательные документы |
+| Task | Required reading |
 |---|---|
-| Любая задача | [`workflows/process.md`](docs/workflows/process.md) |
-| Любое изменение кода, конфигурации или тестов | [`workflows/code.md`](docs/workflows/code.md): FSD, импорты, роуты, код-стайл, особенности Next.js |
-| API, загрузка данных, серверные модули, авторизация, состояние | [`workflows/api.md`](docs/workflows/api.md) |
-| Схема, запросы к БД, RLS, приватность данных, файлы, миграции | [`workflows/database.md`](docs/workflows/database.md) |
-| Интерфейс, формы, тема, токены | [`workflows/ui.md`](docs/workflows/ui.md) и [`SEO`](docs/workflows/seo-checklist.md) |
-| Компонент shadcn, история, новый визуальный элемент или токен | Также [`workflows/ui-kit.md`](docs/workflows/ui-kit.md) |
-| Шаг плана | Строка в [`PLAN.md`](docs/PLAN.md), карточка по её ссылке в `docs/plan/stage-*.md` и [`workflows/plan-step.md`](docs/workflows/plan-step.md) |
-| Закрытие шага плана с UI | Также [`workflows/qa-subagent.md`](docs/workflows/qa-subagent.md) |
-| Отчёт о положении дел по плану | [`workflows/plan-report.md`](docs/workflows/plan-report.md) |
-| Поиск существующего модуля или места изменения | [Карта сценариев](docs/code-map.md#где-искать-изменение) и нужная карточка [каталога](docs/code-map.md#каталог-слайсов) |
-| Изменение связей системы | Нужный уровень [`архитектуры`](docs/architecture/): [контекст](docs/architecture/1.context.md), [контейнеры](docs/architecture/2.containers.md), [компоненты](docs/architecture/3.components.md); для внутреннего устройства — [Code](docs/architecture/4.code.md), для сценариев — [динамические представления](docs/architecture/dynamic.md) |
-| Тексты страниц, маркетинг, дизайн, развитие | [`PRODUCT.md`](docs/PRODUCT.md) |
-| Причина правила или пересмотр решения | Нужная запись [`DECISIONS.md`](docs/DECISIONS.md) |
-| Запуск, скрипты, env, роуты, внешние сервисы, деплой | Нужный раздел [`README.md`](README.md) |
-| Настройка или обслуживание сервиса | Нужная инструкция [`operations/`](docs/operations/): [Supabase](docs/operations/supabase.md), [вход и домен](docs/operations/authentication.md), [почта](docs/operations/support-email.md) |
-| Контекст завершённого шага | Нужная запись [`plan/HISTORY.md`](docs/plan/HISTORY.md); целиком по умолчанию не читать |
+| Any task | [`workflows/process.md`](docs/workflows/process.md) |
+| Any change to code, configuration or tests | [`workflows/code.md`](docs/workflows/code.md): FSD, imports, routes, code style, Next.js specifics |
+| API, data loading, server modules, auth, state | [`workflows/api.md`](docs/workflows/api.md) |
+| Schema, DB queries, RLS, data privacy, files, migrations | [`workflows/database.md`](docs/workflows/database.md) |
+| UI, forms, theme, tokens | [`workflows/ui.md`](docs/workflows/ui.md) and the [SEO checklist](docs/workflows/seo-checklist.md) |
+| shadcn component, Storybook story, new visual element or token | Also [`workflows/ui-kit.md`](docs/workflows/ui-kit.md) |
+| Plan step | The step's card in `docs/plan/stage-*.md` (found via [`PLAN.md`](docs/PLAN.md)) and [`workflows/plan-step.md`](docs/workflows/plan-step.md) |
+| Closing a plan step that changes UI | Also [`workflows/qa-subagent.md`](docs/workflows/qa-subagent.md) |
+| Plan status report | [`workflows/plan-report.md`](docs/workflows/plan-report.md) |
+| Finding an existing module or the place to change | The [scenario map](docs/code-map.md#where-to-look-for-a-change) and the matching [catalog card](docs/code-map.md#slice-catalog) |
+| Changing how parts of the system connect | The matching [architecture](docs/architecture/) level: [context](docs/architecture/1.context.md), [containers](docs/architecture/2.containers.md), [components](docs/architecture/3.components.md); internals — [Code](docs/architecture/4.code.md), scenarios — [dynamic views](docs/architecture/dynamic.md) |
+| Page copy, marketing, design, product direction | [`PRODUCT.md`](docs/PRODUCT.md) |
+| Why a rule exists, or revisiting a decision | The matching entry in [`DECISIONS.md`](docs/DECISIONS.md) |
+| Running, scripts, env, routes, external services, deploy | The matching section of [`README.md`](README.md) |
+| Setting up or maintaining a service | [`operations/`](docs/operations/): [Supabase](docs/operations/supabase.md), [sign-in and domain](docs/operations/authentication.md), [support email](docs/operations/support-email.md) |
+| Context of a completed step | Its stage file in [`plan/history/`](docs/plan/history/); not read in full by default |
 
-У задачи может быть несколько условий: например, загрузка фото требует правил кода, API,
-БД и UI. Для изменения Next.js дополнительно читай документацию установленной версии
-из управляемого блока в начале файла.
+A task can match several rows: a photo upload needs the code, API, database and UI rules.
+For Next.js changes, also read the installed version's docs from the managed block at the top
+of this file; [`code.md`](docs/workflows/code.md#nextjs-docs-index) lists the relevant files.
 
-## Основные ограничения
+## Key constraints
 
-- Локальный сайт работает с боевой базой Supabase; `main` сразу выкладывается в прод,
-  превью-деплои не используем.
-  Миграции применяет пользователь. Порядок бэкапа, миграций и генерации типов — в
-  [`database.md`](docs/workflows/database.md), правила Git — в `process.md`.
-- Клиент ходит только в собственные API через `apiClient` и TanStack Query. Supabase и секреты —
-  только на сервере; данные пользователя защищаются API и RLS. Скрытые профили не раскрываем
-  в поиске, sitemap и новых запросах. Детальные правила — `api.md` и `database.md`.
-- UI преимущественно клиентский. Согласованные исключения: серверный рендер `/<username>`
-  с `generateMetadata`, серверные `/privacy` и `/terms`, обязательные файлы Next.js.
-  Новые исключения, Server Actions и `proxy.ts` — только по согласованию; детали — `api.md`.
-- Серверные данные — TanStack Query; Zustand — только UI и черновики. Серверные функции сущностей
-  работают с данными, Route Handlers — с HTTP. Импорты и границы — `code.md` и `api.md`.
-- Дизайн минималистичный, стандартные компоненты shadcn, стили через токены темы.
-  Декор, иллюстрации и дополнительные пояснения без запроса не добавляем. Детали — `ui.md`.
+- The local site uses the **production** Supabase database, and every commit to `main` deploys
+  to production; there are no preview deploys. The user applies migrations. Backup, migration
+  and type generation order — [`database.md`](docs/workflows/database.md); Git — `process.md`.
+- The browser calls only our own API through `apiClient` and TanStack Query. Supabase and
+  secrets stay on the server; user data is protected by the API and RLS. Hidden profiles never
+  appear in search, the sitemap or new queries. Details — `api.md` and `database.md`.
+- The UI is client-rendered. Agreed exceptions: server-rendered `/<username>` with
+  `generateMetadata`, server `/privacy` and `/terms`, files Next.js requires. New exceptions,
+  Server Actions and `proxy.ts` need the user's approval; details — `api.md`.
+- Server data lives in TanStack Query; Zustand holds only UI state and drafts. Entity server
+  functions work with data, Route Handlers with HTTP. Imports and boundaries — `code.md`, `api.md`.
+- The design is minimal: standard shadcn components, styling through theme tokens. Add
+  decoration, illustrations or extra explanatory text only on request. Details — `ui.md`.
 
-## Стек
+## Stack
 
-Next.js 16 (App Router, React Compiler), React 19, TypeScript 5 strict; Tailwind CSS 4,
-shadcn/ui на Radix, lucide-react, next-themes, sonner; TanStack Query 5 и Form, Zustand 5,
-zod 4; Route Handlers, Supabase; Storybook 10 и Vitest 4 только для разработки; Biome; Vercel.
-Версии зависимостей — `package.json`, полный состав и команды — [`README.md`](README.md#стек).
+Next.js 16 (App Router, React Compiler), React 19, TypeScript strict, Tailwind CSS 4,
+shadcn/ui (Radix), TanStack Query and Form, Zustand, zod 4, Supabase, Biome, Vitest,
+Storybook, Vercel. Versions are in `package.json`, the full list and commands in
+[`README.md`](README.md#стек). Keep this stack instead of alternatives (react-hook-form, Redux,
+SWR, axios, ESLint, Prettier). Add a dependency only when the existing stack cannot solve the
+task, and list it in the README.
 
-Стек не заменяем аналогами (react-hook-form, Redux, SWR, axios, ESLint, Prettier).
-Новую зависимость добавляй, только если задачу нельзя решить существующим стеком,
-и упомяни её в README. Установка — npm 11+, см. правило 6 `process.md`.
+## Documents
 
-## Назначение документов
-
-- Этот файл и `docs/workflows/` — действующие правила: здесь общие ограничения и навигация,
-  в workflows — подробные требования и процедуры.
-- `docs/architecture/` — статические уровни C4 и отдельные динамические представления;
-  `docs/code-map.md` — поиск по сценариям, слайсам, public API и файлам вне уровней C4.
-- `README.md` — текущее состояние и эксплуатация; без планов, дат, журнала правок и решений.
-  `docs/operations/` — подробные инструкции настройки и обслуживания сервисов.
-- `docs/PLAN.md` — индекс незавершённых задач и очередь; `docs/plan/stage-*.md` — карточки этапов;
-  `docs/plan/HISTORY.md` — завершённые пункты и исторические результаты проверок.
-- `docs/DECISIONS.md` — причины и история принятых решений; `docs/PRODUCT.md` — продуктовые
-  границы и согласованное направление с отдельным срезом готовности, предложениями и вопросами.
-  `docs/legal/*.draft.md` — архивные исходники, действующие юридические тексты — в коде views.
-  Запись в плане не означает готовность функции; предложение ИИ не становится решением владельца.
-
-Когда какой документ обновлять — [таблица в process.md](docs/workflows/process.md#когда-обновлять-документацию).
-
-При расхождении описания с кодом проверь связанные модули и сообщи о расхождении.
-История не отменяет действующие правила; новое продуктовое решение не принимай вместо владельца.
+Which document holds what and when to update it — the
+[table in process.md](docs/workflows/process.md#documents-and-when-to-update-them).
+A plan entry does not mean a feature is ready, and an AI proposal is not the owner's decision.
+If a description contradicts the code, check the related modules and report the mismatch.
+History does not override current rules; leave new product decisions to the owner.

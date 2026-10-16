@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { userEvent, within } from "storybook/test";
-import { type PublicProfile, profileSectionIds } from "@/entities/profile";
+import { getEmptySettingsInput, type PublicProfile, profileSectionIds } from "@/entities/profile";
 import { SocialLinkButton, socialPlatformIds, socialPlatforms } from "@/entities/social-link";
 import { PreferredContactButton } from "./preferred-contact-button";
 import { ProfileCard } from "./profile-card";
@@ -117,6 +117,18 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Full: Story = {};
+
+/** У новой страницы условия работы идут после Bio; без общей цены видна минимальная цена услуг. */
+export const NewPageConditions: Story = {
+  args: {
+    profile: {
+      ...fullProfile,
+      sectionOrder: getEmptySettingsInput().sectionOrder,
+      workFormats: ["online"],
+      price: null,
+    },
+  },
+};
 
 export const Owner: Story = { args: { isOwner: true } };
 
