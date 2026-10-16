@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { getEmptySettingsInput } from "../lib/profile-changes";
 import { type ProfileInput, profileInputSchema, profileUpdateSchema } from "./schemas";
 
@@ -22,13 +22,6 @@ const service = {
   priceAmount: "",
   highlighted: false,
 } as const;
-
-// Дата `YYYY-MM-DD` по UTC со сдвигом в годах и днях от сегодня
-function utcDate(years: number, days = 0): string {
-  const date = new Date();
-  date.setUTCFullYear(date.getUTCFullYear() + years, date.getUTCMonth(), date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
 
 function issuePaths(value: ProfileInput): string[] {
   const result = profileInputSchema.safeParse(value);
@@ -147,12 +140,24 @@ describe("profileInputSchema", () => {
     expect(issuePaths(input({ visibility: "private" }))).toEqual([]);
   });
 
-  it("психологу не меньше 18 лет, практика не начинается в будущем", () => {
-    expect(issuePaths(input({ birthDate: utcDate(-18) }))).toEqual([]);
-    expect(issuePaths(input({ birthDate: utcDate(-18, 1) }))).toEqual(["birthDate"]);
-    expect(issuePaths(input({ birthDate: "2000-02-30" }))).toEqual(["birthDate"]);
-    expect(issuePaths(input({ practiceStartedOn: utcDate(0) }))).toEqual([]);
-    expect(issuePaths(input({ practiceStartedOn: utcDate(0, 1) }))).toEqual(["practiceStartedOn"]);
+  describe("календарные границы", () => {
+    afterEach(() => vi.useRealTimers());
+
+    it.each([
+      { today: "2026-10-15", adult: "2008-10-15", underage: "2008-10-16", tomorrow: "2026-10-16" },
+      { today: "2028-02-29", adult: "2010-02-28", underage: "2010-03-01", tomorrow: "2028-03-01" },
+      { today: "2028-03-01", adult: "2010-03-01", underage: "2010-03-02", tomorrow: "2028-03-02" },
+      { today: "2026-02-28", adult: "2008-02-28", underage: "2008-02-29", tomorrow: "2026-03-01" },
+    ])("проверяет 18 лет и начало практики на $today", ({ today, adult, underage, tomorrow }) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(`${today}T12:00:00Z`));
+
+      expect(issuePaths(input({ birthDate: adult }))).toEqual([]);
+      expect(issuePaths(input({ birthDate: underage }))).toEqual(["birthDate"]);
+      expect(issuePaths(input({ birthDate: "2000-02-30" }))).toEqual(["birthDate"]);
+      expect(issuePaths(input({ practiceStartedOn: today }))).toEqual([]);
+      expect(issuePaths(input({ practiceStartedOn: tomorrow }))).toEqual(["practiceStartedOn"]);
+    });
   });
 
   it("ссылки не повторяются даже в разной записи", () => {

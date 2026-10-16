@@ -33,10 +33,9 @@ import {
   ProfileForm,
   type ProfileFormSection,
 } from "@/widgets/profile-form";
-import { useCollapsedBlocksStore } from "../model/collapsed-blocks-store";
+import { DEFAULT_COLLAPSED_BLOCKS, useCollapsedBlocksStore } from "../model/collapsed-blocks-store";
 
 const SITE_HOST = new URL(siteConfig.url).host;
-const NO_COLLAPSED_BLOCKS: string[] = [];
 
 const sectionLabels: Record<ProfileFormSection, string> = {
   account: "Account",
@@ -78,7 +77,7 @@ function SettingsContent() {
   const section = toSection(useSearchParams().get("section"));
   const userId = viewer.data?.user.id ?? "";
   const collapsedBlocks =
-    useCollapsedBlocksStore((state) => state.collapsedByUser[userId]) ?? NO_COLLAPSED_BLOCKS;
+    useCollapsedBlocksStore((state) => state.collapsedByUser[userId]) ?? DEFAULT_COLLAPSED_BLOCKS;
   const setCollapsed = useCollapsedBlocksStore((state) => state.setCollapsed);
   // Гард рендерит страницу только пользователю с профилем
   if (!viewer.data?.profile) return null;
@@ -95,7 +94,7 @@ function SettingsContent() {
         .
       </>
     ) : section === "search" ? (
-      "Not shown on your page. Used to match you with clients."
+      "These details are private and saved for future search and matching. The directory and AI matching aren’t available yet."
     ) : null;
 
   return (

@@ -175,7 +175,7 @@ function SortableBlock({
           className="-my-1 flex size-8 shrink-0 cursor-grab touch-none items-center justify-center text-muted-foreground active:cursor-grabbing">
           <GripVerticalIcon className="size-4" />
         </span>
-        <h3 id={titleId} className="flex min-w-0 flex-1 font-medium text-sm">
+        <h2 id={titleId} className="flex min-w-0 flex-1 font-medium text-sm">
           {onCollapsedChange ? (
             <DisclosureButton
               expanded={!isCollapsed}
@@ -187,7 +187,7 @@ function SortableBlock({
           ) : (
             <span className="truncate">{label}</span>
           )}
-        </h3>
+        </h2>
         <Button
           id={moveButtonId(section, "up")}
           type="button"

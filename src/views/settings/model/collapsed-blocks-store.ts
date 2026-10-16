@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+export const DEFAULT_COLLAPSED_BLOCKS: readonly string[] = ["appearance"];
+
 type CollapsedBlocksState = {
   /** Свёрнутые блоки настроек по id пользователя: в одном браузере может входить несколько. */
   collapsedByUser: Record<string, string[]>;
@@ -9,8 +11,8 @@ type CollapsedBlocksState = {
 
 /**
  * Какие блоки настроек свёрнуты: переживает перезагрузку и закрытие браузера. Храним только id
- * блоков конструктора (`bio`, `contacts`), значения полей сюда не попадают. По умолчанию
- * блок развёрнут.
+ * блоков конструктора (`bio`, `contacts`), значения полей сюда не попадают. Для пользователя
+ * без сохранённых настроек свёрнут Appearance; существующий выбор сохраняем целиком.
  */
 export const useCollapsedBlocksStore = create<CollapsedBlocksState>()(
   persist(
@@ -18,7 +20,7 @@ export const useCollapsedBlocksStore = create<CollapsedBlocksState>()(
       collapsedByUser: {},
       setCollapsed: (userId, blockId, collapsed) =>
         set(({ collapsedByUser }) => {
-          const current = collapsedByUser[userId] ?? [];
+          const current = collapsedByUser[userId] ?? DEFAULT_COLLAPSED_BLOCKS;
           const next = current.filter((id) => id !== blockId);
           if (collapsed) next.push(blockId);
           return { collapsedByUser: { ...collapsedByUser, [userId]: next } };

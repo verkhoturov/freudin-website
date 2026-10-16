@@ -7,6 +7,6 @@ export const siteConfig = {
    */
   url: "https://www.freud.in",
   locale: "en_US",
-  /** Почта поддержки: пока ящик Gmail (решение 17 в docs/PLAN.md). */
+  /** Почта поддержки: пока ящик Gmail (решение 17 в docs/DECISIONS.md). */
   supportEmail: "freudin.support@gmail.com",
 } as const;

@@ -31,7 +31,11 @@ export function SignInMethods({ signInMethods }: { signInMethods: SignInMethod[]
   // После успеха браузер уходит к провайдеру: до этого кнопки остаются неактивными
   const isRedirecting = link.isPending || link.isSuccess;
   const isBusy = isRedirecting || unlink.isPending;
-  const isOnlyMethod = signInMethods.length < 2;
+  // Отключённые на сайте провайдеры (Facebook) не показываем, даже привязанные: войти через них
+  // нельзя, поэтому и последним способом входа они не считаются
+  const providers = enabledAuthProviders;
+  const isOnlyMethod =
+    signInMethods.filter((method) => providers.includes(method.provider)).length < 2;
 
   // «Назад» от провайдера может достать страницу из bfcache вместе с состоянием ожидания
   useEffect(() => {
@@ -43,13 +47,6 @@ export function SignInMethods({ signInMethods }: { signInMethods: SignInMethod[]
   }, [resetLink]);
 
   const methods = new Map(signInMethods.map((method) => [method.provider, method]));
-  // Привязанный способ, который на сайте уже отключили, тоже показываем: его можно отвязать
-  const providers: AuthProvider[] = [
-    ...enabledAuthProviders,
-    ...signInMethods
-      .map((method) => method.provider)
-      .filter((provider) => !enabledAuthProviders.includes(provider)),
-  ];
 
   const connect = (provider: AuthProvider) => {
     link.mutate(
@@ -76,9 +73,9 @@ export function SignInMethods({ signInMethods }: { signInMethods: SignInMethod[]
 
   return (
     <section aria-labelledby="sign-in-methods-title" className="flex flex-col gap-3">
-      <h3 id="sign-in-methods-title" className="font-medium text-sm">
+      <h2 id="sign-in-methods-title" className="font-medium text-sm">
         Sign-in methods
-      </h3>
+      </h2>
       <ul className="flex flex-col divide-y rounded-lg border">
         {providers.map((provider) => {
           const method = methods.get(provider);

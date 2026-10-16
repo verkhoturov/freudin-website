@@ -317,8 +317,8 @@ type ProfileFormProps = {
   onValuesChange?: (values: ProfileInput) => void;
 };
 
-// Раскладки формы и превью. Колонка формы в редакторе — 22rem: поле внутри отступов — 19rem,
-// как на телефоне, под это поля и свёрстаны. Фон холста превью задаёт страница
+// Раскладки формы и превью. Колонка редактора — 28rem: длинные тексты на компьютере шире,
+// чем на телефоне. Фон холста превью задаёт страница
 const layoutClasses = {
   inline: {
     root: "@container flex flex-col gap-6",
@@ -335,7 +335,7 @@ const layoutClasses = {
   workspace: {
     // Превью высотой в экран растягивает строку сетки: колонка формы не короче экрана
     root: "@container flex flex-col",
-    columns: "@3xl:grid @3xl:grid-cols-[--spacing(88)_minmax(0,1fr)]",
+    columns: "@3xl:grid @3xl:grid-cols-[--spacing(112)_minmax(0,1fr)]",
     formColumn: "flex flex-col gap-10 bg-background px-4 py-6 sm:px-6 @3xl:border-r",
     // Рамка превью — вся область справа, как окно браузера: панель с подписью и выбором ширины,
     // под ней холст страницы, карточка в нём сама держит ширину личной страницы. Прокручивается
@@ -545,14 +545,20 @@ export function ProfileForm({
     rootRef.current?.scrollIntoView({ block: "start" });
   };
 
-  const renderSummary = (section: ProfileSection): ReactNode =>
-    section === "documents" ? (
-      (documentsSummary ?? "Not filled")
-    ) : (
-      <form.Subscribe selector={(state) => state.values}>
-        {(values) => getBlockSummary(section, getPreview(values))}
-      </form.Subscribe>
-    );
+  const renderSummary = (section: ProfileSection): ReactNode => (
+    <form.Subscribe selector={(state) => state.values}>
+      {(values) => (
+        <>
+          {values.highlightedSections.includes(section) ? (
+            <span className="font-medium text-foreground">Highlighted · </span>
+          ) : null}
+          {section === "documents"
+            ? (documentsSummary ?? "Not filled")
+            : getBlockSummary(section, getPreview(values))}
+        </>
+      )}
+    </form.Subscribe>
+  );
 
   const isBlockShown = (section: ProfileSection) => {
     if (practiceSections.has(section)) return showPractice;
@@ -578,10 +584,14 @@ export function ProfileForm({
                     onBlur={field.handleBlur}
                     onChange={(event) => field.handleChange(event.target.value)}
                     aria-invalid={isInvalid}
-                    aria-describedby={`${field.name}-counter`}
+                    aria-describedby={`${field.name}-description ${field.name}-counter`}
                     maxLength={BIO_MAX_LENGTH}
                     rows={4}
                   />
+                  <FieldDescription id={`${field.name}-description`}>
+                    You could describe who you help, the concerns you work with, and what clients
+                    can expect when working with you.
+                  </FieldDescription>
                   <FieldDescription id={`${field.name}-counter`}>
                     {field.state.value.length} / {BIO_MAX_LENGTH}
                   </FieldDescription>
@@ -936,7 +946,11 @@ export function ProfileForm({
                                 field.state.meta.isTouched && !field.state.meta.isValid;
                               return (
                                 <Field data-invalid={isInvalid}>
+                                  <FieldLabel htmlFor={field.name}>
+                                    Degree or qualification
+                                  </FieldLabel>
                                   <Input
+                                    id={field.name}
                                     name={field.name}
                                     value={field.state.value}
                                     onBlur={field.handleBlur}
@@ -960,7 +974,11 @@ export function ProfileForm({
                                   field.state.meta.isTouched && !field.state.meta.isValid;
                                 return (
                                   <Field data-invalid={isInvalid} className="min-w-0 flex-1">
+                                    <FieldLabel htmlFor={field.name}>
+                                      School or institution
+                                    </FieldLabel>
                                     <Input
+                                      id={field.name}
                                       name={field.name}
                                       value={field.state.value}
                                       onBlur={field.handleBlur}
@@ -983,7 +1001,9 @@ export function ProfileForm({
                                   field.state.meta.isTouched && !field.state.meta.isValid;
                                 return (
                                   <Field data-invalid={isInvalid} className="w-20 shrink-0">
+                                    <FieldLabel htmlFor={field.name}>Year</FieldLabel>
                                     <Input
+                                      id={field.name}
                                       name={field.name}
                                       value={field.state.value}
                                       onBlur={field.handleBlur}
@@ -1150,7 +1170,9 @@ export function ProfileForm({
                                   field.state.meta.isTouched && !field.state.meta.isValid;
                                 return (
                                   <Field data-invalid={isInvalid}>
+                                    <FieldLabel htmlFor={field.name}>Question</FieldLabel>
                                     <Input
+                                      id={field.name}
                                       name={field.name}
                                       value={field.state.value}
                                       onBlur={field.handleBlur}
@@ -1173,7 +1195,9 @@ export function ProfileForm({
                                   field.state.meta.isTouched && !field.state.meta.isValid;
                                 return (
                                   <Field data-invalid={isInvalid}>
+                                    <FieldLabel htmlFor={field.name}>Answer</FieldLabel>
                                     <Textarea
+                                      id={field.name}
                                       name={field.name}
                                       value={field.state.value}
                                       onBlur={field.handleBlur}
@@ -1299,6 +1323,7 @@ export function ProfileForm({
                                       : clientTypes;
                                     return (
                                       <Field data-invalid={isStale} className="min-w-0 flex-1">
+                                        <FieldLabel htmlFor={field.name}>Client group</FieldLabel>
                                         <Select
                                           value={field.state.value}
                                           onValueChange={(next) => {
@@ -1307,6 +1332,7 @@ export function ProfileForm({
                                             field.handleBlur();
                                           }}>
                                           <SelectTrigger
+                                            id={field.name}
                                             aria-label={`Client group for service ${index + 1}`}
                                             aria-invalid={isStale}
                                             className="w-full sm:w-48">
@@ -1345,7 +1371,9 @@ export function ProfileForm({
                                     field.state.meta.isTouched && !field.state.meta.isValid;
                                   return (
                                     <Field data-invalid={isInvalid}>
+                                      <FieldLabel htmlFor={field.name}>Service name</FieldLabel>
                                       <Input
+                                        id={field.name}
                                         name={field.name}
                                         value={field.state.value}
                                         onBlur={field.handleBlur}
@@ -1370,7 +1398,11 @@ export function ProfileForm({
                                     field.state.meta.isTouched && !field.state.meta.isValid;
                                   return (
                                     <Field data-invalid={isInvalid}>
+                                      <FieldLabel htmlFor={field.name}>
+                                        Description (optional)
+                                      </FieldLabel>
                                       <Textarea
+                                        id={field.name}
                                         name={field.name}
                                         value={field.state.value}
                                         onBlur={field.handleBlur}
@@ -1393,28 +1425,10 @@ export function ProfileForm({
                               <div className="flex flex-wrap items-start gap-2">
                                 <form.Field name={`services[${index}].durationMinutes`}>
                                   {(field) => (
-                                    <Input
-                                      name={field.name}
-                                      value={field.state.value}
-                                      onBlur={field.handleBlur}
-                                      onChange={(event) => field.handleChange(event.target.value)}
-                                      aria-invalid={
-                                        field.state.meta.isTouched && !field.state.meta.isValid
-                                      }
-                                      aria-label={`Duration in minutes, service ${index + 1}`}
-                                      placeholder="Minutes"
-                                      inputMode="numeric"
-                                      pattern="[0-9]*"
-                                      autoComplete="off"
-                                      maxLength={String(SERVICE_DURATION_MAX).length}
-                                      className="w-24 shrink-0"
-                                    />
-                                  )}
-                                </form.Field>
-                                <form.Field name={`services[${index}].priceAmount`}>
-                                  {(field) => (
-                                    <InputGroup className="w-32 shrink-0">
-                                      <InputGroupInput
+                                    <Field className="w-28 shrink-0">
+                                      <FieldLabel htmlFor={field.name}>Duration (min)</FieldLabel>
+                                      <Input
+                                        id={field.name}
                                         name={field.name}
                                         value={field.state.value}
                                         onBlur={field.handleBlur}
@@ -1422,19 +1436,46 @@ export function ProfileForm({
                                         aria-invalid={
                                           field.state.meta.isTouched && !field.state.meta.isValid
                                         }
-                                        aria-label={`Price in ${form.getFieldValue("currency")}, service ${index + 1}`}
-                                        placeholder="Price"
+                                        aria-label={`Duration in minutes, service ${index + 1}`}
+                                        placeholder="Minutes"
                                         inputMode="numeric"
                                         pattern="[0-9]*"
                                         autoComplete="off"
-                                        maxLength={PRICE_AMOUNT_MAX_LENGTH}
+                                        maxLength={String(SERVICE_DURATION_MAX).length}
                                       />
-                                      <InputGroupAddon align="inline-end">
-                                        <InputGroupText>
-                                          {form.getFieldValue("currency")}
-                                        </InputGroupText>
-                                      </InputGroupAddon>
-                                    </InputGroup>
+                                    </Field>
+                                  )}
+                                </form.Field>
+                                <form.Field name={`services[${index}].priceAmount`}>
+                                  {(field) => (
+                                    <Field className="w-32 shrink-0">
+                                      <FieldLabel htmlFor={field.name}>Price</FieldLabel>
+                                      <InputGroup>
+                                        <InputGroupInput
+                                          id={field.name}
+                                          name={field.name}
+                                          value={field.state.value}
+                                          onBlur={field.handleBlur}
+                                          onChange={(event) =>
+                                            field.handleChange(event.target.value)
+                                          }
+                                          aria-invalid={
+                                            field.state.meta.isTouched && !field.state.meta.isValid
+                                          }
+                                          aria-label={`Price in ${form.getFieldValue("currency")}, service ${index + 1}`}
+                                          placeholder="Price"
+                                          inputMode="numeric"
+                                          pattern="[0-9]*"
+                                          autoComplete="off"
+                                          maxLength={PRICE_AMOUNT_MAX_LENGTH}
+                                        />
+                                        <InputGroupAddon align="inline-end">
+                                          <InputGroupText>
+                                            {form.getFieldValue("currency")}
+                                          </InputGroupText>
+                                        </InputGroupAddon>
+                                      </InputGroup>
+                                    </Field>
                                   )}
                                 </form.Field>
                               </div>
@@ -1990,6 +2031,7 @@ export function ProfileForm({
                           <Field orientation="horizontal">
                             <Checkbox
                               id="hide-page"
+                              aria-describedby="hide-page-description"
                               checked={isHidden}
                               onCheckedChange={(checked) => {
                                 field.handleChange(checked === true ? "private" : "public");
@@ -2000,6 +2042,11 @@ export function ProfileForm({
                               Hide my page
                             </FieldLabel>
                           </Field>
+                          <FieldDescription id="hide-page-description">
+                            This setting takes effect after Save. Hiding your page doesn’t revoke
+                            access to photos or documents through previously saved direct image
+                            links.
+                          </FieldDescription>
                           {isHidden ? (
                             <RadioGroup
                               value={field.state.value}

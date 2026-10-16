@@ -97,7 +97,8 @@ function renderSections(profile: PublicProfile, isPreview: boolean): ReactNode[]
 
   for (const section of profile.sectionOrder) {
     if (section === "bio") {
-      if (profile.bio) add(section, <p className="whitespace-pre-line">{profile.bio}</p>);
+      if (profile.bio)
+        add(section, <p className="max-w-full whitespace-pre-line wrap-anywhere">{profile.bio}</p>);
     } else if (section === "links") {
       if (profile.socialLinks.length > 0) {
         add(

@@ -58,7 +58,7 @@ export function AppearanceBlock({
       id={getBlockElementId(BLOCK_ID)}
       aria-labelledby={titleId}
       className="flex flex-col gap-3 rounded-xl border bg-background p-3">
-      <h3 id={titleId} className="flex min-w-0 font-medium text-sm">
+      <h2 id={titleId} className="flex min-w-0 font-medium text-sm">
         {onCollapsedChange ? (
           <DisclosureButton
             expanded={!isCollapsed}
@@ -70,7 +70,7 @@ export function AppearanceBlock({
         ) : (
           <span className="truncate">Appearance</span>
         )}
-      </h3>
+      </h2>
       {isCollapsed ? (
         <p className="truncate pl-5.5 text-muted-foreground text-sm">
           {pageThemeLabels[theme]} · {coverLabels[cover]}

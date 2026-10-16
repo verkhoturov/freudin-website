@@ -1,49 +1,57 @@
 # Freudin
 
-Сайт для психологов и их будущих клиентов. Психолог входит через Google, Meta (Facebook) или
-Telegram и делает личную страницу-визитку с уникальной ссылкой, а клиент без регистрации находит
-психолога. Сайт не проверяет психологов, не участвует в их общении с клиентами и не берёт оплату.
+Сайт для психологов и их будущих клиентов. Психолог входит через Google или Telegram и делает
+личную страницу-визитку с уникальной ссылкой, а клиент без регистрации находит психолога. Сайт
+не проверяет психологов, не участвует в их общении с клиентами и не берёт оплату.
 
-> Проект в разработке. О продукте: [`docs/PRODUCT.md`](docs/PRODUCT.md). План и прогресс:
-> [`docs/PLAN.md`](docs/PLAN.md). Правила для разработчиков и AI-агентов: [`AGENTS.md`](AGENTS.md).
+Этот файл описывает текущее состояние системы и то, как ею управлять: запуск, окружение,
+внешние сервисы, деплой. Подробные процедуры настройки сервисов — в
+[`docs/operations/`](docs/operations). Остальное — в отдельных документах:
 
-## Возможности (MVP)
+- о продукте — [`docs/PRODUCT.md`](docs/PRODUCT.md);
+- индекс активных задач и ссылки на карточки этапов — [`docs/PLAN.md`](docs/PLAN.md);
+- завершённые задачи и результаты проверок — [`docs/plan/HISTORY.md`](docs/plan/HISTORY.md);
+- архитектура по модели C4 — [`docs/architecture/`](docs/architecture);
+- поиск модулей и файлов по сценарию — [`docs/code-map.md`](docs/code-map.md);
+- решения и их причины — [`docs/DECISIONS.md`](docs/DECISIONS.md);
+- правила для разработчиков и AI-агентов — [`AGENTS.md`](AGENTS.md) и
+  [`docs/workflows/`](docs/workflows).
 
-- вход и регистрация через Google и Telegram (вход через Facebook готов, но скрыт до подтверждения компании в Meta);
+Быстрые переходы: [запуск](#быстрый-старт) · [env](#переменные-окружения) ·
+[скрипты](#скрипты) · [роуты](#роуты) · [сервисы](#внешние-сервисы) · [деплой](#деплой).
+
+## Возможности
+
+- вход и регистрация через Google и Telegram, несколько способов входа в одном аккаунте
+  (вход через Facebook есть в коде, но выключен — см. «Вход через Facebook»);
 - онбординг: фото, имя, описание, адрес страницы, ссылки на соцсети;
-- публичная страница `https://<домен>/<username>`;
+- личная страница `https://www.freud.in/<username>` с FAQ, услугами, документами и прямыми
+  контактами; страницу можно скрыть ото всех или открыть только по паролю;
+- редактор `/settings` с превью несохранённых правок, порядком и выделением блоков, пресетами
+  оформления и тремя обложками;
 - редактирование профиля, выход, удаление аккаунта.
 
-Провайдер появляется на странице входа, когда его добавляют в `enabledAuthProviders`
-(`src/entities/viewer/config/auth-providers.ts`). Интерфейс сайта, ошибки API и юридические
-тексты `/privacy` и `/terms` — на английском. Пример личной страницы — демо-профиль по адресу
-`/demo`.
-
-Лента постов из соцсетей пока в плане: в [этапе K](docs/PLAN.md#этап-k-лента-постов-из-соцсетей)
-записаны два референса Linktree — виджет последних постов и сетка публикаций. Формат и место
-показа выбираются перед реализацией.
+Пример личной страницы — демо-профиль по адресу `/demo`.
 
 ## Стек
 
-| Задача | Выбор | Статус |
-|--------|-------|--------|
-| Фреймворк | Next.js 16 (App Router, React Compiler), React 19, TypeScript 5 | ✅ |
-| Стили | Tailwind CSS 4, `tw-animate-css` | ✅ |
-| UI-компоненты | shadcn/ui на Radix (`radix-ui`, `cn` — слияние классов; варианты классов — своя `cva` в `shared/lib` вместо `class-variance-authority`), lucide-react; `cmdk` — список с поиском (`command`); `@dnd-kit/core` и `@dnd-kit/sortable` — перетаскивание в списке порядка блоков | ✅ |
-| Темы и уведомления | next-themes, sonner | ✅ |
-| Запросы к API | TanStack Query (+ Devtools в dev) | ✅ |
-| Валидация | zod | ✅ |
-| Формы | TanStack Form | ✅ |
-| Клиентское состояние | Zustand (черновик онбординга) | ✅ |
-| Кроп фото | react-easy-crop | ✅ |
-| QR-код страницы | qrcode.react (рисуется в браузере, без внешних сервисов) | ✅ |
-| БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI (миграции и типы) | ✅ БД, вход через Google и Telegram (Facebook скрыт) |
-| UI kit | Storybook 10 (`storybook`, `@storybook/nextjs-vite`, `vite`), dev-зависимость | ✅ локально и на `freudin-storybook.vercel.app` |
-| Линтер и форматтер | Biome | ✅ |
-| Юнит-тесты | Vitest 4 (`vitest`), dev-зависимость; окружение node, только чистая логика | ✅ локально, в CI — после шага 18.7 |
-| Хостинг | Vercel, прод на `www.freud.in` | ✅ |
-
-Номера шагов указаны по [`docs/PLAN.md`](docs/PLAN.md).
+| Задача | Выбор |
+|--------|-------|
+| Фреймворк | Next.js 16 (App Router, React Compiler), React 19, TypeScript 5 |
+| Стили | Tailwind CSS 4, `tw-animate-css` |
+| UI-компоненты | shadcn/ui на Radix (`radix-ui`, `cn` — слияние классов; варианты классов — своя `cva` в `shared/lib` вместо `class-variance-authority`), lucide-react; `cmdk` — список с поиском (`command`); `@dnd-kit/core` и `@dnd-kit/sortable` — перетаскивание в списке порядка блоков |
+| Темы и уведомления | next-themes, sonner |
+| Запросы к API | TanStack Query (+ Devtools в dev) |
+| Валидация | zod |
+| Формы | TanStack Form |
+| Клиентское состояние | Zustand: черновик онбординга, свёрнутые блоки настроек, скрытые подсказки владельца |
+| Кроп фото | react-easy-crop |
+| QR-код страницы | qrcode.react (рисуется в браузере, без внешних сервисов) |
+| БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI (миграции и типы) |
+| UI kit | Storybook 10 (`storybook`, `@storybook/nextjs-vite`, `vite`), dev-зависимость; опубликован на `freudin-storybook.vercel.app` |
+| Линтер и форматтер | Biome |
+| Юнит-тесты | Vitest 4 (`vitest`), dev-зависимость; окружение node, только чистая логика; запускаются локально, CI нет |
+| Хостинг | Vercel, прод на `www.freud.in` |
 
 ## Быстрый старт
 
@@ -63,15 +71,15 @@ npm run dev
 сайт открывается, но API-роуты, которые работают с Supabase (`/api/me`, `/api/profile`,
 `/api/profiles/…`, `/api/usernames/…`), отвечают 500. Демо-профиль `/demo` работает и без них.
 
-| Переменная | Где взять | Нужна с |
-|------------|-----------|---------|
-| `SUPABASE_URL` | Supabase → Project Settings → API Keys | шага 7 |
-| `SUPABASE_PUBLISHABLE_KEY` | там же, ключ `sb_publishable_…` | шага 7 |
-| `SUPABASE_SECRET_KEY` | там же, ключ `sb_secret_…` | шага 7 |
-| `GOOGLE_CLIENT_ID` | Google Cloud → Google Auth Platform → Clients (тот же, что в Supabase → Providers → Google) | шага 8.1 |
-| `GOOGLE_CLIENT_SECRET` | там же, секрет `GOCSPX-…` | шага 8.1 |
-| `TELEGRAM_CLIENT_ID` | @BotFather → бот → Web Login (OpenID Connect), тот же, что в Supabase → Providers → `custom:telegram` | шага 10 |
-| `TELEGRAM_CLIENT_SECRET` | там же, Client Secret (не токен бота) | шага 10 |
+| Переменная | Где взять |
+|------------|-----------|
+| `SUPABASE_URL` | Supabase → Project Settings → API Keys |
+| `SUPABASE_PUBLISHABLE_KEY` | там же, ключ `sb_publishable_…` |
+| `SUPABASE_SECRET_KEY` | там же, ключ `sb_secret_…` |
+| `GOOGLE_CLIENT_ID` | Google Cloud → Google Auth Platform → Clients (тот же, что в Supabase → Providers → Google) |
+| `GOOGLE_CLIENT_SECRET` | там же, секрет `GOCSPX-…` |
+| `TELEGRAM_CLIENT_ID` | @BotFather → бот → Web Login (OpenID Connect), тот же, что в Supabase → Providers → `custom:telegram` |
+| `TELEGRAM_CLIENT_SECRET` | там же, Client Secret (не токен бота) |
 
 Переменные проверяются zod-схемой при первом обращении (`getServerEnv()`), поэтому
 `npm run build` проходит без них.
@@ -121,8 +129,8 @@ src/
 ├─ widgets/            # header, footer, sign-in-panel, profile-card, profile-form, profile-documents, account-settings, legal-document
 ├─ entities/           # viewer (вход), profile (профиль, username, данные психолога), location (страны и города), social-link (ссылки на соцсети)
 └─ shared/
-   ├─ ui/              # компоненты shadcn/ui, Container, Logo, ThemeToggle, NotFoundState, ErrorState, Spinner, toast (обёртка sonner), SupportEmailLink, Combobox; истории *.stories.tsx и токены (tokens.stories.tsx)
-   ├─ lib/             # утилиты: cn, cva (варианты классов компонентов), безопасный редирект по ?next=, кроп и сжатие картинок, буфер обмена, ошибки форм
+   ├─ ui/              # компоненты shadcn/ui, Container, Logo, ThemeToggle, NotFoundState, ErrorState, Spinner, toast (обёртка sonner), SupportEmailLink, SectionNav, DisclosureButton, Combobox; истории *.stories.tsx и токены (tokens.stories.tsx)
+   ├─ lib/             # утилиты: cn, cva (варианты классов компонентов), безопасный редирект по ?next=, кроп и сжатие картинок, буфер обмена, ошибки форм, транслитерация
    ├─ api/             # apiClient, ApiError, QueryClient; на сервере — клиенты Supabase и типы БД
    └─ config/          # routes, apiRoutes, site, цвета темы для <meta name="theme-color">, зарезервированные адреса, серверный env
 supabase/
@@ -140,79 +148,106 @@ vitest.config.mts      # юнит-тесты: src/**/*.test.ts, окружени
 .storybook/            # настройки Storybook: истории из src/**/*.stories.tsx, globals.css, шрифты из src/app/fonts.ts, переключатель темы
 .env.example           # шаблон переменных окружения
 docs/
-├─ PLAN.md             # пошаговый план
+├─ PLAN.md             # индекс активных задач, состояния и очередь
+├─ plan/
+│  ├─ stage-*.md       # карточки этапов: контекст, связи, точки входа, подшаги и критерии
+│  ├─ context.md       # сводка действий разработчика, риски и справочные ссылки
+│  ├─ review-sources.md # источники замечаний сводного ревью и привязка к задачам
+│  └─ HISTORY.md       # завершённые шаги и подшаги, результаты проверок
+├─ PRODUCT.md          # описание продукта
+├─ DECISIONS.md        # реестр решений: что, когда и почему
+├─ code-map.md         # карта сценариев, FSD-слайсы, public API и файлы реализации
+├─ architecture/       # C4: 1.context, 2.containers, 3.components, 4.code; отдельно dynamic (сквозные сценарии)
+├─ workflows/          # правила: process (проверки и Git), code (FSD и Next.js), api, database, ui; процедуры: plan-step, qa-subagent, plan-report, seo-checklist, ui-kit
+├─ operations/         # настройка и обслуживание: Supabase и бэкапы, вход и домен, почта поддержки
 ├─ brand/              # файлы бренда вне сайта: иконка приложения Meta 1024×1024
-└─ legal/              # исходные тексты /privacy и /terms с разделами про аналитику (заготовка)
+└─ legal/              # архивные юридические черновики с аналитикой; действующие тексты — в views
 ```
 
-Файлы в `src/app` только реэкспортируют страницы из `src/views`. Страницы — клиентские
-компоненты, а серверная логика живёт в `src/app/api`. Исключения: личная страница `/<username>`
-загружает профиль на сервере, а `/privacy` и `/terms` — серверные компоненты без клиентского JS. Правила слоёв и импортов
-описаны в [`AGENTS.md`](AGENTS.md), линтер проверяет их при `npm run lint`.
+Статическое устройство системы — уровни C4 в [`docs/architecture/`](docs/architecture):
+[контекст](docs/architecture/1.context.md), [контейнеры](docs/architecture/2.containers.md),
+[компоненты](docs/architecture/3.components.md),
+[внутреннее устройство выбранных компонентов](docs/architecture/4.code.md).
+Сквозные сценарии — в [dynamic.md](docs/architecture/dynamic.md), поиск реализации —
+в [code-map.md](docs/code-map.md). Правила слоёв и импортов — в
+[`docs/workflows/code.md`](docs/workflows/code.md), линтер проверяет их при `npm run lint`.
 
 ## Тесты
 
-Юнит-тесты (шаг 24) лежат рядом с кодом: `<модуль>.test.ts`. Покрыта логика, ошибка в которой
-дорого стоит или незаметна в интерфейсе:
+Юнит-тесты лежат рядом с кодом: `<модуль>.test.ts`. Покрыта логика, ошибка в которой дорого
+стоит или незаметна в интерфейсе:
 
 | Что | Тесты |
 |-----|-------|
 | Безопасность | `getSafeRedirectPath` (open redirect), `assertSameOrigin` (CSRF) |
 | Адрес страницы | `usernameSchema`: формат, служебные слова и сегменты роутов из `routes` |
 | Ссылки | `normalizeSocialLinkUrl`, `socialLinkSchema` |
-| Профиль | `profileInputSchema` и `profileUpdateSchema`: связанные поля (город и формат, карточки услуг, запросы, способ связи, пароль скрытой страницы), валюта профиля, даты, контакты |
+| Профиль | `profileInputSchema` и `profileUpdateSchema`: связанные поля (город и формат, карточки услуг, запросы, способ связи, пароль скрытой страницы), валюта профиля, даты (обычный и високосный день с фиксированными часами), контакты |
 | Сохранение и превью | `getProfileChanges`, `normalizeSectionOrder`, `toPreviewProfile` (без закрытых данных) |
-| Аккаунт | `isAccountDeletionConfirmed` |
+| Аккаунт | `isAccountDeletionConfirmed`, `canUnlinkSignInMethod` (последний способ входа, отключённый Facebook не в счёт) |
 | Загрузки | `detectImage`: формат по сигнатуре, размеры из заголовка PNG, JPEG и WebP |
 | Подсказки и поиск | `transliterate`, `toSearchKey`, `getProfileSuggestions` |
 | Ошибки | `getOAuthErrorCode`, `toFieldErrors`, `toFormFieldName` |
 
 Проверка `state` при входе через Google и Telegram не покрыта: это сравнение в роуте, для теста
-пришлось бы подменять `cookies()` из Next. E2e и тесты интерфейса пишем только по отдельному
-запросу.
+пришлось бы подменять `cookies()` из Next. Тестов интерфейса и e2e нет.
 
 ## Роуты
 
-| Путь | Страница | Статус |
-|------|----------|--------|
-| `/` | главная | готово (минимальная) |
-| `/login` | вход; вошедшего пользователя уводит дальше | готово: Google |
-| `/onboarding` | создание страницы после первого входа | готово; превью страницы рядом с формой (на телефоне — кнопка Preview); вошедшего с профилем уводит на его страницу |
-| `/settings` | настройки профиля и аккаунта | готово, доступна только вошедшим с профилем: редактор на весь экран без шапки и подвала сайта, превью страницы видно во всех разделах; разделы Account (адрес, почта, страна и город, валюта цен, способы входа), Public profile и Search details в сайдбаре (`/settings?section=account`, по умолчанию Public profile; у каждого раздела свой Save — в Account под полями, в остальных в липкой панели; при переходе в другой раздел несохранённые правки сбрасываются после подтверждения), блоки сворачиваются (состояние — в localStorage, по пользователю), панель Save видна при прокрутке, превью несохранённой страницы (ширина Desktop или Phone), блок Appearance — пресет и обложка; `/settings#block-<id>` разворачивает блок и ведёт к нему |
-| `/<username>` | личная страница пользователя | готово, рендерится на сервере; владельцу — подсказки «Finish your page» со ссылками на блоки настроек; `/demo` — демо-профиль, нет профиля — 404, адрес с заглавными редиректит на нижний регистр (`/Anna` → `/anna`) |
-| `/privacy` | политика конфиденциальности (Privacy Policy) | готово |
-| `/terms` | условия использования (Terms of Service) | готово |
+Пути в коде строят `routes` (страницы) и `apiRoutes` (API) из `src/shared/config`.
 
-API:
+### Страницы
 
-| Метод | Путь | Назначение | Статус |
-|-------|------|------------|--------|
-| GET | `/api/health` | проверка связки клиент → API | готово |
-| GET | `/api/auth/sign-in?provider=&next=` | старт входа, редирект к провайдеру | готово: Google, Telegram; Facebook скрыт |
-| GET | `/api/auth/callback?code=&next=` | обмен кода на сессию после OAuth Supabase (Facebook, Telegram на localhost), редирект дальше | готово |
-| GET | `/api/auth/callback/[provider]?code=&state=` | возврат от Google и Telegram на наш домен: код → ID-токен → сессия Supabase, редирект дальше | готово |
-| POST | `/api/auth/sign-out` | выход | готово |
-| POST | `/api/auth/identities` | старт привязки способа входа: `{ provider }` → `{ url }` провайдера | готово |
-| DELETE | `/api/auth/identities/[provider]` | отвязка способа входа (последний нельзя — 409) | готово |
-| GET | `/api/me` | текущий пользователь, привязанные способы входа, контактная почта, его профиль, закрытые данные психолога (дата рождения, пол, запросы) и подсказки для онбординга | готово |
-| DELETE | `/api/me` | удаление аккаунта со всеми данными; тело `{ "username": "…" }` — подтверждение, без совпадения 400; у аккаунта без страницы подтверждение не нужно | готово |
-| POST | `/api/profile` | создание профиля (онбординг) и контактной почты | готово |
-| PATCH | `/api/profile` | обновление профиля, контактной почты, закрытых данных психолога, порядка и выделения блоков страницы, FAQ, карточек услуг и оформления страницы: обложка, пресет, иконки, место главной кнопки (только переданные поля) | готово |
-| POST | `/api/profile/avatar` | новое фото: файл (JPEG, PNG, WebP до 2 МБ и 1024×1024) или копия фото из аккаунта привязанного провайдера (`provider` — чьё) | готово |
-| DELETE | `/api/profile/avatar` | удаление фото | готово |
-| POST | `/api/profile/documents` | документ психолога: изображение (JPEG, PNG, WebP до 2 МБ и 2048×2048), превью (до 480×480) и подпись, до 5 документов | готово |
-| DELETE | `/api/profile/documents/[id]` | удаление документа | готово |
-| GET | `/api/cities?country=&q=` | поиск города в стране по справочнику GeoNames | готово |
-| GET | `/api/profiles/[username]` | публичный профиль; скрытая страница — 403, с паролем — по cookie доступа | готово |
-| POST | `/api/profiles/[username]/access` | пароль скрытой страницы: cookie доступа на 30 дней | готово |
-| GET | `/api/usernames/[username]` | свободен ли адрес страницы | готово |
+| Путь | Страница | Файл роутинга | View | Доступ | Особенности |
+|------|----------|---------------|------|--------|-------------|
+| `/` | главная | `src/app/page.tsx` | `home` | все | Минимальная |
+| `/login` | вход | `src/app/login/page.tsx` | `login` | гости; вошедшего уводим дальше | Google и Telegram (Facebook выключен) |
+| `/onboarding` | создание страницы после первого входа | `src/app/onboarding/page.tsx` | `onboarding` | вошедшие без профиля; с профилем уводим на `/<username>` | Превью страницы рядом с формой (на телефоне — кнопка Preview) |
+| `/settings` | настройки профиля и аккаунта | `src/app/settings/page.tsx` | `settings` | вошедшие с профилем | Редактор на весь экран без шапки и подвала сайта, превью несохранённой страницы во всех разделах (ширина Desktop или Phone). Разделы Account (адрес, почта, страна и город, валюта цен, способы входа), Public profile и Search details в сайдбаре (`?section=`, `routes.settingsSection`, по умолчанию Public profile); у каждого раздела свой Save — в Account под полями, в остальных в липкой панели; при переходе в другой раздел несохранённые правки сбрасываются после подтверждения. Блоки сворачиваются (состояние — в localStorage, по пользователю; без сохранённого выбора Appearance свёрнут); блок Appearance — пресет и обложка; `routes.settingsBlock(id)` (`#block-<id>`) разворачивает блок и ведёт к нему |
+| `/privacy` | политика конфиденциальности (Privacy Policy) | `src/app/privacy/page.tsx` | `privacy` | все | На английском, у разделов якоря (`#account-and-data-deletion`) |
+| `/terms` | условия использования (Terms of Service) | `src/app/terms/page.tsx` | `terms` | все | На английском |
+| `/<username>` | личная страница пользователя | `src/app/[username]/page.tsx` | `profile` | все | Серверный рендер (данные из БД, `/demo` — демо-профиль); владельцу — подсказки «Finish your page» со ссылками на блоки настроек; нет профиля — 404, адрес с заглавными — редирект 308 на нижний регистр (`/Anna` → `/anna`) |
+| 404 | страница не найдена | `src/app/not-found.tsx` | `not-found` | все | — |
+| Ошибка | ошибка рендера страницы | `src/app/error.tsx`, `src/app/global-error.tsx` | `error` | все | Try again (`retry`) и почта поддержки; `global-error.tsx` — при падении корневого layout |
 
-Полный список запланированных API-роутов со статусами — в [`AGENTS.md`](AGENTS.md#api).
+### Служебные файлы
 
-Служебные файлы: `/robots.txt`, `/sitemap.xml`, `/opengraph-image.jpg` (картинка превью ссылок),
-иконки `/icon.svg`, `/apple-icon.png`, `/favicon.ico` и веб-манифест `/manifest.webmanifest`.
-Ошибку рендера любой страницы показывает `src/app/error.tsx` (Try again и почта поддержки),
-падение корневого layout — `src/app/global-error.tsx`.
+| Путь | Файл | Что это |
+|------|------|---------|
+| `/robots.txt` | `src/app/robots.ts` | правила для поисковиков и ссылка на sitemap |
+| `/sitemap.xml` | `src/app/sitemap.ts` | публичные страницы |
+| `/opengraph-image.jpg` | `src/app/opengraph-image.jpg` | картинка превью ссылок по умолчанию (1200×630) |
+| `/icon.svg` | `src/app/icon.svg` | фавиконка: розовая точка из логотипа на фиолетовой плитке, цвета `violet-700` и `pink-400` |
+| `/apple-icon.png` | `src/app/apple-icon.png` | та же иконка для iOS, 180×180, квадрат без скругления (углы срезает iOS) |
+| `/favicon.ico` | `src/app/favicon.ico` | та же иконка 32×32 (PNG внутри ICO) для тех, кто запрашивает `/favicon.ico` напрямую |
+| `/manifest.webmanifest` | `src/app/manifest.ts` | название, цвета (`themeColors`) и иконки для «На экран Домой»: `public/icon-192.png`, `icon-512.png` и `icon-maskable-512.png` (квадрат без скругления, точка в безопасной зоне) |
+
+### API
+
+«Сессия ✓» — роут работает от имени вошедшего пользователя: без сессии — 401 (выход отвечает
+204). Формат ошибки и правила роутов — в [`docs/workflows/api.md`](docs/workflows/api.md).
+
+| Метод | Путь | Назначение | Сессия |
+|-------|------|------------|:------:|
+| GET | `/api/health` | проверка связки клиент → API | — |
+| GET | `/api/auth/sign-in?provider=&next=` | старт входа и редирект к провайдеру; выключенный провайдер (сейчас Facebook) — на `/login` с `auth_unavailable` | — |
+| GET | `/api/auth/callback?code=&provider=&next=&mode=` | обмен кода на сессию и редирект (вход через OAuth Supabase: Facebook, Telegram на localhost); ошибку провайдера переводит в код через `getOAuthErrorCode`; после Facebook берёт фото 512×512 из Graph API. `mode=link` — привязка способа входа, итог в `/settings` | — |
+| GET | `/api/auth/callback/[provider]?code=&state=` | возврат от Google и Telegram без OAuth Supabase (`provider`: `google`, `telegram`): проверка `state` по cookie `freudin-<provider>-sign-in`, код → ID-токен → сессия Supabase, редирект. С `linkUserId` в cookie — привязка способа входа, итог в `/settings` | — |
+| POST | `/api/auth/identities` | старт привязки способа входа: `{ provider }` → `{ url }` провайдера; не подключён — 400, уже привязан — 409 | ✓ |
+| DELETE | `/api/auth/identities/[provider]` | отвязка способа входа, ответ — оставшиеся способы; не привязан — 404, последний из подключённых (`enabledAuthProviders`) — 409 | ✓ |
+| POST | `/api/auth/sign-out` | выход; без сессии тоже 204 | ✓ |
+| GET | `/api/me` | текущий пользователь (`email` от провайдера, `contactEmail` — своя почта, если провайдер её не дал, `signInMethods` — привязанные способы входа), его профиль (или `null`), `privateDetails` (дата рождения, пол, запросы — из `profile_private`) и подсказки для онбординга | ✓ |
+| DELETE | `/api/me` | удаление аккаунта: тело `{ "username": "…" }` — подтверждение, без совпадения с профилем (пробелы по краям и регистр не важны) 400 с `fields.username`; без профиля подтверждение не нужно (`{}`); фото и документы (из профиля, затем из Storage), пользователь через admin API (профиль — каскадом), cookies сессии; 204 | ✓ |
+| POST | `/api/profile` | создание профиля (онбординг) и контактной почты, если она указана: 201; занятый username — 409 с `fields.username`, профиль уже есть — 409, город не из справочника или не из `country` — 400 с `fields.cityId` | ✓ |
+| PATCH | `/api/profile` | обновление переданных полей профиля; `contactEmail: ""` удаляет контактную почту; `sectionOrder` — порядок блоков страницы; `birthDate`, `gender`, `concerns` пишутся в `profile_private`; связанные поля передаются группой (`linkedFieldGroups`: `country`, `cityId`, `workFormats`; `socialLinks`, `contacts`, `preferredContact`; `clientTypes`, `concerns`, `services`); `currency` — валюта всех цен профиля; `faq`, `services`, `highlightedSections`, `cover`, `pageTheme`, `linkIcons`, `ctaPlacement` — содержимое и оформление страницы, иначе 400; `visibility` и `pagePassword` (4–8 символов, пустой — не менять) — режим скрытой страницы, `password` без заданного пароля — 400 с `fields.pagePassword`; нет профиля — 404, занятый username — 409 | ✓ |
+| POST | `/api/profile/avatar` | новое фото: `multipart/form-data` с полем `file` (JPEG, PNG, WebP до 2 МБ и не больше 1024×1024, иначе 400 или 413) или JSON `{ "source": "provider", "provider"?: "telegram" }` — копия фото привязанного способа входа (без `provider` — первого с фото) | ✓ |
+| DELETE | `/api/profile/avatar` | удаление фото | ✓ |
+| POST | `/api/profile/documents` | документ психолога: `multipart/form-data` с полями `file` (JPEG, PNG, WebP до 2 МБ и 2048×2048), `thumbnail` (превью до 256 КБ и 480×480) и `title` (подпись до 100 символов); 201 с профилем, шестой документ — 409 | ✓ |
+| DELETE | `/api/profile/documents/[id]` | удаление документа, ответ — профиль; нет документа — 404 | ✓ |
+| GET | `/api/cities?country=&q=` | поиск города в стране по началу названия (регистр, диакритика и апострофы не важны, кириллица транслитерируется): до 10 `City`, крупные первыми; ответ кешируется (`s-maxage` сутки) | — |
+| GET | `/api/profiles/[username]` | публичный профиль (регистр не важен), в том числе данные психолога (город — объект `City` из справочника, документы со ссылками), `demo` — демо-профиль из кода; скрытая страница — 403, страница с паролем открывается cookie доступа (ответ `no-store`) | — |
+| POST | `/api/profiles/[username]/access` | пароль скрытой страницы `{ password }`: верный — cookie доступа на 30 дней и 204, неверный — 400 с `fields.password`; защиты от перебора нет (мягкий замок) | — |
+| GET | `/api/usernames/[username]` | `{ username, available }`; неверный формат или зарезервированный адрес — 400. Свой текущий адрес тоже «занят» | — |
 
 ## SEO
 
@@ -224,39 +259,26 @@ API:
 - `/login`, `/onboarding` и `/settings` закрыты от индексации (`noindex, follow`).
 - Личные страницы рендерятся на сервере: в HTML сразу есть контент, `title` — имя человека,
   `description` — начало «О себе», canonical — адрес в нижнем регистре, в превью ссылки — фото
-  (без фото — картинка сайта). Несуществующий адрес отвечает 404. В `sitemap.xml` их пока нет.
+  (без фото — картинка сайта). Несуществующий адрес отвечает 404. Личных страниц в `sitemap.xml` нет.
 
 ## Дизайн
 
-- Пока минималистичный дизайн: стандартные компоненты shadcn/ui и минимум контента — только
-  навигация и поля ввода.
-- shadcn/ui на Radix, стиль по умолчанию (nova), шрифт Geist (с кириллицей для
-  пользовательских имён и описаний),
-  иконки lucide. Токены темы — в `src/app/globals.css` (см. «Тема» ниже).
-- Палитра «Iris & Orchid» (28.09.2026) в `globals.css` двумя слоями. Примитивы — шкалы OKLCH
-  по 11 шагов `violet`, `pink`, `neutral` и `red`. Семантические токены shadcn ссылаются на
-  примитивы, а тёмная тема переопределяет только их. Светлая тема: текст `#292535`, фон
-  `#FAF7F2`, карточки `#FFFFFF`, активные элементы и второстепенная кнопка `#4C429D`
-  (`primary`, `secondary`), выбранный элемент `#E7EAFE` (`accent`), главная кнопка `#CF87CE`
-  с текстом `#292535` (`cta`), ссылки в тексте `#983F95` (`link`). Тёмная тема: фон
-  `neutral-950`, карточки `neutral-900` (`#292535`), активные элементы `violet-300`. Все пары
-  текста проходят WCAG AA, рамки полей (`input`) — не ниже 3:1 в обеих темах. Тосты по типу
-  (29.09.2026): успех — `violet-200` (`success`), ошибка — `red-200` (`error`), информация —
-  как меню (`popover`); в тёмной теме — шаги 800 тех же шкал.
-- Логотип (28.09.2026) — адрес `freud.in`, точка розовая (`text-cta`). Фавиконка — та же точка
-  на фиолетовой плитке (`src/app/icon.svg`), из неё отрисованы `apple-icon.png`, `favicon.ico` и иконки манифеста `public/icon-*.png`.
-- UI kit — Storybook (`npm run storybook`): компоненты `shared/ui`, которые использует сайт, страница токенов
-  и виджеты с данными психолога (карточка профиля, оформление страницы — пресеты и обложки, форма настроек) в светлой и тёмной темах. Опубликован на https://freudin-storybook.vercel.app (см. «Деплой»).
-- Светлая, тёмная и системная темы, переключатель в шапке.
-- Хранилище браузера (всё описано в `/privacy`, раздел 2): `theme` (localStorage), черновик
-  онбординга `freudin:onboarding-draft` (sessionStorage), свёрнутые блоки настроек
-  `freudin:settings-collapsed-blocks` и скрытые подсказки владельца `freudin:page-checklist`
-  (localStorage, Zustand `persist`). Cookie `freudin-page-access-<username>` — доступ гостя
-  к странице с паролем (httpOnly, 30 дней). Новый ключ — только вместе с правкой `/privacy`.
+- shadcn/ui на Radix, стиль по умолчанию (nova), шрифт Geist (с кириллицей для пользовательских
+  имён и описаний), иконки lucide.
+- Палитра «Iris & Orchid»: фиолетовые активные элементы и второстепенная кнопка, розовая главная
+  кнопка. Светлая, тёмная и системная темы, переключатель в шапке.
+  Значения цветов — в `src/app/globals.css` (см. «Тема»), наглядно — на странице
+  `Foundations/Tokens` в Storybook.
+- Логотип — адрес `freud.in` с розовой точкой (`text-cta`). Фавиконка — та же точка
+  на фиолетовой плитке (`src/app/icon.svg`), из неё отрисованы `apple-icon.png`, `favicon.ico`
+  и иконки манифеста `public/icon-*.png`.
+- UI kit — Storybook (`npm run storybook`): компоненты `shared/ui`, страница токенов и виджеты
+  с данными психолога (карточка профиля, оформление страницы — пресеты и обложки, форма
+  настроек) в светлой и тёмной темах. Опубликован на https://freudin-storybook.vercel.app
+  (см. «Деплой»).
 - Вёрстка mobile-first, есть ссылка Skip to content для навигации с клавиатуры.
-- Компоненты добавляются командой `npx shadcn add <component>` и попадают в `src/shared/ui`.
-  Варианты классов CLI пишет на `class-variance-authority`: импорт меняем на `@/shared/lib/cva`
-  (тот же API), зависимость удаляем.
+- Cookies и хранилище браузера перечислены в `/privacy` (раздел 2) и в
+  [`docs/architecture/2.containers.md`](docs/architecture/2.containers.md#хранилище-браузера).
 
 ### Тема
 
@@ -283,219 +305,55 @@ API:
 
 ## Внешние сервисы
 
-Инструкции по настройке появятся здесь по мере интеграции:
-
-- Supabase (БД, авторизация, хранилище фото): см. ниже;
-- вход через Google: см. ниже;
-- вход через Facebook: см. ниже;
-- вход через Telegram: см. ниже;
-- Vercel: сайт и UI kit — два проекта, см. «Деплой»;
-- почта поддержки `freudin.support@gmail.com` (Gmail): где прописать адрес и как позже перейти
-  на `support@freud.in` — в [`docs/PLAN.md`](docs/PLAN.md), этап H. Адрес задан
-  в `siteConfig.supportEmail` и показан в подвале и юридических текстах.
+- Supabase — БД, авторизация, хранилище фото и документов;
+- Google и Telegram — вход; Meta (Facebook) — вход настроен, но выключен;
+- Google Search Console — подтверждение домена `freud.in` для проверки бренда Google;
+- Vercel — сайт и UI kit, два проекта (см. «Деплой»);
+- почта поддержки `freudin.support@gmail.com` (Gmail).
 
 ### Supabase
 
-Один облачный проект `freudin_data` в регионе eu-central-1 (Франкфурт). Он же прод: отдельной
-базы для разработки нет. Тариф Free: если к базе неделю никто не обращается, проект засыпает,
-и сайт перестаёт открывать страницы. Разбудить его можно кнопкой Restore в дашборде.
-Автоматических бэкапов на Free нет, копии делаем сами (см. «Резервные копии»).
-
-- Authentication → URL Configuration: Site URL `https://www.freud.in`, в Redirect URLs —
-  `http://localhost:3000/**` для локальной разработки.
-- Схема меняется только миграциями. Новая миграция создаётся командой
-  `npx supabase migration new <name>`, применяется командой `npm run db:push`, после неё
-  обновляются типы: `npm run db:types`. Команда берёт типы через Management API по
-  `SUPABASE_ACCESS_TOKEN`: если токен истёк, она пишет в файл типов ошибку `Unauthorized` —
-  выпусти новый токен (Account → Access Tokens в дашборде Supabase) и замени его в `.env`.
-- Supabase CLI уже привязан к проекту (`supabase link`). На новой машине привяжи заново:
-  `npx supabase link --project-ref <ref>`.
-- Прямой адрес базы доступен только по IPv6. Если сеть его не поддерживает, CLI сам идёт через
-  пулер, а для `psql` используй `aws-0-eu-central-1.pooler.supabase.com:5432` с пользователем
-  `postgres.<ref>`.
-- Гость (роль `anon`) читает из `profiles` только колонки публичной страницы, без `id` и дат,
-  и только открытые страницы. Скрытую страницу (Settings → Account → Hide my page) видит
-  владелец, а с режимом «по паролю» — гость с cookie доступа: проверку пароля и чтение делают
-  функции базы, пароль лежит в `profile_page_access` открытым текстом и виден только владельцу.
-- Данные психолога, которых нет на странице (дата рождения, пол, запросы клиентов), лежат
-  в `profile_private`: RLS пускает только владельца, у `anon` прав нет. Поиск (шаг 22) будет
-  читать их на сервере.
-- Валюта цен одна на профиль (шаг 54): её, страну и город выбирают в Settings → Account. Валюта
-  лежит в колонке `profiles.price_currency` (имя прежнее, NULL читается как USD), цена сессии
-  `price_amount` и цены карточек услуг хранятся без валюты (у старых карточек она осталась
-  в jsonb и не читается). Миграция `*_use_profile_currency.sql`.
-- Оформление личной страницы (шаги 50–51): пресет фона и карточки — колонка
-  `profiles.page_theme` (`pageThemeIds`), цвета — токены `globals.css`, раздел «Оформление
-  личной страницы», атрибут `data-page-theme` на обёртке `ProfileCanvas`. Обложки Classic,
-  Banner и Hero рисует `PageCover` по `cover`. Колонка `link_icons` (шаг 52) включает логотипы
-  платформ на кнопках ссылок и главной кнопке (`PlatformIcon` в `social-link`: одноцветные
-  SVG simple-icons, CC0, без зависимости; почта, телефон и сайт — lucide).
-  `cta_placement` (шаг 53): `sticky` закрепляет главную кнопку внизу экрана, когда страница
-  уже 32rem (container query `page` у `ProfileCanvas`, в превью — тоже). На такой же узкой
-  странице карточка пресета стоит во всю ширину экрана, без рамки и отступов от шапки
-  и подвала; отступ контента от края карточки у всех пресетов, включая Classic, один. Миграция `*_add_page_appearance.sql`, выбор — блок Appearance в Settings →
-  Public profile.
-- FAQ, карточки услуг, выделенные блоки и вариант обложки — колонки `profiles.faq`, `services`,
-  `highlighted_sections` и `cover` (миграция `*_add_page_content.sql`). jsonb-списки проверяют
-  CHECK-функции `is_valid_profile_faq` и `is_valid_profile_services` (длины строк, категория
-  карточки — из `client_types`). Выделение ссылки или карточки — поле `highlighted` в самом
-  элементе, у ссылки ещё необязательный заголовок `title`.
-- Справочник городов `cities` для профиля психолога (шаг 20) — данные
-  [GeoNames](https://www.geonames.org) (лицензия CC BY 4.0): города от 5000 жителей
-  и административные центры, около 64 тыс. строк. Их загружает миграция `*_seed_cities.sql`,
-  собранная скриптом, руками её не правим. Обновить справочник:
-  `npx supabase migration new update_cities`, затем
-  `node scripts/generate-cities-migration.mjs supabase/migrations/<новый файл>.sql`
-  (нужны Node 23.6+ и `unzip`) и `npm run db:push`. Миграция добавляет и обновляет города,
-  но не удаляет: на них могут ссылаться профили.
-  Атрибуцию GeoNames, которую требует лицензия, публикует `/terms` (раздел Intellectual property).
+Один облачный проект `freudin_data` в eu-central-1 (Франкфурт), он же прод; отдельной базы
+для разработки нет. Подключение CLI и `psql`, миграции, генерация типов и обновление
+справочника городов — в [инструкции Supabase](docs/operations/supabase.md).
 
 #### Резервные копии
 
-Запусти Docker Desktop и выполни `npm run db:dump`. Делай копию перед каждым `npm run db:push`
-и регулярно, например раз в неделю. Команда создаёт папку `backups/<дата-время>/` с тремя
-файлами:
+Перед `npm run db:push` сделай `npm run db:dump`. Состав копии, ограничения и восстановление —
+в [инструкции резервного копирования](docs/operations/supabase.md#резервные-копии).
 
-- `roles.sql` — настройки ролей;
-- `schema.sql` — схема `public`: таблицы, функции, RLS-политики, права;
-- `data.sql` — данные: пользователи (`auth.users`, `auth.identities`), профили, записи
-  о файлах Storage.
+### Почта поддержки
 
-В копию не входят:
-
-- сессии и токены входа: после восстановления пользователи войдут заново;
-- сами файлы фото и документов (Storage хранит их отдельно от базы);
-- политики Storage: они есть в миграциях `*_create_avatars_bucket.sql`
-  и `*_create_documents_bucket.sql`.
-
-В копиях персональные данные. Папка `backups/` не попадает в git, файлы доступны только
-владельцу. Старые копии удаляй вручную.
-
-Восстановление в новый пустой проект Supabase (строку подключения к его базе возьми
-в дашборде: Connect → Session pooler):
-
-```bash
-cd backups/<дата-время>
-psql --single-transaction --variable ON_ERROR_STOP=1 \
-  --file roles.sql --file schema.sql \
-  --command 'SET session_replication_role = replica' \
-  --file data.sql --dbname "<строка подключения>"
-```
-
-После этого выполни блоки `create policy` из миграций `*_create_avatars_bucket.sql`
-и `*_create_documents_bucket.sql`. В рабочую
-базу копию целиком не накатывают: отдельные строки восстанавливай вручную по `data.sql`.
+`freudin.support@gmail.com` — обычный ящик Gmail. Где указан адрес и как поддерживать доступ —
+в [инструкции почты поддержки](docs/operations/support-email.md).
 
 ### Вход через Google
 
-1. Google Cloud → Google Auth Platform:
-   - Branding: название, логотип, ссылки на `/privacy` и `/terms`;
-   - Audience: External, статус In production: войти может любой аккаунт Google. В статусе
-     Testing пускают только тестовых пользователей из этого же раздела. Название и логотип
-     Freudin на экране Google видны после проверки бренда (brand verification). Бренд
-     подтверждён 26.09.2026. Для проверки домен `freud.in` подтверждён в Google Search Console
-     TXT-записью в DNS: её не удалять;
-   - Data access: `openid`, `email`, `profile`.
-2. Clients → Create client → Web application:
-   - Authorized JavaScript origins: `http://localhost:3000` и `https://www.freud.in`;
-   - Authorized redirect URIs: `https://www.freud.in/api/auth/callback/google`
-     и `http://localhost:3000/api/auth/callback/google`. Адрес Supabase здесь не нужен.
-3. Client ID и Client Secret внести в Supabase → Authentication → Sign In / Providers → Google
-   и включить провайдер: Supabase проверяет по этому Client ID ID-токены Google. Skip nonce
-   check оставить выключенным: мы передаём nonce, и Supabase его сверяет.
-4. Те же Client ID и Client Secret задать в `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET`
-   (`.env` и Vercel).
+Google входит через наш `/api/auth/callback/google`, сессия создаётся по ID-токену Supabase.
+Параметры Google Cloud и Supabase — в [инструкции Google](docs/operations/authentication.md#вход-через-google).
 
-Как устроен вход: кнопка ведёт на `/api/auth/sign-in`, оттуда браузер уходит прямо к Google,
-а `state`, `nonce` и PKCE-верификатор хранятся в httpOnly-cookie `freudin-google-sign-in`
-(10 минут). Google возвращает на `/api/auth/callback/google`: сервер меняет код на токены
-Google и создаёт сессию Supabase по ID-токену (`signInWithIdToken`). Так же, тем же кодом
-(`oidc-sign-in.server.ts`), входит Telegram. Supabase узнаёт
-пользователя по Google ID, поэтому аккаунты, созданные раньше через OAuth Supabase, остались
-теми же. Дальше онбординг, если профиля ещё нет, иначе своя страница или `?next=`. Cookies
-сессии `httpOnly`: браузер их не читает, сессию видят только API-роуты.
+#### Подтверждение домена в Google Search Console
+
+Домен `freud.in` подтверждён TXT-записью `google-site-verification=…`; её не удалять.
+Повторное подтверждение — в [инструкции Search Console](docs/operations/authentication.md#подтверждение-домена-в-google-search-console).
 
 ### Вход через Facebook
 
-**Скрыт с 08.10.2026:** Meta не приняла документы для подтверждения компании, поэтому `facebook`
-убран из `enabledAuthProviders` (кнопки на `/login` и Connect в настройках нет, уже привязанный
-Facebook можно отвязать). Код и настройки ниже остались: вход вернётся добавлением провайдера
-в список (этап G в `docs/PLAN.md`).
-
-Подробная инструкция — в [`docs/PLAN.md`](docs/PLAN.md), шаг 9. Кратко:
-
-1. Meta for Developers → приложение `Freudin` с use case «Authenticate and request data from
-   users with Facebook Login», разрешения `public_profile` и `email`. `public_profile` Meta
-   выдаёт автоматически. Для `email` в режиме Development диалог входа показывает людям
-   с ролью «Submit for Login Review»; перед Live нужны подтверждение компании (Business
-   verification) и, возможно, App Review для `email`.
-2. Facebook Login → Settings → Valid OAuth Redirect URIs:
-   `https://<ref>.supabase.co/auth/v1/callback`.
-3. App settings → Basic: App domains `freud.in`, ссылки на `/privacy` и `/terms`, Data deletion
-   instructions URL `https://www.freud.in/privacy#account-and-data-deletion`, контакт
-   `freudin.support@gmail.com`.
-4. App ID и App secret внести в Supabase → Authentication → Sign In / Providers → Facebook.
-5. Пока приложение в режиме Development, войти могут только люди с ролью в нём. Для всех —
-   App Mode Live.
-
-Как устроен вход: `/api/auth/sign-in?provider=facebook` → Supabase → Facebook →
-`https://<ref>.supabase.co/auth/v1/callback` → `/api/auth/callback` (обмен кода на сессию,
-PKCE-верификатор в cookie `sb-…-code-verifier`). Email от Facebook Supabase считает
-подтверждённым: если он совпадает с email аккаунта Google, вход попадает в тот же аккаунт.
-Если у аккаунта Facebook нет email, а вход без email в Supabase выключен, `/login` показывает
-ошибку `email_required`. Supabase сохраняет фото Facebook размером 50×50, а подписанную ссылку
-увеличить нельзя. Поэтому `/api/auth/sign-in` передаёт в адресе возврата `provider=facebook`,
-и после входа колбэк по токену Facebook берёт у Graph API ссылку на фото 512×512 и кладёт её
-в `user_metadata`. Для этого в приложении Meta должен быть выключен Require app secret
-(App settings → Advanced → Security).
+Facebook выключен в `enabledAuthProviders` до подтверждения компании в Meta. Код и настройки
+сохранены; кнопок входа и привязки нет. Условия включения и параметры приложения —
+в [инструкции Facebook](docs/operations/authentication.md#вход-через-facebook).
 
 ### Вход через Telegram
 
-Telegram подключён через OpenID Connect как свой провайдер Supabase (`custom:telegram`).
-На сайте он входит, как Google, через свой адрес возврата: так на экране Telegram виден
-`www.freud.in`, а не `<ref>.supabase.co`.
-
-1. @BotFather: `/newbot` — отдельный бот только для входа (`@freudin_bot`). В мини-приложении
-   BotFather: бот → Bot Settings → Web Login → OpenID Connect Login. Переключение необратимо:
-   старый Login Widget у этого бота больше не работает.
-2. Там же: Redirect URIs — `https://www.freud.in/api/auth/callback/telegram` и
-   `https://<ref>.supabase.co/auth/v1/callback` (для localhost, см. ниже), Trusted Origins —
-   `https://www.freud.in`. BotFather показывает Client ID и Client Secret (это не токен бота).
-   Адреса с `http://` BotFather не принимает.
-3. Supabase → Authentication → Sign In / Providers → New Provider → Auto-discovery (OIDC):
-   Identifier `custom:telegram`, Issuer URL `https://oauth.telegram.org`, scopes
-   `openid profile`, PKCE включён, вход без email разрешён (Telegram email не отдаёт).
-   Supabase по этим настройкам проверяет ID-токены Telegram. На тарифе Free можно до трёх
-   своих провайдеров.
-4. Те же Client ID и Client Secret задать в `TELEGRAM_CLIENT_ID` и `TELEGRAM_CLIENT_SECRET`
-   (`.env` и Vercel).
-
-Как устроен вход на сайте: `/api/auth/sign-in?provider=telegram` → `oauth.telegram.org` →
-`/api/auth/callback/telegram`, cookie попытки входа `freudin-telegram-sign-in`. Код меняется
-на токены с секретом в заголовке Basic. Ошибки токен-эндпоинт Telegram отдаёт со статусом 200,
-поэтому ответ разбирается по полям. На `http://localhost` вход идёт через OAuth Supabase, как
-у Facebook (`… → Supabase → /api/auth/callback`), и на экране Telegram виден `<ref>.supabase.co`.
-Аккаунт в обоих случаях один: Client ID общий, и `sub` у пользователя тот же. Telegram передаёт
-имя, username и фото. Email нет, поэтому онбординг и настройки показывают необязательное поле
-контактной почты. Подсказка адреса страницы — username Telegram, иначе имя латиницей
-(`transliterate` из `shared/lib`), и только в последнюю очередь часть email до «@».
+Telegram подключён через OpenID Connect (`custom:telegram`): на проде — через наш callback,
+на localhost — через OAuth Supabase. Настройки BotFather и Supabase —
+в [инструкции Telegram](docs/operations/authentication.md#вход-через-telegram).
 
 ### Несколько способов входа в одном аккаунте
 
-В Supabase → Authentication → Sign In / Providers включён **Allow manual linking**: без него
-привязка и отвязка не работают. В Google Cloud, BotFather и Meta ничего дополнительно
-не настраивается: привязка возвращает браузер на те же адреса, что и вход.
-
-Как устроено: Settings → Account → Sign-in methods → Connect → `POST /api/auth/identities`
-отдаёт адрес провайдера. Google и Telegram на https возвращаются на
-`/api/auth/callback/<provider>` и привязываются по ID-токену (`linkIdentity`), остальные —
-через OAuth Supabase и `/api/auth/callback?mode=link`. Итог приходит в `/settings?section=account&linked=`
-или `&link_error=` и показывается тостом. Способ, уже привязанный к другому аккаунту
-Freudin, даёт ошибку `identity_already_exists`: аккаунты не объединяются, второй нужно удалить.
-Для аккаунта без страницы кнопка удаления есть на онбординге. Отвязка —
-`DELETE /api/auth/identities/<provider>`, последний способ отвязать нельзя. Крупное фото
-Facebook хранится в `user_metadata.facebook_avatar_url`, чтобы вход через другого провайдера
-его не перезаписал.
+В Supabase включён **Allow manual linking**. Способы входа привязываются в настройках;
+существующие аккаунты не объединяются. Требования к настройке и занятым способам входа —
+в [инструкции привязки](docs/operations/authentication.md#несколько-способов-входа-в-одном-аккаунте).
 
 ## Деплой
 
@@ -510,5 +368,4 @@ Framework Preset — Other, Build Command — `npm run build-storybook`, Output 
 All Deployments: кит открывается только под аккаунтом Vercel владельца и не индексируется.
 
 Переменные окружения прода задаются в Vercel → Settings → Environment Variables (окружение
-Production). Приложению они нужны с шага 7, и задать их надо до того, как код, который их читает,
-попадёт в `main`.
+Production). Новую переменную задают там до того, как код, который её читает, попадёт в `main`.

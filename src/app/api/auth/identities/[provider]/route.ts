@@ -7,6 +7,7 @@ import {
 } from "@/app/api/_lib";
 import {
   authProviderSchema,
+  canUnlinkSignInMethod,
   getLinkedIdentities,
   type SignInMethod,
   toSignInMethod,
@@ -23,7 +24,8 @@ export const DELETE = withErrorHandling(
     const identities = await getLinkedIdentities(supabase);
     const target = identities.find((identity) => identity.provider === provider.data);
     if (!target) throw new HttpError(404, "not_found", "This sign-in method isn’t connected.");
-    if (identities.length < 2) {
+    const linked = identities.map((identity) => identity.provider);
+    if (!canUnlinkSignInMethod(linked, provider.data)) {
       throw new HttpError(409, "conflict", "You can’t disconnect your only sign-in method.");
     }
 

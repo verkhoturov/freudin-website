@@ -28,6 +28,7 @@ export {
 export type { AuthErrorCode } from "./config/auth-errors";
 export { type AuthProvider, enabledAuthProviders } from "./config/auth-providers";
 export { identityLinkParams } from "./config/identity-link";
+export { canUnlinkSignInMethod } from "./lib/can-unlink-sign-in-method";
 export { isAccountDeletionConfirmed } from "./lib/is-account-deletion-confirmed";
 export { authProviderSchema, identityLinkInputSchema } from "./model/auth-provider-schema";
 export { deleteAccountInputSchema } from "./model/delete-account-schema";

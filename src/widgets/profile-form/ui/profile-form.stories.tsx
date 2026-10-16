@@ -116,7 +116,7 @@ export const SearchDetailsSection: Story = { args: { section: "search" } };
 
 // Свёрнутые блоки хранит страница: здесь — состояние истории
 function CollapsibleForm(props: ComponentProps<typeof ProfileForm>) {
-  const [collapsed, setCollapsed] = useState<string[]>(["bio", "approaches"]);
+  const [collapsed, setCollapsed] = useState<string[]>(["appearance", "bio", "approaches"]);
   return (
     <ProfileForm
       {...props}

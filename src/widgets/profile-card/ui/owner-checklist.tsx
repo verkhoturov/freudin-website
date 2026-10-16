@@ -12,6 +12,9 @@ type ChecklistItem = { id: string; label: string; href: string; done: boolean };
 
 function getChecklistItems(profile: PublicProfile): ChecklistItem[] {
   const hasContact = Object.keys(profile.contacts).length > 0 || profile.socialLinks.length > 0;
+  const hasWorkFormat = profile.workFormats.length > 0;
+  const hasPrice =
+    profile.price !== null || profile.services.some((service) => service.price !== null);
   return [
     { id: "photo", label: "Add a photo", href: routes.settings, done: Boolean(profile.avatarUrl) },
     {
@@ -29,8 +32,10 @@ function getChecklistItems(profile: PublicProfile): ChecklistItem[] {
     {
       id: "format-price",
       label: "Add your work format and price",
-      href: routes.settingsBlock("work-formats"),
-      done: profile.workFormats.length > 0 && profile.price !== null,
+      href: routes.settingsBlock(
+        !hasWorkFormat ? "work-formats" : profile.services.length > 0 ? "services" : "price",
+      ),
+      done: hasWorkFormat && hasPrice,
     },
   ];
 }
