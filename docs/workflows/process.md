@@ -13,8 +13,8 @@ shared: the plan and [`docs/DECISIONS.md`](../DECISIONS.md) refer to rules by nu
 - **Documentation only:** check local links, section anchors, consistency of the rules and the
   diff. When moving instructions, confirm nothing was lost and check the size of `AGENTS.md`.
   `npm run check`, type generation and the build are not needed for Markdown alone.
-- **Code, configuration or dependencies:** the checks of rule 5. If the task changes the UI
-  of a plan step, also run QA per rule 14 before closing it.
+- **Code, configuration or dependencies:** the checks of rule 5. A plan step that changes the
+  UI stays open until it is checked (rule 14).
 - **Preparing a commit on request:** also `npm run build` (rule 5); Git permissions — rule 10.
 
 ## Documents and when to update them
@@ -123,7 +123,14 @@ What each document is for:
     Uncovered: removing the whole FAQ list — a case for `profile-changes.test.ts`, not
     written without your request.
     </example>
-14. **A plan step with UI is closed through the QA agent** (decision 26). After finishing a 🤖
-    step or sub-step that changes the behaviour or look of the UI, do not mark it right away:
-    go through the cycle in [`qa-subagent.md`](qa-subagent.md) (brief, run, review, plan
-    update). Steps without UI skip QA: pick checks by task type at the top of this document.
+14. **The QA agent runs only when the user asks for it directly** in the current task
+    (decisions 26 and 39): «запусти QA», «проверь через QA-агента». A plain «проверь» means
+    your own checks (rule 5, a look in the browser) without a second agent. A request in one
+    task does not carry over to the next.
+    - A 🤖 step or sub-step that changes the behaviour or look of the UI is not marked `[x]`
+      after implementation. Add «Ожидает проверки: <что проверить>» under it, and say in the
+      report that the developer can check it or ask for the QA agent.
+    - Mark the step `[x]` when the developer writes that it is done or checked (the summary
+      line: «Проверено разработчиком <дата>», plus what was checked if they said so), or after
+      QA returned PASS — the cycle in [`qa-subagent.md`](qa-subagent.md).
+    - Steps without UI need no such check: pick checks by task type at the top of this document.

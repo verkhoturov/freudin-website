@@ -36,7 +36,7 @@ Freudin does not vet psychologists, take part in client communication or accept 
 | UI, forms, theme, tokens | [`workflows/ui.md`](docs/workflows/ui.md) and the [SEO checklist](docs/workflows/seo-checklist.md) |
 | shadcn component, Storybook story, new visual element or token | Also [`workflows/ui-kit.md`](docs/workflows/ui-kit.md) |
 | Plan step | The step's card in `docs/plan/stage-*.md` (found via [`PLAN.md`](docs/PLAN.md)) and [`workflows/plan-step.md`](docs/workflows/plan-step.md) |
-| Closing a plan step that changes UI | Also [`workflows/qa-subagent.md`](docs/workflows/qa-subagent.md) |
+| Running the QA agent (only when the user asks) | Also [`workflows/qa-subagent.md`](docs/workflows/qa-subagent.md) |
 | Plan status report | [`workflows/plan-report.md`](docs/workflows/plan-report.md) |
 | Finding an existing module or the place to change | The [scenario map](docs/code-map.md#where-to-look-for-a-change) and the matching [catalog card](docs/code-map.md#slice-catalog) |
 | Changing how parts of the system connect | The matching [architecture](docs/architecture/) level: [context](docs/architecture/1.context.md), [containers](docs/architecture/2.containers.md), [components](docs/architecture/3.components.md); internals — [Code](docs/architecture/4.code.md), scenarios — [dynamic views](docs/architecture/dynamic.md) |

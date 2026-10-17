@@ -315,7 +315,7 @@ type ProfileFormProps = {
   /** Шапка над формой в её колонке: заголовок и подпись раздела. */
   header?: ReactNode;
   /** Блок под полями раздела Account вне `<form>`: способы входа, выход, удаление аккаунта. */
-  accountBlock?: ReactNode;
+  accountBlock?: ReactNode | ((beforeLeave: (action: () => void) => void) => ReactNode);
   /**
    * Превью страницы из несохранённых значений формы (без закрытых данных и документов):
    * на широком экране — рядом с формой, на телефоне — вместо неё по кнопке Preview.
@@ -434,6 +434,7 @@ export function ProfileForm({
   const isSavedRef = useRef(false);
   // Адрес ссылки, переход по которой ждёт ответа в диалоге несохранённых правок
   const [leaveUrl, setLeaveUrl] = useState<URL | null>(null);
+  const [leaveAction, setLeaveAction] = useState<(() => void) | null>(null);
   // Блок, который выбрали в форме последним: к нему прокручивается превью
   const selectedBlockRef = useRef<string | null>(null);
   const pendingPreviewBlockRef = useRef<string | null>(null);
@@ -631,8 +632,36 @@ export function ProfileForm({
   };
 
   const saveAndLeave = async (url: URL) => {
+    const submittedUsername = form.state.values.username;
     setLeaveUrl(null);
-    if (await submit()) leave(url);
+    if (await submit()) {
+      if (
+        currentUsername &&
+        url.origin === window.location.origin &&
+        url.pathname === routes.profile(currentUsername)
+      ) {
+        url.pathname = routes.profile(usernameSchema.parse(submittedUsername));
+      }
+      leave(url);
+    }
+  };
+
+  const beforeLeave = (action: () => void) => {
+    if (hasChanges) setLeaveAction(() => action);
+    else action();
+  };
+
+  const finishAccountAction = async (save: boolean) => {
+    const action = leaveAction;
+    setLeaveAction(null);
+    if (!action) return;
+    if (save) {
+      if (!(await submit())) return;
+    } else {
+      form.reset();
+      setAvatar(initialAvatar);
+    }
+    action();
   };
 
   // Прокрутка превью к блоку на странице: на широком экране прокручивается холст превью, на
@@ -658,9 +687,17 @@ export function ProfileForm({
     return true;
   };
 
-  // Явный выбор блока — фокус на его поле, заголовке или кнопках: превью показывает этот блок.
+  // Выбор поля или кнопки блока, раскрытие его шапки — превью показывает этот блок.
   // Ввод внутри того же блока превью не двигает
   const selectBlock = (event: React.SyntheticEvent, reselect = false) => {
+    // Фокус на кнопке сворачивания не выбирает блок: раскрытие обрабатываем по клику.
+    if (
+      !reselect &&
+      event.target instanceof Element &&
+      event.target.closest("[data-block] h2 button[aria-expanded]")
+    ) {
+      return;
+    }
     const blockId =
       event.target instanceof Element
         ? event.target.closest<HTMLElement>("[data-block]")?.dataset.block
@@ -691,7 +728,9 @@ export function ProfileForm({
       window.scrollTo({ top: positions.form });
       return;
     }
-    const blockId = pendingPreviewBlockRef.current;
+    const blockId =
+      pendingPreviewBlockRef.current ??
+      (positions.preview === null ? selectedBlockRef.current : null);
     pendingPreviewBlockRef.current = null;
     if (blockId && scrollPreviewTo(blockId)) return;
     if (positions.preview === null) rootRef.current?.scrollIntoView({ block: "start" });
@@ -1745,7 +1784,9 @@ export function ProfileForm({
   );
   const status =
     isEditMode && hasChanges ? (
-      <p className="text-muted-foreground text-sm">Unsaved changes</p>
+      <p aria-live="polite" className="text-muted-foreground text-sm">
+        Unsaved changes
+      </p>
     ) : null;
 
   return (
@@ -2295,7 +2336,11 @@ export function ProfileForm({
               ) : null}
             </FieldGroup>
           </form>
-          {accountBlock ? <div hidden={isSectionHidden("account")}>{accountBlock}</div> : null}
+          {accountBlock ? (
+            <div hidden={isSectionHidden("account")}>
+              {typeof accountBlock === "function" ? accountBlock(beforeLeave) : accountBlock}
+            </div>
+          ) : null}
         </div>
         {renderPreview ? (
           <section
@@ -2373,7 +2418,14 @@ export function ProfileForm({
         </div>
       )}
 
-      <AlertDialog open={leaveUrl !== null} onOpenChange={(open) => !open && setLeaveUrl(null)}>
+      <AlertDialog
+        open={leaveUrl !== null || leaveAction !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setLeaveUrl(null);
+            setLeaveAction(null);
+          }
+        }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Save your changes?</AlertDialogTitle>
@@ -2383,10 +2435,17 @@ export function ProfileForm({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Stay</AlertDialogCancel>
-            <Button variant="outline" onClick={() => leaveUrl && discardAndLeave(leaveUrl)}>
+            <Button
+              variant="outline"
+              onClick={() =>
+                leaveUrl ? discardAndLeave(leaveUrl) : void finishAccountAction(false)
+              }>
               Discard changes
             </Button>
-            <Button onClick={() => leaveUrl && void saveAndLeave(leaveUrl)}>
+            <Button
+              onClick={() =>
+                leaveUrl ? void saveAndLeave(leaveUrl) : void finishAccountAction(true)
+              }>
               Save and continue
             </Button>
           </AlertDialogFooter>

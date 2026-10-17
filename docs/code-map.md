@@ -185,8 +185,10 @@ the same job.
   right block. Closed fields do not get into the summary. Account has its own Save; immediate
   operations on documents and the account are separate widgets. The form survives a section
   change: edits of all sections are saved together. A link away from the page with unsaved
-  edits opens Save and continue / Discard changes / Stay; an error in a hidden section names
-  the field and leads to it. Focusing a block scrolls the preview to `[data-preview-section]`.
+  edits opens Save and continue / Discard changes / Stay; the account slot can use the same
+  guard before an action leaves the editor. An error in a hidden section names
+  the field and leads to it. Focusing a field or opening a block scrolls the preview to
+  `[data-preview-section]`; focusing its disclosure button or collapsing it does not.
   Concerns of Search details — [concerns-field.tsx](../src/widgets/profile-form/ui/concerns-field.tsx).
 
 <a id="widgets-profile-card"></a>
@@ -208,7 +210,8 @@ the same job.
 - **Boundary:** `isPreview` hides Share, Edit and the owner checklist, and the name does not
   become an `h1`. Hiding the checklist is stored separately in
   [model](../src/widgets/profile-card/model/checklist-store.ts). The profile sets the order,
-  empty blocks are hidden; collapsed FAQ answers are not in the server HTML for now. A preset
+  empty blocks are hidden; collapsed FAQ answers stay in the server HTML, with `hidden`
+  following the controlled accordion state. A preset
   changes the canvas but not the site frame; the pinned contact button accounts for the preview
   frame.
 
@@ -222,7 +225,8 @@ the same job.
   [prepare-document-images.ts](../src/widgets/profile-documents/lib/prepare-document-images.ts).
 - **Boundary:** upload and deletion are saved at once, independently of the profile form's
   Save. The full file and the thumbnail are prepared separately; a caption is required,
-  deletion requires confirmation.
+  deletion requires confirmation. The widget and dialogs explain that Discard does not undo
+  these operations; Highlight and block order still require the profile form's Save.
 
 <a id="widgets-account-settings"></a>
 
@@ -234,7 +238,8 @@ the same job.
   [delete-account-dialog.tsx](../src/widgets/account-settings/ui/delete-account-dialog.tsx).
 - **Boundary:** only enabled providers are visible; deleting an account with a profile is
   confirmed with the username, an account without a page needs no username. The view draws the
-  Account heading.
+  Account heading. Sign-in actions are separated from Save; sign-out and linking a provider
+  use the form's draft guard before making a request that leaves the editor.
 
 <a id="widgets-sign-in-panel"></a>
 
@@ -291,7 +296,8 @@ routes and access — in the [README](../README.md#страницы), SSR rules 
   editor, saving and syncing the form's initial values. The section is `?section=`; `key`
   recreates the form only after Save. Collapsing —
   [collapsed-blocks-store.ts](../src/views/settings/model/collapsed-blocks-store.ts),
-  localStorage per user. Unsaved edits left with the browser Back button —
+  localStorage per user. View my page stays in the sidebar for every section and uses the
+  saved username. Unsaved edits left with the browser Back button —
   [draft-store.ts](../src/views/settings/model/draft-store.ts), in memory only. The Profile → Avatar sequence is in the view, not in the form.
 
 <a id="views-onboarding"></a>
@@ -307,8 +313,9 @@ routes and access — in the [README](../README.md#страницы), SSR rules 
   with TanStack Query `initialData`. The hidden page —
   [hidden-profile-view.tsx](../src/views/profile/ui/hidden-profile-view.tsx) and
   [page-password-form.tsx](../src/views/profile/ui/page-password-form.tsx). The server reads as
-  a guest; the owner sees a hidden page from `/api/me`. A hidden page's metadata does not reveal
-  the name and photo and includes `noindex`. The full flow — in the
+  a guest; the owner sees a hidden page from `/api/me`. Without access, a hidden page's metadata does not reveal
+  the name and photo and includes `noindex`; after confirming the owner, the client updates
+  only the tab title and restores it when the owner view unmounts. The full flow — in the
   [dynamic view](architecture/dynamic.md#profile-page-username).
 
 - **privacy / terms:** server texts without client JS; the shared wrapper is `legal-document`.

@@ -24,7 +24,13 @@ function getErrorMessage(error: unknown, fallback: string): string {
  * провайдеры — привязать. Привязка уводит браузер к провайдеру, итог показывает
  * `IdentityLinkToast` после возврата.
  */
-export function SignInMethods({ signInMethods }: { signInMethods: SignInMethod[] }) {
+export function SignInMethods({
+  signInMethods,
+  beforeLeave,
+}: {
+  signInMethods: SignInMethod[];
+  beforeLeave: (action: () => void) => void;
+}) {
   const link = useLinkIdentityMutation();
   const unlink = useUnlinkIdentityMutation();
   const { reset: resetLink } = link;
@@ -48,18 +54,17 @@ export function SignInMethods({ signInMethods }: { signInMethods: SignInMethod[]
 
   const methods = new Map(signInMethods.map((method) => [method.provider, method]));
 
-  const connect = (provider: AuthProvider) => {
-    link.mutate(
-      { provider },
-      {
-        onSuccess: ({ url }) => window.location.assign(url),
-        onError: (error) =>
-          toast.error(
-            getErrorMessage(error, "Couldn’t connect this sign-in method. Please try again."),
-          ),
-      },
-    );
-  };
+  const connect = (provider: AuthProvider) =>
+    beforeLeave(async () => {
+      try {
+        const { url } = await link.mutateAsync({ provider });
+        window.location.assign(url);
+      } catch (error) {
+        toast.error(
+          getErrorMessage(error, "Couldn’t connect this sign-in method. Please try again."),
+        );
+      }
+    });
 
   const disconnect = (provider: AuthProvider) => {
     unlink.mutate(provider, {

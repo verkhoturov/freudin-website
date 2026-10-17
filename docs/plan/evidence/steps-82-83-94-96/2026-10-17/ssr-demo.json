@@ -1,0 +1,27 @@
+{
+  "answersInHTML": [true, true],
+  "triggers": [
+    {
+      "id": "radix-_R_6tanpfddb_",
+      "controls": "_R_danpfddb_-0",
+      "expanded": "false"
+    },
+    {
+      "id": "radix-_R_atanpfddb_",
+      "controls": "_R_danpfddb_-1",
+      "expanded": "false"
+    }
+  ],
+  "contents": [
+    {
+      "id": "_R_danpfddb_-0",
+      "labelledBy": "radix-_R_6tanpfddb_",
+      "hidden": true
+    },
+    {
+      "id": "_R_danpfddb_-1",
+      "labelledBy": "radix-_R_atanpfddb_",
+      "hidden": true
+    }
+  ]
+}

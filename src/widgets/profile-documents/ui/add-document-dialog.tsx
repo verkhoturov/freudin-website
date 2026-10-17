@@ -136,7 +136,7 @@ export function AddDocumentDialog() {
             <DialogTitle>Add document</DialogTitle>
             <DialogDescription>
               Everyone who visits your page will see it. Before uploading, cover ID numbers and
-              other details you don’t want to share.
+              other details you don’t want to share. Upload takes effect immediately, without Save.
             </DialogDescription>
           </DialogHeader>
           <FieldGroup>

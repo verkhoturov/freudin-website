@@ -111,6 +111,7 @@ npm run dev
 | `npm run db:push` | применить новые миграции из `supabase/migrations` к базе проекта |
 | `npm run db:types` | сгенерировать типы БД в `src/shared/api/supabase/database.types.ts` |
 | `npm run db:dump` | резервная копия базы в `backups/<дата-время>/`, нужен запущенный Docker (см. «Резервные копии») |
+| `npm run qa:stand` | стенд приёмки для QA-агента на http://localhost:3100: прод-сборка с вымышленными данными, без боевой базы; сначала `npm run build` |
 
 ## Структура проекта
 
@@ -142,6 +143,7 @@ supabase/
 └─ migrations/         # SQL-миграции схемы БД и Storage
 scripts/
 ├─ db-dump.sh          # резервная копия базы (npm run db:dump)
+├─ qa-stand/           # стенд приёмки для QA-агента (npm run qa:stand), зачем он — в его README
 └─ generate-cities-migration.mjs   # миграция со справочником городов из выгрузки GeoNames
 public/
 ├─ demo-certificate.svg   # документ демо-профиля
@@ -207,10 +209,10 @@ docs/
 | `/` | главная | `src/app/page.tsx` | `home` | все | Минимальная |
 | `/login` | вход | `src/app/login/page.tsx` | `login` | гости; вошедшего уводим дальше | Google и Telegram (Facebook выключен) |
 | `/onboarding` | создание страницы после первого входа | `src/app/onboarding/page.tsx` | `onboarding` | вошедшие без профиля; с профилем уводим на `/<username>` | Превью страницы рядом с формой (на телефоне — кнопка Preview) |
-| `/settings` | настройки профиля и аккаунта | `src/app/settings/page.tsx` | `settings` | вошедшие с профилем | Редактор на весь экран без шапки и подвала сайта, превью несохранённой страницы в Account и Public profile (ширина Desktop или Phone). Разделы Account (адрес, почта, страна и город, валюта цен, способы входа), Public profile и Search details в сайдбаре (`?section=`, `routes.settingsSection`, по умолчанию Public profile); Save — в Account под полями, в остальных в липкой панели — сохраняет правки всех разделов: при переходе между разделами и «Назад»/«Вперёд» они остаются, а уход по ссылке спрашивает Save and continue / Discard changes / Stay. В Search details превью нет. Блоки сворачиваются (состояние — в localStorage, по пользователю; без сохранённого выбора Appearance свёрнут); блок Appearance — пресет и обложка; `routes.settingsBlock(id)` (`#block-<id>`) разворачивает блок и ставит фокус на его первое поле, `routes.settingsField(id)` (`#<id>`) — на поле с этим id |
+| `/settings` | настройки профиля и аккаунта | `src/app/settings/page.tsx` | `settings` | вошедшие с профилем | Редактор на весь экран без шапки и подвала сайта, превью несохранённой страницы в Account и Public profile (ширина Desktop или Phone). Разделы Account (адрес, почта, страна и город, валюта цен, способы входа), Public profile и Search details и постоянная ссылка View my page на сохранённый адрес в сайдбаре (`?section=`, `routes.settingsSection`, по умолчанию Public profile); Save — в Account под полями, в остальных в липкой панели — сохраняет правки всех разделов: при переходе между разделами и «Назад»/«Вперёд» они остаются, а уход по ссылке, выход из аккаунта и переход к провайдеру спрашивают Save and continue / Discard changes / Stay. Документы загружаются и удаляются сразу, Highlight и порядок блоков применяются через Save. В Search details превью нет. Выбор поля или раскрытие блока ведёт превью к нему; сворачивание и ввод текста не прокручивают превью. Блоки сворачиваются (состояние — в localStorage, по пользователю; без сохранённого выбора Appearance свёрнут); блок Appearance — пресет и обложка; `routes.settingsBlock(id)` (`#block-<id>`) разворачивает блок и ставит фокус на его первое поле, `routes.settingsField(id)` (`#<id>`) — на поле с этим id |
 | `/privacy` | политика конфиденциальности (Privacy Policy) | `src/app/privacy/page.tsx` | `privacy` | все | На английском, у разделов якоря (`#account-and-data-deletion`) |
 | `/terms` | условия использования (Terms of Service) | `src/app/terms/page.tsx` | `terms` | все | На английском |
-| `/<username>` | личная страница пользователя | `src/app/[username]/page.tsx` | `profile` | все | Серверный рендер (данные из БД, `/demo` — демо-профиль); владельцу — Edit page и Share под именем и подсказки «Finish your page» со ссылками на нужные поля настроек, посетителю — Share внизу карточки; у новых страниц условия работы (формат, место, языки, цена) идут сразу после Bio, без общей цены Price показывает самую низкую цену услуг; нет профиля — 404, адрес с заглавными — редирект 308 на нижний регистр (`/Anna` → `/anna`) |
+| `/<username>` | личная страница пользователя | `src/app/[username]/page.tsx` | `profile` | все | Серверный рендер (данные из БД, `/demo` — демо-профиль), включая ответы свёрнутого FAQ; без доступа у закрытой страницы серверный title нейтральный, после подтверждения владельца вкладка получает имя из его профиля; владельцу — Edit page и Share под именем и подсказки «Finish your page» со ссылками на нужные поля настроек, посетителю — Share внизу карточки; у новых страниц условия работы (формат, место, языки, цена) идут сразу после Bio, без общей цены Price показывает самую низкую цену услуг; нет профиля — 404, адрес с заглавными — редирект 308 на нижний регистр (`/Anna` → `/anna`) |
 | 404 | страница не найдена | `src/app/not-found.tsx` | `not-found` | все | — |
 | Ошибка | ошибка рендера страницы | `src/app/error.tsx`, `src/app/global-error.tsx` | `error` | все | Try again (`retry`) и почта поддержки; `global-error.tsx` — при падении корневого layout |
 

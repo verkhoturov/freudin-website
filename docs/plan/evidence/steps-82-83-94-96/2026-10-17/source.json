@@ -1,0 +1,9 @@
+{
+  "sourceSha256": "6830c28550a392bca5e8e6ad92c89741cf4c2b51a350158137c8e45307cd4167",
+  "buildId": "oTgYp14oevTrIHFI7OURe",
+  "next": "16.3.6",
+  "fixtureOrigin": "http://localhost:3100",
+  "productionNextOrigin": "http://localhost:3002",
+  "supabase": "local fixture, fake credentials",
+  "date": "2026-10-17"
+}

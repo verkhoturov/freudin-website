@@ -96,7 +96,11 @@ export function AppearanceBlock({
                 <Field className="gap-2">
                   <ThemeSwatch theme={id} />
                   <span className="flex items-center gap-2 font-normal">
-                    <RadioGroupItem id={`page-theme-${id}`} value={id} />
+                    <RadioGroupItem
+                      id={`page-theme-${id}`}
+                      value={id}
+                      aria-label={pageThemeLabels[id]}
+                    />
                     {pageThemeLabels[id]}
                   </span>
                 </Field>
@@ -116,7 +120,7 @@ export function AppearanceBlock({
                 <Field className="gap-2">
                   <CoverSketch cover={id} theme={theme} />
                   <span className="flex items-center gap-2 font-normal">
-                    <RadioGroupItem id={`cover-${id}`} value={id} />
+                    <RadioGroupItem id={`cover-${id}`} value={id} aria-label={coverLabels[id]} />
                     {coverLabels[id]}
                   </span>
                 </Field>

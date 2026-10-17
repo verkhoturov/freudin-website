@@ -16,7 +16,11 @@ export function ProfileDocuments({ documents }: ProfileDocumentsProps) {
     <div className="flex flex-col gap-4">
       <p className="text-muted-foreground text-sm">
         Diplomas and certificates, up to {DOCUMENTS_MAX} images. Everyone who visits your page can
-        see them. Uploads and deletions are saved right away.
+        see them.
+      </p>
+      <p className="text-muted-foreground text-sm">
+        Uploads and deletions take effect immediately and aren’t undone by Discard. Highlight and
+        block order only take effect after Save.
       </p>
       {documents.length > 0 ? (
         <ul className="flex flex-col gap-3">

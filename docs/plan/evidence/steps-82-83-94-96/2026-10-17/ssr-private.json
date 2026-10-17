@@ -1,0 +1,12 @@
+{
+  "private": {
+    "title": ["Hidden page — Freudin"],
+    "ownerNameAnywhereInHTML": false,
+    "noindex": true
+  },
+  "password": {
+    "title": ["Protected page — Freudin"],
+    "ownerNameAnywhereInHTML": false,
+    "noindex": true
+  }
+}

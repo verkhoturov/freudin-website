@@ -150,12 +150,16 @@ sequenceDiagram
 ```
 
 - `generateMetadata`: the name in `title`, the start of the description in `description`, the
-  photo in Open Graph (without a photo — the site image). A hidden page has no name or photo
+  photo in Open Graph (without a photo — the site image). Without access, a hidden page has no name or photo
   and gets `noindex`.
 - The server does not know the owner (a guest client without session cookies). `ProfileView`
   detects the owner through `/api/me`, and `HiddenProfileView` shows the owner their page from
-  `/api/me`.
+  `/api/me`. Only after this ownership check does the hidden view replace the neutral tab
+  title with the owner's name; its cleanup restores the previous title unless navigation
+  has already supplied a new one. Guest HTML and server metadata stay neutral.
 - `/demo` serves a demo profile from code (`config/demo-profile.ts`), without the database.
+- FAQ answers remain in the server HTML even when collapsed; the controlled accordion state
+  sets `hidden` on the content without removing it. Radix handles focus and keyboard control.
 
 ## Hidden page
 
@@ -211,6 +215,8 @@ sequenceDiagram
   with an `updated_at` check (protection against a race between two tabs). On failure the
   files are deleted.
 - A new file always gets a new name (uuid), so the one-year cache is safe.
+- Document upload and deletion apply immediately and are not undone by Discard. The widget
+  and its dialogs explain this separately from Highlight and block order, which require Save.
 - An error deleting a leftover file is only logged: it does not break the profile.
 
 ## Saving the profile
@@ -230,8 +236,12 @@ sequenceDiagram
   reloading clears this draft. A successful Save recreates the form from the updated query data.
 - A link leaving settings opens Save and continue / Discard changes / Stay. Save and continue
   navigates only after a successful save; validation or API errors keep the draft. Discard
-  resets the form before navigation. Closing or reloading the tab uses the browser warning.
-- Selecting an editor block scrolls the preview to that block; typing does not scroll it.
+  resets the form before navigation. View my page is available from every section and uses
+  the saved username; after Save and continue renames the page, navigation uses the new name.
+  Sign-out and linking a provider use the same draft dialog before their requests start.
+  Closing or reloading the tab uses the browser warning.
+- Selecting a field or opening an editor block scrolls the preview to that block; typing,
+  focusing the disclosure button or collapsing the block does not scroll it.
   Mobile Edit and Preview keep separate scroll positions. Search details has no preview.
 - CHECK constraints and the `is_valid_profile_*` functions in the database mirror the zod limits.
 

@@ -57,7 +57,7 @@ export function DeleteDocumentButton({ profileDocument }: { profileDocument: Pro
         <AlertDialogHeader>
           <AlertDialogTitle>Delete document?</AlertDialogTitle>
           <AlertDialogDescription>
-            “{profileDocument.title}” will be removed from your page.
+            “{profileDocument.title}” will be removed immediately. Discard won’t restore it.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -20,6 +20,7 @@ import {
   ViewerGuard,
 } from "@/entities/viewer";
 import { routes, siteConfig } from "@/shared/config";
+import { Button } from "@/shared/ui/button";
 import { Logo } from "@/shared/ui/logo";
 import { SectionNav } from "@/shared/ui/section-nav";
 import { toast } from "@/shared/ui/sonner";
@@ -110,6 +111,9 @@ function SettingsContent() {
             current: id === section,
           }))}
         />
+        <Button asChild variant="outline" className="self-start lg:w-full">
+          <Link href={routes.profile(profile.username)}>View my page</Link>
+        </Button>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <ProfileSettingsForm
@@ -123,6 +127,9 @@ function SettingsContent() {
             <div className="flex flex-col gap-1">
               <h1 className="font-heading text-page-title">{sectionLabels[section]}</h1>
               {description ? <p className="text-muted-foreground text-sm">{description}</p> : null}
+              <p className="text-muted-foreground text-sm">
+                Save applies to changes in all settings sections.
+              </p>
             </div>
           }
         />
@@ -201,7 +208,9 @@ function ProfileSettingsForm({
       section={section}
       layout="workspace"
       header={header}
-      accountBlock={<AccountSettings viewer={viewer} profile={profile} />}
+      accountBlock={(beforeLeave) => (
+        <AccountSettings viewer={viewer} profile={profile} beforeLeave={beforeLeave} />
+      )}
       // Документы уже опубликованы: их загрузка и удаление идут мимо формы
       renderPreview={(draft) => (
         <ProfileCanvas theme={draft.pageTheme}>

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import type { ProfileVisibility } from "@/entities/profile";
 import { useViewerQuery } from "@/entities/viewer";
-import { routes } from "@/shared/config";
+import { routes, siteConfig } from "@/shared/config";
 import { Alert, AlertDescription } from "@/shared/ui/alert";
 import { Container } from "@/shared/ui/container";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -22,6 +23,17 @@ type HiddenProfileViewProps = {
 export function HiddenProfileView({ username, visibility }: HiddenProfileViewProps) {
   const viewer = useViewerQuery();
   const ownProfile = viewer.data?.profile;
+  const ownerName = ownProfile?.username === username ? ownProfile.displayName : null;
+
+  useEffect(() => {
+    if (ownerName === null) return;
+    const previousTitle = document.title;
+    const title = `${ownerName} — ${siteConfig.name}`;
+    document.title = title;
+    return () => {
+      if (document.title === title) document.title = previousTitle;
+    };
+  }, [ownerName]);
 
   if (viewer.isPending) {
     return (

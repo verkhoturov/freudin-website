@@ -51,8 +51,8 @@ other rules — 4–14 in [`process.md`](process.md) — apply to every task, pl
 - The old heading anchors in `PLAN.md` lead to the index rows. When closing a step, keep a
   history link for its anchors so old links keep working.
 - Record a check result together with the completed item in the history: date, what was
-  checked, environment and limitations. Do not close failed checks. UI steps go through the
-  QA cycle.
+  checked, environment and limitations. Do not close failed checks. UI steps wait for a check
+  by the developer or the QA agent (rule 14 in `process.md`).
 - General working rules stay in the workflows. Read the summaries in `plan/context.md` and the
   sources in `plan/review-sources.md` when needed, and update them when related facts change.
 

@@ -42,7 +42,7 @@
 
 **Точки входа:** [`src/entities/profile/lib/profile-changes.ts`](../../src/entities/profile/lib/profile-changes.ts), [`src/entities/profile/api/profile.server.ts`](../../src/entities/profile/api/profile.server.ts), [`src/views/settings`](../../src/views/settings).
 
-**Связи:** Проверка версии внутри транзакции [65](stage-n.md#step-65); стабильная база черновика связана с [56](stage-m.md#step-56).
+**Связи:** Проверка версии внутри транзакции [65](stage-n.md#step-65); стабильная база черновика связана с [56](history/stage-m.md#step-56).
 
 Сценарий: в первой вкладке цена услуги меняется с 90 на 100. Во второй остаётся прежний
 профиль; изменение только запросов клиентов отправляет связанную группу
