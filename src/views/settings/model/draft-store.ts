@@ -1,10 +1,21 @@
 import { create } from "zustand";
 import type { ProfileInput } from "@/entities/profile";
 
+/**
+ * Сохранённые значения и версия профиля, от которых считаются правки формы. Фоновое
+ * обновление `/api/me` их не подменяет: иначе старое значение из формы ушло бы как правка.
+ */
+export type SettingsFormBase = {
+  values: ProfileInput;
+  version: number;
+};
+
 type SettingsDraft = {
   /** Чей черновик: в той же вкладке может войти другой пользователь. */
   userId: string;
   values: ProfileInput;
+  /** От чего считаются правки черновика. */
+  base: SettingsFormBase;
 };
 
 type SettingsDraftState = {

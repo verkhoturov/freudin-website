@@ -1,8 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import type { ProfileVisibility } from "@/entities/profile";
 import { Container } from "@/shared/ui/container";
-import { PagePasswordForm } from "./page-password-form";
+
+const PagePasswordForm = dynamic(() =>
+  import("./page-password-form").then((module) => module.PagePasswordForm),
+);
 
 type HiddenPageNoticeProps = {
   username: string;

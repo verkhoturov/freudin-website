@@ -1,6 +1,6 @@
+import { cn } from "cn";
 import Link from "next/link";
 import type { ComponentProps } from "react";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 
 export type SectionNavItem = { href: string; label: string; current?: boolean };

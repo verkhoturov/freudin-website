@@ -6,7 +6,13 @@ import type { ProfileCover } from "../config/cover";
 import type { CtaPlacement } from "../config/cta-placement";
 import type { Gender } from "../config/gender";
 import type { PageTheme } from "../config/page-theme";
-import type { Approach, ClientType, WorkFormat } from "../config/practice";
+import type {
+  AcceptingClients,
+  Approach,
+  ClientType,
+  PriceType,
+  WorkFormat,
+} from "../config/practice";
 import type { ProfileSection } from "../config/sections";
 import type { ProfileVisibility } from "../config/visibility";
 
@@ -65,6 +71,8 @@ export type PrivateProfileDetails = {
 export type PublicProfile = {
   username: string;
   displayName: string;
+  /** Роль под именем со слов автора («Clinical psychologist»); пустая строка — не указана. */
+  professionalRole: string;
   bio: string;
   avatarUrl: string | null;
   socialLinks: SocialLink[];
@@ -78,8 +86,14 @@ export type PublicProfile = {
   languages: string[];
   /** Валюта всех цен профиля, ISO 4217: её выбирают в Settings → Account. */
   currency: string;
-  /** Цена сессии «от» в валюте профиля. */
+  /** Цена сессии в валюте профиля. */
   price: ProfilePrice | null;
+  /** Цена сессии «от» или фиксированная. */
+  priceType: PriceType;
+  /** Приём новых клиентов; `null` — не указан. */
+  acceptingClients: AcceptingClients | null;
+  /** Район или ориентир очного приёма; показывается только при In person. */
+  inPersonArea: string;
   documents: ProfileDocument[];
   /** Порядок блоков после фото и имени: полный список, без повторов. */
   sectionOrder: ProfileSection[];
@@ -104,6 +118,17 @@ export type PublicProfile = {
   ctaPlacement: CtaPlacement;
   /** Кто видит страницу. Скрытую гость получает только по паролю, владелец — всегда. */
   visibility: ProfileVisibility;
+};
+
+/**
+ * Ответ `PATCH /api/profile`: сохранённые данные настроек и новая версия, с которой форма
+ * продолжит работу (шаг 66).
+ */
+export type SavedProfile = {
+  profile: PublicProfile;
+  contactEmail: string | null;
+  privateDetails: PrivateProfileDetails;
+  version: number;
 };
 
 /** Ответ `GET /api/usernames/[username]`: `username` приведён к нижнему регистру. */

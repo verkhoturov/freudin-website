@@ -53,6 +53,16 @@ other rules — 4–14 in [`process.md`](process.md) — apply to every task, pl
 - Record a check result together with the completed item in the history: date, what was
   checked, environment and limitations. Do not close failed checks. UI steps wait for a check
   by the developer or the QA agent (rule 14 in `process.md`).
+- Raw check materials (reports, logs, screenshots, measurement JSON) are not stored in the
+  repository (decision 40). They stay locally in `tmp/`, which is not in git: QA artifacts in
+  `tmp/qa-<step>/`, other materials in `tmp/evidence/<step>/<date>/`. Mention them in a
+  document as a path in backticks, not as a link.
+- `tmp/` exists on this computer only, so the history entry holds everything needed later:
+  besides the result, the key numbers (for a baseline — the medians and the conditions of the
+  measurement).
+- Delete materials in `tmp/evidence/` when a new baseline replaces them or the last step that
+  compares with them is closed; QA artifacts and other materials — when their stage has moved
+  to the history entirely. Before deleting, check that the history entry has the numbers.
 - General working rules stay in the workflows. Read the summaries in `plan/context.md` and the
   sources in `plan/review-sources.md` when needed, and update them when related facts change.
 

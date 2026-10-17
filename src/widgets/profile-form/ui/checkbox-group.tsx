@@ -1,7 +1,7 @@
 "use client";
 
+import { cn } from "cn";
 import type { ReactNode } from "react";
-import { cn } from "@/shared/lib/utils";
 import { Checkbox } from "@/shared/ui/checkbox";
 import {
   Field,

@@ -59,9 +59,8 @@ These are required rules from [`AGENTS.md`](../../AGENTS.md); the process is in 
   both themes: text at least 4.5:1 (including `muted-foreground` on `muted` and `accent`,
   `destructive` on its `/20` tint), `input`, `primary` and `ring` at least 3:1. `border` is
   decorative.
-- Combine classes with `cn` from `@/shared/lib/utils` (shadcn files take it from the `cn`
-  package directly, as the CLI writes). `cn` removes conflicting Tailwind classes but does not
-  know our tokens. So column width comes from the `width` prop of `Container`, not a `max-w-*`
+- Combine classes with `cn` from the `cn` package, as the shadcn CLI writes. `cn` removes
+  conflicting Tailwind classes but does not know our tokens. So column width comes from the `width` prop of `Container`, not a `max-w-*`
   class in `className`. Do not mix a heading token (`text-page-title`) with a text colour
   (`text-muted-foreground`) in one `cn`: `cn` takes the token for a colour and drops it. Do not
   build class names from parts (`max-w-${x}`): Tailwind will not see them.

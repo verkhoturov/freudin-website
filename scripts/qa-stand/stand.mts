@@ -3,6 +3,7 @@
 // в `next start` на :3002, а Supabase этого процесса тоже указывает на :3100.
 // Пульт: /__qa/control?…, состояние: /__qa/state. Подробности — docs/workflows/qa-subagent.md.
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import {
   appendFileSync,
   existsSync,
@@ -13,7 +14,7 @@ import {
 } from "node:fs";
 import http from "node:http";
 import { join } from "node:path";
-import type { PrivateProfileDetails, PublicProfile } from "@/entities/profile";
+import type { PrivateProfileDetails, PublicProfile, SavedProfile } from "@/entities/profile";
 import type { Viewer } from "@/entities/viewer";
 import type { ApiErrorBody } from "@/shared/api";
 import type { Tables } from "@/shared/api/index.server";
@@ -27,6 +28,7 @@ const LOG_FILE = `${LOG_DIR}/requests.jsonl`;
 const baseProfile: PublicProfile = {
   username: "qa-anna",
   displayName: "Anna Example",
+  professionalRole: "",
   bio: "A fictional psychologist for acceptance checks.",
   avatarUrl: null,
   socialLinks: [
@@ -40,6 +42,9 @@ const baseProfile: PublicProfile = {
   approaches: ["cbt", "act"],
   languages: ["en", "ru"],
   currency: "USD",
+  priceType: "from",
+  acceptingClients: null,
+  inPersonArea: "",
   price: { amount: 60, currency: "USD" },
   documents: [],
   sectionOrder: [
@@ -108,13 +113,22 @@ const basePrivateDetails: PrivateProfileDetails = {
 type StandState = {
   profile: PublicProfile;
   privateDetails: PrivateProfileDetails;
+  /** Версия сохранения настроек: `bumpVersion` имитирует сохранение в другой вкладке. */
+  version: number;
   owner: boolean;
   delay: number;
   meError: boolean;
   saveError: boolean;
   documentError: boolean;
-  requests: { method: string; path: string }[];
+  /** Загруженное через UI фото; отдаётся по `/__qa/avatar`. */
+  avatar: { type: string; bytes: Buffer } | null;
+  /** Токен cookie доступа к странице с паролем после верного пароля. */
+  accessToken: string | null;
+  requests: StandRequest[];
 };
+
+/** Запрос в логе; `blocked` — у стенда нет ответа на этот запрос, и он вернул 403. */
+type StandRequest = { method: string; path: string; status?: number; blocked?: true };
 
 let state: StandState;
 
@@ -122,11 +136,14 @@ function reset() {
   state = {
     profile: structuredClone(baseProfile),
     privateDetails: structuredClone(basePrivateDetails),
+    version: 1,
     owner: true,
     delay: 0,
     meError: false,
     saveError: false,
     documentError: false,
+    avatar: null,
+    accessToken: null,
     requests: [],
   };
 }
@@ -138,6 +155,7 @@ function toRow(profile: PublicProfile) {
   const row = {
     username: profile.username,
     display_name: profile.displayName,
+    professional_role: profile.professionalRole,
     bio: profile.bio,
     avatar_path: null,
     social_links: profile.socialLinks,
@@ -165,6 +183,9 @@ function toRow(profile: PublicProfile) {
     link_icons: profile.linkIcons,
     cta_placement: profile.ctaPlacement,
     visibility: profile.visibility,
+    price_type: profile.priceType,
+    accepting_clients: profile.acceptingClients,
+    in_person_area: profile.inPersonArea,
   } satisfies Partial<Tables<"profiles">>;
   return { ...row, city: null };
 }
@@ -178,6 +199,7 @@ function viewer(): Viewer {
       signInMethods: [{ provider: "google", accountLabel: "anna@example.com", avatarUrl: null }],
     },
     profile: state.profile,
+    profileVersion: state.version,
     privateDetails: state.privateDetails,
     suggestions: { username: null, displayName: null, avatarUrl: null },
   };
@@ -211,14 +233,24 @@ function handleControl(url: URL, res: http.ServerResponse) {
   if (params.has("meError")) state.meError = params.get("meError") === "true";
   if (params.has("saveError")) state.saveError = params.get("saveError") === "true";
   if (params.has("documentError")) state.documentError = params.get("documentError") === "true";
-  const { owner, delay, meError, saveError, documentError } = state;
+  if (params.has("bumpVersion")) state.version += 1;
+  if (params.has("password")) state.privateDetails.pagePassword = params.get("password") || null;
+  if (params.has("photo")) {
+    state.avatar = null;
+    // Файл из public/: адрес без /storage/…/avatars/, поэтому Next.js показывает его напрямую
+    state.profile.avatarUrl = params.get("photo") === "true" ? "/icon-512.png" : null;
+  }
+  const { owner, delay, meError, saveError, documentError, version } = state;
   sendJson(res, {
+    version,
     owner,
     delay,
     meError,
     saveError,
     documentError,
     visibility: state.profile.visibility,
+    password: state.privateDetails.pagePassword !== null,
+    photo: state.profile.avatarUrl !== null,
   });
 }
 
@@ -226,8 +258,12 @@ async function handleApi(req: http.IncomingMessage, url: URL, res: http.ServerRe
   const path = url.pathname;
   const method = req.method ?? "GET";
   const body = await readBody(req);
-  state.requests.push({ method, path });
-  appendFileSync(LOG_FILE, `${JSON.stringify({ method, path })}\n`);
+  const entry: StandRequest = { method, path };
+  state.requests.push(entry);
+  res.on("finish", () => {
+    entry.status = res.statusCode;
+    appendFileSync(LOG_FILE, `${JSON.stringify(entry)}\n`);
+  });
 
   // Supabase REST для серверного рендера страницы /<username>
   if (path === "/rest/v1/profiles") {
@@ -239,6 +275,18 @@ async function handleApi(req: http.IncomingMessage, url: URL, res: http.ServerRe
     const { p_username } = JSON.parse(body.toString() || "{}") as { p_username?: string };
     return sendJson(res, p_username === state.profile.username ? state.profile.visibility : null);
   }
+  if (path === "/rest/v1/rpc/get_unlocked_profile") {
+    const { p_username, p_token } = JSON.parse(body.toString() || "{}") as {
+      p_username?: string;
+      p_token?: string;
+    };
+    const unlocked =
+      p_username === state.profile.username &&
+      state.profile.visibility === "password" &&
+      state.accessToken !== null &&
+      p_token === state.accessToken;
+    return sendJson(res, unlocked ? [toRow(state.profile)] : []);
+  }
 
   // Наш API для браузера
   if (path === "/api/me") {
@@ -248,6 +296,30 @@ async function handleApi(req: http.IncomingMessage, url: URL, res: http.ServerRe
     return sendJson(res, viewer());
   }
   if (path.startsWith("/api/usernames/")) return sendJson(res, { available: true });
+  const access = path.match(/^\/api\/profiles\/([^/]+)\/access$/);
+  if (access && method === "POST") {
+    const { password } = JSON.parse(body.toString() || "{}") as { password?: string };
+    const correct =
+      access[1].toLowerCase() === state.profile.username &&
+      state.profile.visibility === "password" &&
+      state.privateDetails.pagePassword !== null &&
+      password === state.privateDetails.pagePassword;
+    if (!correct) {
+      const wrong: ApiErrorBody = {
+        error: {
+          code: "validation_error",
+          message: "Wrong password.",
+          fields: { password: "Wrong password" },
+        },
+      };
+      return sendJson(res, wrong, 400);
+    }
+    // Как setPageAccessCookie: своя httpOnly-cookie у каждой страницы
+    state.accessToken = randomUUID();
+    const cookie = `freudin-page-access-${state.profile.username}=${state.accessToken}`;
+    res.writeHead(204, { "set-cookie": `${cookie}; Path=/; HttpOnly; SameSite=Lax` });
+    return res.end();
+  }
   if (path.startsWith("/api/profiles/")) {
     const visible =
       path.split("/")[3] === state.profile.username && state.profile.visibility === "public";
@@ -258,7 +330,10 @@ async function handleApi(req: http.IncomingMessage, url: URL, res: http.ServerRe
     if (state.saveError) {
       return sendError(res, "internal_error", "Fictional save failure. Please try again.", 500);
     }
-    const changes = JSON.parse(body.toString()) as Record<string, unknown>;
+    const { expectedVersion, ...changes } = JSON.parse(body.toString()) as Record<string, unknown>;
+    if (expectedVersion !== state.version) {
+      return sendError(res, "version_conflict", "Fictional save in another tab.", 409);
+    }
     const details = state.privateDetails as Record<string, unknown>;
     const profile = state.profile as Record<string, unknown>;
     for (const [key, value] of Object.entries(changes)) {
@@ -267,6 +342,40 @@ async function handleApi(req: http.IncomingMessage, url: URL, res: http.ServerRe
         profile[key] = key === "username" ? String(value).trim().toLowerCase() : value;
       }
     }
+    state.version += 1;
+    return sendJson(res, {
+      profile: state.profile,
+      contactEmail: null,
+      privateDetails: state.privateDetails,
+      version: state.version,
+    } satisfies SavedProfile);
+  }
+  if (path === "/api/profile/avatar" && method === "POST") {
+    if (req.headers["content-type"]?.startsWith("multipart/form-data")) {
+      const form = await new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": req.headers["content-type"] },
+        body,
+      }).formData();
+      const file = form.get("file");
+      if (!(file instanceof Blob)) {
+        return sendError(res, "validation_error", "Fictional photo is missing.", 400);
+      }
+      state.avatar = {
+        type: file.type || "image/jpeg",
+        bytes: Buffer.from(await file.arrayBuffer()),
+      };
+      state.profile.avatarUrl = `/__qa/avatar?v=${Date.now()}`;
+    } else {
+      // Фото из аккаунта провайдера
+      state.avatar = null;
+      state.profile.avatarUrl = "/icon-512.png";
+    }
+    return sendJson(res, state.profile);
+  }
+  if (path === "/api/profile/avatar" && method === "DELETE") {
+    state.avatar = null;
+    state.profile.avatarUrl = null;
     return sendJson(res, state.profile);
   }
   if (path === "/api/profile/documents" && method === "POST") {
@@ -302,6 +411,8 @@ async function handleApi(req: http.IncomingMessage, url: URL, res: http.ServerRe
   if (path === "/api/auth/identities") return sendJson(res, { url: `${STAND_URL}/__qa/provider` });
 
   // Ни один неизвестный запрос к API, Supabase или входу не уходит дальше стенда
+  entry.blocked = true;
+  console.warn(`QA stand: no response for ${method} ${path}, blocked with 403`);
   return sendError(res, "forbidden", "Blocked by the QA stand.", 403);
 }
 
@@ -328,7 +439,15 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", STAND_URL);
     const path = url.pathname;
     if (path === "/__qa/control") return handleControl(url, res);
-    if (path === "/__qa/state") return sendJson(res, state);
+    if (path === "/__qa/state") {
+      const { avatar, ...rest } = state;
+      return sendJson(res, { ...rest, avatar: avatar !== null });
+    }
+    if (path === "/__qa/avatar") {
+      if (!state.avatar) return sendError(res, "not_found", "No fictional photo.", 404);
+      res.writeHead(200, { "content-type": state.avatar.type, "cache-control": "no-store" });
+      return res.end(state.avatar.bytes);
+    }
     if (path === "/__qa/provider") {
       res.writeHead(200, { "content-type": "text/html" });
       return res.end("<h1>Fictional sign-in provider</h1>");

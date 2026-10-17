@@ -32,7 +32,7 @@ of `biome.json`: `npm run lint` reports a violation with a message explaining th
 - (B) Slices of one layer do not import each other. Exception — `entities` through `@x`:
   `@/entities/<slice>/@x/<consumer>`.
 - `shared/ui` and `shared/lib` are imported by file (`@/shared/ui/button`,
-  `@/shared/lib/utils`), as shadcn does. `shared/config` and `shared/api` are imported through
+  `@/shared/lib/cva`), as shadcn does. `shared/config` and `shared/api` are imported through
   their index: `@/shared/config`, `@/shared/config/index.server`, `@/shared/api`,
   `@/shared/api/index.server`.
 - (B) Client code (`views`, `widgets`, `src/app` outside `api`) does not import `index.server`.

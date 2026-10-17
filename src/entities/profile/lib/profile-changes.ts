@@ -11,6 +11,7 @@ import { toServiceInput } from "./services";
 
 type SettingsInput = Pick<
   ProfileInput,
+  | "professionalRole"
   | "country"
   | "cityId"
   | "workFormats"
@@ -18,7 +19,10 @@ type SettingsInput = Pick<
   | "approaches"
   | "languages"
   | "priceAmount"
+  | "priceType"
   | "currency"
+  | "acceptingClients"
+  | "inPersonArea"
   | "sectionOrder"
   | "practiceStartedOn"
   | "education"
@@ -44,6 +48,7 @@ type SettingsInput = Pick<
  */
 export function getEmptySettingsInput(): SettingsInput {
   return {
+    professionalRole: "",
     country: "",
     cityId: null,
     workFormats: [],
@@ -51,7 +56,10 @@ export function getEmptySettingsInput(): SettingsInput {
     approaches: [],
     languages: [],
     priceAmount: "",
+    priceType: "from",
     currency: DEFAULT_CURRENCY,
+    acceptingClients: "",
+    inPersonArea: "",
     sectionOrder: [...newProfileSectionOrder],
     practiceStartedOn: "",
     education: [],
@@ -85,6 +93,7 @@ export function toProfileInput(
   return {
     username: profile.username,
     displayName: profile.displayName,
+    professionalRole: profile.professionalRole,
     bio: profile.bio,
     socialLinks: profile.socialLinks,
     contactEmail: contactEmail ?? "",
@@ -95,7 +104,10 @@ export function toProfileInput(
     approaches: profile.approaches,
     languages: profile.languages,
     priceAmount: profile.price ? String(profile.price.amount) : "",
+    priceType: profile.priceType,
     currency: profile.currency,
+    acceptingClients: profile.acceptingClients ?? "",
+    inPersonArea: profile.inPersonArea,
     sectionOrder: profile.sectionOrder,
     practiceStartedOn: profile.practiceStartedOn ?? "",
     education: profile.education.map((entry) => ({
@@ -149,4 +161,24 @@ export function getProfileChanges(
     for (const key of group) changes[key] = next[key];
   }
   return Object.keys(changes).length > 0 ? (changes as ProfileUpdateInput) : null;
+}
+
+/**
+ * Черновик поверх свежих сохранённых значений, когда профиль сохранили в другой вкладке
+ * (шаг 66). Поле, которое пользователь не менял относительно `base`, берём из `latest`,
+ * изменённое — из черновика. Так чужие правки не возвращаются к старым значениям.
+ */
+export function rebaseProfileDraft(
+  base: ProfileInput,
+  draft: ProfileInput,
+  latest: ProfileInput,
+): ProfileInput {
+  const isChanged = (key: keyof ProfileInput) =>
+    JSON.stringify(draft[key]) !== JSON.stringify(base[key]);
+  return Object.fromEntries(
+    (Object.keys(latest) as (keyof ProfileInput)[]).map((key) => [
+      key,
+      isChanged(key) ? draft[key] : latest[key],
+    ]),
+  ) as ProfileInput;
 }

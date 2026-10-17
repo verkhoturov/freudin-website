@@ -44,12 +44,12 @@ function DocumentPreview({ profileDocument }: { profileDocument: ProfileDocument
           type="button"
           className="flex w-32 flex-col gap-2 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           {/* Имя кнопки — alt превью, видимая подпись скрыта от скринридера, чтобы не читать её дважды */}
-          {/* biome-ignore lint/performance/noImgElement: файл из Supabase Storage, next/image для него не настроен */}
-          <img
+          <Image
             src={thumbnailUrl}
             alt={title}
             width={width}
             height={height}
+            sizes="128px"
             loading="lazy"
             className="h-24 w-full rounded-md border bg-muted object-contain"
           />
@@ -77,3 +77,5 @@ function DocumentPreview({ profileDocument }: { profileDocument: ProfileDocument
     </Dialog>
   );
 }
+
+import Image from "next/image";

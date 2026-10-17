@@ -8,6 +8,8 @@ import {
   type ProfileInput,
   type ProfileVisibility,
   type PublicProfile,
+  rebaseProfileDraft,
+  type SavedProfile,
   toProfileInput,
 } from "@/entities/profile";
 import {
@@ -19,6 +21,7 @@ import {
   type Viewer,
   ViewerGuard,
 } from "@/entities/viewer";
+import { ApiError } from "@/shared/api";
 import { routes, siteConfig } from "@/shared/config";
 import { Button } from "@/shared/ui/button";
 import { Logo } from "@/shared/ui/logo";
@@ -36,7 +39,7 @@ import {
   profileFormSectionLabels as sectionLabels,
 } from "@/widgets/profile-form";
 import { DEFAULT_COLLAPSED_BLOCKS, useCollapsedBlocksStore } from "../model/collapsed-blocks-store";
-import { useSettingsDraftStore } from "../model/draft-store";
+import { type SettingsFormBase, useSettingsDraftStore } from "../model/draft-store";
 
 const SITE_HOST = new URL(siteConfig.url).host;
 
@@ -88,6 +91,10 @@ function SettingsContent() {
         {pageAudience[profile.visibility]} at{" "}
         <Link href={routes.profile(profile.username)} className="text-link underline">
           {SITE_HOST}/{profile.username}
+        </Link>
+        . City, currency and who can see your page are in{" "}
+        <Link href={routes.settingsSection("account")} className="text-link underline">
+          Account
         </Link>
         .
       </>
@@ -147,6 +154,38 @@ type ProfileSettingsFormProps = {
   onCollapsedChange: (blockId: string, collapsed: boolean) => void;
 };
 
+function toFormBase(saved: SavedProfile): SettingsFormBase {
+  return {
+    values: toProfileInput(saved.profile, saved.contactEmail, saved.privateDetails),
+    version: saved.version,
+  };
+}
+
+// Версии нет только без профиля, а сюда гард пускает с профилем. Иначе 0: сервер ответит 400
+function toViewerBase(viewer: Viewer, profile: PublicProfile): SettingsFormBase {
+  const { contactEmail } = viewer.user;
+  const version = viewer.profileVersion ?? 0;
+  return toFormBase({ profile, contactEmail, privateDetails: viewer.privateDetails, version });
+}
+
+// Текст сохранён, а фото нет: говорим об этом вместо общего «Couldn’t save»
+function toPhotoNotSavedError(error: unknown): ApiError {
+  const isApiError = error instanceof ApiError;
+  return new ApiError(
+    isApiError ? error.status : 0,
+    isApiError ? error.code : "network_error",
+    `Your other changes were saved, but the photo wasn’t. ${isApiError ? error.message : "Please try again."}`,
+  );
+}
+
+type EditSession = {
+  /** Ключ формы: после сохранения и конфликта версий она монтируется заново. */
+  key: number;
+  base: SettingsFormBase;
+  /** Значения поверх базы при монтировании: черновик или правки после конфликта. */
+  draft: ProfileInput | null;
+};
+
 function ProfileSettingsForm({
   viewer,
   profile,
@@ -155,44 +194,89 @@ function ProfileSettingsForm({
   collapsedBlocks,
   onCollapsedChange,
 }: ProfileSettingsFormProps) {
+  const viewerQuery = useViewerQuery();
   const updateProfile = useUpdateProfileMutation();
   const setAvatar = useSetAvatarMutation();
   const deleteAvatar = useDeleteAvatarMutation();
-  // После сохранения форма монтируется заново: начальные значения берутся из нового профиля.
-  // Смена раздела её не пересоздаёт: правки всех разделов живут до Save или Discard
-  const [formVersion, setFormVersion] = useState(0);
   const userId = viewer.user.id;
-  // Черновик читаем при монтировании формы: форма сама отдаёт его, когда закрывается
-  const [draftValues] = useState(() => {
+  // Смена раздела форму не пересоздаёт: правки всех разделов живут до Save или Discard.
+  // Черновик читаем при монтировании: форма сама отдаёт его, когда закрывается
+  const [session, setSession] = useState<EditSession>(() => {
     const { draft } = useSettingsDraftStore.getState();
-    return draft?.userId === userId ? draft.values : null;
+    if (draft?.userId === userId) return { key: 0, base: draft.base, draft: draft.values };
+    return { key: 0, base: toViewerBase(viewer, profile), draft: null };
   });
   const setDraft = useSettingsDraftStore((state) => state.setDraft);
   const { email, contactEmail } = viewer.user;
-  const savedValues = toProfileInput(profile, contactEmail, viewer.privateDetails);
+  const { base } = session;
+
+  // Профиль сохранили в другой вкладке: черновик переносим на свежие данные, и поля, которые
+  // здесь не меняли, не вернут чужие правки. Сохранение завершается ошибкой: Save and continue
+  // не уводит со страницы
+  const continueAfterConflict = async (
+    values: ProfileInput,
+    hasPhotoChange: boolean,
+    conflict: ApiError,
+  ): Promise<never> => {
+    const latest = await viewerQuery.refetch();
+    if (latest.isError || !latest.data?.profile) throw conflict;
+    const latestBase = toViewerBase(latest.data, latest.data.profile);
+    setSession((current) => ({
+      key: current.key + 1,
+      base: latestBase,
+      draft: rebaseProfileDraft(current.base.values, values, latestBase.values),
+    }));
+    throw new ApiError(
+      conflict.status,
+      conflict.code,
+      `Your page was updated in another tab. We loaded the latest version and kept your edits here. Review them and save again.${hasPhotoChange ? " Choose your new photo again." : ""}`,
+    );
+  };
 
   const submit = async (values: ProfileInput, avatar: AvatarValue) => {
     // Правки могли совпасть с сохранённым после нормализации: `@anna` и `t.me/anna`
-    const changes = getProfileChanges(savedValues, values);
+    const changes = getProfileChanges(base.values, values);
     const avatarSource = getAvatarSource(avatar);
     const shouldDeleteAvatar = avatar.type === "none" && Boolean(profile.avatarUrl);
+    const hasPhotoChange = Boolean(avatarSource) || shouldDeleteAvatar;
 
-    if (changes || avatarSource || shouldDeleteAvatar) {
-      if (changes) await updateProfile.mutateAsync(changes);
+    if (!changes && !hasPhotoChange) {
+      toast.info("No changes to save");
+      setSession((current) => ({ key: current.key + 1, base: current.base, draft: null }));
+      return;
+    }
+
+    let savedBase = base;
+    if (changes) {
+      try {
+        savedBase = toFormBase(
+          await updateProfile.mutateAsync({ changes, expectedVersion: base.version }),
+        );
+      } catch (error) {
+        if (!(error instanceof ApiError && error.code === "version_conflict")) throw error;
+        return continueAfterConflict(values, hasPhotoChange, error);
+      }
+    }
+
+    try {
       if (avatarSource) await setAvatar.mutateAsync(avatarSource);
       else if (shouldDeleteAvatar) await deleteAvatar.mutateAsync();
-      toast.success("Changes saved");
-    } else {
-      toast.info("No changes to save");
+    } catch (error) {
+      if (!changes) throw error;
+      // Остальное сохранено: правки считаем от сохранённого, и повторный Save отправит только фото
+      setSession((current) => ({ ...current, base: savedBase }));
+      throw toPhotoNotSavedError(error);
     }
-    setFormVersion((version) => version + 1);
+
+    toast.success("Changes saved");
+    setSession((current) => ({ key: current.key + 1, base: savedBase, draft: null }));
   };
 
   return (
     <ProfileForm
-      key={formVersion}
+      key={session.key}
       mode="edit"
-      defaultValues={savedValues}
+      defaultValues={base.values}
       defaultAvatar={{ type: "current" }}
       currentAvatarUrl={profile.avatarUrl}
       accountPhotos={getAccountPhotos(viewer.user.signInMethods)}
@@ -219,9 +303,8 @@ function ProfileSettingsForm({
       )}
       submitLabel="Save"
       onSubmit={submit}
-      // После сохранения прежний черновик уже в профиле
-      draftValues={formVersion === 0 ? draftValues : null}
-      onDraftChange={(values) => setDraft(values ? { userId, values } : null)}
+      draftValues={session.draft}
+      onDraftChange={(values) => setDraft(values ? { userId, values, base } : null)}
     />
   );
 }

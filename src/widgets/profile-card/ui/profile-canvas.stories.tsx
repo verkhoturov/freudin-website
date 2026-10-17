@@ -21,6 +21,7 @@ const portrait = `data:image/svg+xml,${encodeURIComponent(
 const profile: PublicProfile = {
   username: "anna",
   displayName: "Anna Smith",
+  professionalRole: "",
   bio: "I help adults and couples cope with anxiety, burnout, and relationship difficulties.",
   avatarUrl: portrait,
   socialLinks: [
@@ -39,6 +40,9 @@ const profile: PublicProfile = {
   approaches: ["cbt", "act"],
   languages: ["en", "ru"],
   currency: "USD",
+  priceType: "from",
+  acceptingClients: null,
+  inPersonArea: "",
   price: { amount: 60, currency: "USD" },
   documents: [],
   sectionOrder: [...profileSectionIds],

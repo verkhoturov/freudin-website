@@ -31,7 +31,7 @@ function SettingsLink() {
 
 export function PrivacyView() {
   return (
-    <LegalDocument title="Privacy Policy" lastUpdated="October 3, 2026">
+    <LegalDocument title="Privacy Policy" lastUpdated="October 17, 2026">
       <p>
         This Privacy Policy explains how Freudin collects, uses, stores, and shares personal data
         when you access or use the Freudin website, applications, features, and related services
@@ -175,10 +175,12 @@ export function PrivacyView() {
         </li>
         <li>links to your social media profiles and websites, with the titles you give them;</li>
         <li>
-          details about your practice, if you add them: your country and the city where you see
-          clients in person, whether you work online or in person, who you work with, your therapy
-          approaches, the languages you work in, your starting price per session, and the date you
-          started practicing, which your page shows as years of experience;
+          details about your practice, if you add them: your professional role, whether you are
+          accepting new clients, your country and the city where you see clients in person, the area
+          or landmark of your in-person sessions, whether you work online or in person, who you work
+          with, your therapy approaches, the languages you work in, your price per session and
+          whether it is fixed or a starting price, and the date you started practicing, which your
+          page shows as years of experience;
         </li>
         <li>your education: degrees or qualifications, institutions, and graduation years;</li>
         <li>
@@ -532,6 +534,11 @@ export function PrivacyView() {
       <p>
         We may retain limited information for longer where required by law, necessary for security
         or fraud prevention, or needed to establish, exercise, or defend legal claims.
+      </p>
+      <p>
+        To protect page passwords and page addresses from automated guessing, we count recent
+        attempts from each IP address. We store only a keyed hash of the IP address, not the address
+        itself, and delete these counters within about a day.
       </p>
 
       <h2 id="account-and-data-deletion">9. Account and data deletion</h2>

@@ -1,6 +1,6 @@
+import { cn } from "cn";
 import Link from "next/link";
 import { routes } from "@/shared/config";
-import { cn } from "@/shared/lib/utils";
 
 /** Логотип — адрес сайта. Розовая точка — знак бренда, она же фавиконка (src/app/icon.svg). */
 export function Logo({ className }: { className?: string }) {

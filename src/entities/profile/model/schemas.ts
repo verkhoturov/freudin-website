@@ -21,11 +21,13 @@ import {
   FAQ_ANSWER_MAX_LENGTH,
   FAQ_MAX,
   FAQ_QUESTION_MAX_LENGTH,
+  IN_PERSON_AREA_MAX_LENGTH,
   LANGUAGES_MAX,
   MIN_AGE,
   PHONE_MAX_LENGTH,
   PRACTICE_START_MIN,
   PRICE_AMOUNT_MAX,
+  PROFESSIONAL_ROLE_MAX_LENGTH,
   SERVICE_DESCRIPTION_MAX_LENGTH,
   SERVICE_DURATION_MAX,
   SERVICE_TITLE_MAX_LENGTH,
@@ -33,7 +35,14 @@ import {
   SOCIAL_LINKS_MAX,
 } from "../config/limits";
 import { pageThemeIds } from "../config/page-theme";
-import { approachIds, clientTypeIds, clientTypeLabels, workFormatIds } from "../config/practice";
+import {
+  acceptingClientsIds,
+  approachIds,
+  clientTypeIds,
+  clientTypeLabels,
+  priceTypeIds,
+  workFormatIds,
+} from "../config/practice";
 import { profileSectionIds } from "../config/sections";
 import {
   PAGE_PASSWORD_MAX_LENGTH,
@@ -47,6 +56,12 @@ const displayNameSchema = z
   .trim()
   .min(1, "Enter your name")
   .max(DISPLAY_NAME_MAX_LENGTH, `Must be ${DISPLAY_NAME_MAX_LENGTH} characters or fewer`);
+
+/** Роль под именем со слов автора; пустая строка — не указана. */
+const professionalRoleSchema = z
+  .string()
+  .trim()
+  .max(PROFESSIONAL_ROLE_MAX_LENGTH, `Must be ${PROFESSIONAL_ROLE_MAX_LENGTH} characters or fewer`);
 
 const bioSchema = z
   .string()
@@ -131,6 +146,17 @@ const priceAmountSchema = z
     }
   })
   .transform((value) => (value === "" ? "" : String(Number(value))));
+
+const priceTypeSchema = z.enum(priceTypeIds, "Choose a price type");
+
+/** Приём новых клиентов или пустая строка — не указан. */
+const acceptingClientsSchema = z.enum(["", ...acceptingClientsIds], "Choose from the list");
+
+/** Район или ориентир очного приёма: публичный, без точного адреса. */
+const inPersonAreaSchema = z
+  .string()
+  .trim()
+  .max(IN_PERSON_AREA_MAX_LENGTH, `Must be ${IN_PERSON_AREA_MAX_LENGTH} characters or fewer`);
 
 const currencyCodeSet = new Set(currencyCodes);
 
@@ -354,6 +380,7 @@ const pagePasswordSchema = z
 export const profileFieldsSchema = z.object({
   username: usernameSchema,
   displayName: displayNameSchema,
+  professionalRole: professionalRoleSchema,
   bio: bioSchema,
   socialLinks: socialLinksSchema,
   contactEmail: contactEmailSchema,
@@ -364,7 +391,10 @@ export const profileFieldsSchema = z.object({
   approaches: approachesSchema,
   languages: languagesSchema,
   priceAmount: priceAmountSchema,
+  priceType: priceTypeSchema,
   currency: currencySchema,
+  acceptingClients: acceptingClientsSchema,
+  inPersonArea: inPersonAreaSchema,
   sectionOrder: sectionOrderSchema,
   practiceStartedOn: practiceStartedOnSchema,
   education: educationSchema,
@@ -480,18 +510,21 @@ export type ProfileData = z.output<typeof profileInputSchema>;
 
 /**
  * Обновление профиля (`PATCH /api/profile`): передаются только изменённые поля, связанные
- * (`linkedFieldGroups`) — группой.
+ * (`linkedFieldGroups`) — группой, и `expectedVersion` — версия, с которой открыта форма.
  */
 export const profileUpdateSchema = profileFieldsSchema
   .partial()
+  .extend({ expectedVersion: z.int("Reload the page and try again.").positive() })
   .superRefine((data, ctx) => {
     checkFieldGroups(data, ctx);
     checkLinkedFields(data, ctx);
   })
   .transform(normalizeLinkedFields);
 
-export type ProfileUpdateInput = z.input<typeof profileUpdateSchema>;
-export type ProfileUpdateData = z.output<typeof profileUpdateSchema>;
+export type ProfileUpdateRequest = z.input<typeof profileUpdateSchema>;
+/** Изменённые поля без версии. */
+export type ProfileUpdateInput = Omit<ProfileUpdateRequest, "expectedVersion">;
+export type ProfileUpdateData = Omit<z.output<typeof profileUpdateSchema>, "expectedVersion">;
 
 /**
  * JSON-тело `POST /api/profile/avatar`: копия фото из аккаунта провайдера входа. `provider` —

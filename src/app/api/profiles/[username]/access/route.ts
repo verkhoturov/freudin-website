@@ -1,4 +1,10 @@
-import { HttpError, parseJsonBody, withErrorHandling } from "@/app/api/_lib";
+import {
+  enforceRateLimits,
+  getClientIp,
+  HttpError,
+  parseJsonBody,
+  withErrorHandling,
+} from "@/app/api/_lib";
 import {
   pageAccessInputSchema,
   setPageAccessCookie,
@@ -10,12 +16,25 @@ const WRONG_PASSWORD_MESSAGE = "Wrong password";
 
 /**
  * Пароль скрытой страницы: верный — cookie доступа на 30 дней и 204, неверный или страница
- * не защищена паролем — 400. Защиты от перебора нет: это мягкий замок (решение пользователя).
+ * не защищена паролем — 400. Перебор ограничен (шаг 67.4): с одного IP к странице — 10 попыток
+ * за 15 минут, ко всей странице — 100 в час, чтобы не помогала смена IP; дальше — 429.
  */
 export const POST = withErrorHandling(
   async (request, { params }: RouteContext<"/api/profiles/[username]/access">) => {
     const username = (await params).username.trim().toLowerCase();
     const { password } = await parseJsonBody(request, pageAccessInputSchema);
+    await enforceRateLimits(
+      [
+        {
+          scope: "page-password-ip",
+          subject: `${getClientIp(request)} ${username}`,
+          limit: 10,
+          windowSeconds: 15 * 60,
+        },
+        { scope: "page-password", subject: username, limit: 100, windowSeconds: 60 * 60 },
+      ],
+      "password",
+    );
     const token = await unlockProfilePage(createSupabasePublicClient(), username, password);
 
     if (!token) {

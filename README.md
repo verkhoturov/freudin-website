@@ -31,7 +31,9 @@
 - личная страница `https://www.freud.in/<username>` с FAQ, услугами, документами и прямыми
   контактами; страницу можно скрыть ото всех или открыть только по паролю;
 - редактор `/settings` с превью несохранённых правок, порядком и выделением блоков, пресетами
-  оформления и тремя обложками;
+  оформления и тремя обложками; мобильное превью строится при открытии, разделы — при первом посещении;
+- фото из Supabase Storage и миниатюры документов доставляются через `next/image` с вариантами
+  под размер и плотность экрана; исходники сохраняются, полные документы загружаются при открытии;
 - редактирование профиля, выход, удаление аккаунта.
 
 Пример личной страницы — демо-профиль по адресу `/demo`.
@@ -53,7 +55,7 @@
 | БД, авторизация, файлы | Supabase (`@supabase/ssr`, `@supabase/supabase-js`), Supabase CLI (миграции и типы) |
 | UI kit | Storybook 10 (`storybook`, `@storybook/nextjs-vite`, `vite`), dev-зависимость; опубликован на `freudin-storybook.vercel.app` |
 | Линтер и форматтер | Biome |
-| Юнит-тесты | Vitest 4 (`vitest`), dev-зависимость; окружение node, только чистая логика; запускаются локально, CI нет |
+| Юнит-тесты | Vitest 4 (`vitest`), dev-зависимость; окружение node, только чистая логика; запускаются локально и в CI (GitHub Actions) |
 | Хостинг | Vercel, прод на `www.freud.in` |
 
 ## Быстрый старт
@@ -188,8 +190,8 @@ docs/
 | Безопасность | `getSafeRedirectPath` (open redirect), `assertSameOrigin` (CSRF) |
 | Адрес страницы | `usernameSchema`: формат, служебные слова и сегменты роутов из `routes` |
 | Ссылки | `normalizeSocialLinkUrl`, `socialLinkSchema` |
-| Профиль | `profileInputSchema` и `profileUpdateSchema`: связанные поля (город и формат, карточки услуг, запросы, способ связи, пароль скрытой страницы), валюта профиля, даты (обычный и високосный день с фиксированными часами), контакты |
-| Сохранение и превью | `getProfileChanges`, `normalizeSectionOrder`, `toPreviewProfile` (без закрытых данных) |
+| Профиль | `profileInputSchema` и `profileUpdateSchema`: версия формы, связанные поля (город и формат, карточки услуг, запросы, способ связи, пароль скрытой страницы), валюта профиля, даты (обычный и високосный день с фиксированными часами), контакты |
+| Сохранение и превью | `getProfileChanges`, `rebaseProfileDraft` (черновик после сохранения в другой вкладке), `normalizeSectionOrder`, `toPreviewProfile` (без закрытых данных) |
 | Аккаунт | `isAccountDeletionConfirmed`, `canUnlinkSignInMethod` (последний способ входа, отключённый Facebook не в счёт) |
 | Загрузки | `detectImage`: формат по сигнатуре, размеры из заголовка PNG, JPEG и WebP |
 | Подсказки и поиск | `transliterate`, `toSearchKey`, `getProfileSuggestions` |
@@ -242,18 +244,18 @@ docs/
 | POST | `/api/auth/identities` | старт привязки способа входа: `{ provider }` → `{ url }` провайдера; не подключён — 400, уже привязан — 409 | ✓ |
 | DELETE | `/api/auth/identities/[provider]` | отвязка способа входа, ответ — оставшиеся способы; не привязан — 404, последний из подключённых (`enabledAuthProviders`) — 409 | ✓ |
 | POST | `/api/auth/sign-out` | выход; без сессии тоже 204 | ✓ |
-| GET | `/api/me` | текущий пользователь (`email` от провайдера, `contactEmail` — своя почта, если провайдер её не дал, `signInMethods` — привязанные способы входа), его профиль (или `null`), `privateDetails` (дата рождения, пол, запросы — из `profile_private`) и подсказки для онбординга | ✓ |
+| GET | `/api/me` | текущий пользователь (`email` от провайдера, `contactEmail` — своя почта, если провайдер её не дал, `signInMethods` — привязанные способы входа), его профиль (или `null`), `profileVersion` — версия сохранения настроек, `privateDetails` (дата рождения, пол, запросы — из `profile_private`) и подсказки для онбординга | ✓ |
 | DELETE | `/api/me` | удаление аккаунта: тело `{ "username": "…" }` — подтверждение, без совпадения с профилем (пробелы по краям и регистр не важны) 400 с `fields.username`; без профиля подтверждение не нужно (`{}`); фото и документы (из профиля, затем из Storage), пользователь через admin API (профиль — каскадом), cookies сессии; 204 | ✓ |
 | POST | `/api/profile` | создание профиля (онбординг) и контактной почты, если она указана: 201; занятый username — 409 с `fields.username`, профиль уже есть — 409, город не из справочника или не из `country` — 400 с `fields.cityId` | ✓ |
-| PATCH | `/api/profile` | обновление переданных полей профиля; `contactEmail: ""` удаляет контактную почту; `sectionOrder` — порядок блоков страницы; `birthDate`, `gender`, `concerns` пишутся в `profile_private`; связанные поля передаются группой (`linkedFieldGroups`: `country`, `cityId`, `workFormats`; `socialLinks`, `contacts`, `preferredContact`; `clientTypes`, `concerns`, `services`); `currency` — валюта всех цен профиля; `faq`, `services`, `highlightedSections`, `cover`, `pageTheme`, `linkIcons`, `ctaPlacement` — содержимое и оформление страницы, иначе 400; `visibility` и `pagePassword` (4–8 символов, пустой — не менять) — режим скрытой страницы, `password` без заданного пароля — 400 с `fields.pagePassword`; нет профиля — 404, занятый username — 409 | ✓ |
+| PATCH | `/api/profile` | обновление переданных полей профиля одной транзакцией (функция `save_profile`): при любой ошибке не сохраняется ничего. `expectedVersion` — версия из `/api/me`, с которой открыта форма; профиль с тех пор сохранили (другая вкладка) — 409 с кодом `version_conflict`. Ответ — `{ profile, contactEmail, privateDetails, version }`; `contactEmail: ""` удаляет контактную почту; `sectionOrder` — порядок блоков страницы; `birthDate`, `gender`, `concerns` пишутся в `profile_private`; связанные поля передаются группой (`linkedFieldGroups`: `country`, `cityId`, `workFormats`; `socialLinks`, `contacts`, `preferredContact`; `clientTypes`, `concerns`, `services`); `currency` — валюта всех цен профиля; `priceType` (`from` или `fixed`) — цена сессии «от» или фиксированная; `professionalRole` (до 60 символов), `acceptingClients` (`accepting`, `waitlist`, `not-accepting` или пустая строка) и `inPersonArea` (район очного приёма, до 100 символов) — данные практики; `faq`, `services`, `highlightedSections`, `cover`, `pageTheme`, `linkIcons`, `ctaPlacement` — содержимое и оформление страницы, иначе 400; `visibility` и `pagePassword` (4–8 символов, пустой — не менять) — режим скрытой страницы, `password` без заданного пароля — 400 с `fields.pagePassword`; нет профиля — 404, занятый username — 409 | ✓ |
 | POST | `/api/profile/avatar` | новое фото: `multipart/form-data` с полем `file` (JPEG, PNG, WebP до 2 МБ и не больше 1024×1024, иначе 400 или 413) или JSON `{ "source": "provider", "provider"?: "telegram" }` — копия фото привязанного способа входа (без `provider` — первого с фото) | ✓ |
 | DELETE | `/api/profile/avatar` | удаление фото | ✓ |
 | POST | `/api/profile/documents` | документ психолога: `multipart/form-data` с полями `file` (JPEG, PNG, WebP до 2 МБ и 2048×2048), `thumbnail` (превью до 256 КБ и 480×480) и `title` (подпись до 100 символов); 201 с профилем, шестой документ — 409 | ✓ |
 | DELETE | `/api/profile/documents/[id]` | удаление документа, ответ — профиль; нет документа — 404 | ✓ |
 | GET | `/api/cities?country=&q=` | поиск города в стране по началу названия (регистр, диакритика и апострофы не важны, кириллица транслитерируется): до 10 `City`, крупные первыми; ответ кешируется (`s-maxage` сутки) | — |
 | GET | `/api/profiles/[username]` | публичный профиль (регистр не важен), в том числе данные психолога (город — объект `City` из справочника, документы со ссылками), `demo` — демо-профиль из кода; скрытая страница — 403, страница с паролем открывается cookie доступа (ответ `no-store`) | — |
-| POST | `/api/profiles/[username]/access` | пароль скрытой страницы `{ password }`: верный — cookie доступа на 30 дней и 204, неверный — 400 с `fields.password`; защиты от перебора нет (мягкий замок) | — |
-| GET | `/api/usernames/[username]` | `{ username, available }`; неверный формат или зарезервированный адрес — 400. Свой текущий адрес тоже «занят» | — |
+| POST | `/api/profiles/[username]/access` | пароль скрытой страницы `{ password }`: верный — cookie доступа на 30 дней и 204, неверный — 400 с `fields.password`; больше 10 попыток с одного IP к странице за 15 минут или 100 попыток к странице за час — 429 с `Retry-After` и `fields.password` | — |
+| GET | `/api/usernames/[username]` | `{ username, available }`; неверный формат или зарезервированный адрес — 400. Свой текущий адрес тоже «занят». Больше 60 запросов с одного IP за 10 минут — 429 с `Retry-After` | — |
 
 ## SEO
 
@@ -366,6 +368,15 @@ Telegram подключён через OpenID Connect (`custom:telegram`): на 
 Хостинг — Vercel. Каждый коммит в `main` сразу выкладывается в прод на `https://www.freud.in`,
 `freud.in` редиректит туда. Отдельного стенда нет, превью-деплои не используем: вход и интеграции
 проверяем локально, а после мержа — на проде.
+
+CI — GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) на каждый push в
+`main` и pull request: `npm run lint`, `typecheck`, `npm test`, `build` и `build-storybook`.
+Секреты CI не нужны. Деплой Vercel CI не ждёт: блокировать мерж может только защита ветки
+`main` в GitHub.
+
+Все ответы сайта несут заголовки защиты из `next.config.ts`: CSP `frame-ancestors 'none'`
+(сайт нельзя встроить в чужую страницу), `X-Frame-Options`, `X-Content-Type-Options`,
+`Referrer-Policy`, `Permissions-Policy`.
 
 UI kit — отдельный проект Vercel `freudin-storybook` из того же репозитория, адрес
 https://freudin-storybook.vercel.app. Он тоже пересобирается при каждом коммите в `main`:

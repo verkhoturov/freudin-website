@@ -1,8 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { type PublicProfile, profileQueries } from "@/entities/profile";
+import { DEMO_USERNAME, type PublicProfile, profileQueries } from "@/entities/profile";
 import { useViewerQuery } from "@/entities/viewer";
+import { Alert, AlertDescription } from "@/shared/ui/alert";
 import { ProfileCanvas, ProfileCard } from "@/widgets/profile-card";
 
 type ProfileViewProps = {
@@ -21,6 +22,15 @@ export function ProfileView({ profile: renderedProfile }: ProfileViewProps) {
 
   return (
     <ProfileCanvas theme={profile.pageTheme}>
+      {profile.username === DEMO_USERNAME ? (
+        // Психолог вымышленный: страница — пример, а не специалист, к которому можно обратиться
+        <Alert className="mx-auto mb-6 max-w-profile">
+          <AlertDescription>
+            This is an example page. Maria Example is a fictional psychologist, so don’t use these
+            contacts to ask for help.
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <ProfileCard
         profile={profile}
         isOwner={viewer.data?.profile?.username === profile.username}

@@ -3,11 +3,15 @@ import type { PublicProfile } from "../model/types";
 import { DEMO_USERNAME } from "./limits";
 import { profileSectionIds } from "./sections";
 
-/** Демо-профиль для ссылки «Пример страницы»: отдаётся без базы данных. */
+/**
+ * Демо-профиль для ссылки «Пример страницы»: отдаётся без базы данных. Психолог вымышленный
+ * (шаг 95): на странице есть пометка о примере, контакты никуда не ведут.
+ */
 export const demoProfile: PublicProfile = {
   username: DEMO_USERNAME,
-  displayName: "Demo profile",
-  bio: "This is what a psychologist’s page looks like: a photo, name, bio, practice details, education, contacts, links, and documents.",
+  displayName: "Maria Example",
+  professionalRole: "Clinical psychologist",
+  bio: "I help adults and couples with anxiety, burnout, and relationship difficulties. In our first sessions we look at what brings you here and agree on goals. I combine CBT and ACT and give you practical tools to use between sessions. I work online and in person in Tbilisi, in English and Russian.",
   avatarUrl: null,
   socialLinks: [
     { platform: "telegram", url: "https://t.me/telegram", title: "", highlighted: false },
@@ -28,6 +32,9 @@ export const demoProfile: PublicProfile = {
   languages: ["en", "ru", "ka"],
   currency: "USD",
   price: { amount: 60, currency: "USD" },
+  priceType: "from",
+  acceptingClients: "accepting",
+  inPersonArea: "Vake, near Vake Park",
   // Файл лежит в public: у демо-профиля нет записи в Storage
   documents: [
     {
@@ -46,6 +53,11 @@ export const demoProfile: PublicProfile = {
       qualification: "MA in Clinical Psychology",
       institution: "Sample University",
       year: 2015,
+    },
+    {
+      qualification: "Cognitive behavioral therapy, 2-year program",
+      institution: "Sample Institute",
+      year: 2018,
     },
   ],
   // Адрес из зарезервированного домена example.com: письмо никому не уйдёт
@@ -66,7 +78,7 @@ export const demoProfile: PublicProfile = {
     {
       clientType: "individuals",
       title: "Individual session",
-      description: "",
+      description: "For anxiety, stress, and life changes.",
       durationMinutes: 50,
       price: { amount: 60, currency: "USD" },
       highlighted: false,
@@ -78,6 +90,14 @@ export const demoProfile: PublicProfile = {
       durationMinutes: 80,
       price: { amount: 90, currency: "USD" },
       highlighted: true,
+    },
+    {
+      clientType: "individuals",
+      title: "Introductory call",
+      description: "A short call to see whether we’re a good fit.",
+      durationMinutes: 20,
+      price: null,
+      highlighted: false,
     },
   ],
   highlightedSections: ["bio"],

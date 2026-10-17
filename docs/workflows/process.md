@@ -32,7 +32,7 @@ document needs no edit. Read the relevant section, not every project document.
 | A general constraint or working rule | A short constraint and navigation — [`AGENTS.md`](../../AGENTS.md), details — the matching workflow. Do not copy rules into the plan |
 | The user made or revised a decision | [`DECISIONS.md`](../DECISIONS.md): reason, date and author; when revising, the previous meaning and a link to the replacement. Keep the numbers. An agent's proposal is not a decision by itself |
 | Agreed product direction or feature readiness | The matching part of [`PRODUCT.md`](../PRODUCT.md): sections 1–5 only by the owner's decision, readiness — section 6 with the date and basis of the review; mark ideas and open questions separately |
-| A plan task, its conditions or a check result | The stage card and the [`PLAN.md`](../PLAN.md) row; completed items and evidence go to [`plan/history/`](../plan/history/), per [plan-step.md](plan-step.md). Do not rewrite history as current instructions |
+| A plan task, its conditions or a check result | The stage card and the [`PLAN.md`](../PLAN.md) row; completed items and check results go to [`plan/history/`](../plan/history/), raw materials stay in `tmp/`, per [plan-step.md](plan-step.md). Do not rewrite history as current instructions |
 | Personal data processing | The sources of the live `/privacy` and `/terms`, per rule 11. A legal draft is not the published text |
 
 When moving a section, fix its relative links and the incoming links from other documents.

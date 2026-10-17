@@ -1,3 +1,4 @@
+import { cn } from "cn";
 import { Mail, Phone } from "lucide-react";
 import type { ComponentProps } from "react";
 import {
@@ -13,7 +14,6 @@ import {
   type SocialPlatform,
   socialPlatforms,
 } from "@/entities/social-link";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 
 const contactActionLabels = {

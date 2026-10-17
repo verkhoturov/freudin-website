@@ -55,13 +55,30 @@ export function getPracticeDetails(profile: PublicProfile, section: PracticeSect
       return workFormats.length > 0
         ? toSentenceList(workFormats.map((format) => workFormatLabels[format]))
         : null;
-    case "location":
-      if (city) return `${getCityLabel(city)}, ${getCountryName(city.countryCode)}`;
-      return country ? getCountryName(country) : null;
+    case "location": {
+      const place = city
+        ? `${getCityLabel(city)}, ${getCountryName(city.countryCode)}`
+        : country && getCountryName(country);
+      // Район нужен только для очного приёма, а очный приём всегда с городом
+      const area = workFormats.includes("in-person") ? profile.inPersonArea : "";
+      if (!place) return null;
+      return area ? (
+        <>
+          {place}
+          <br />
+          <span className="text-muted-foreground">{area}</span>
+        </>
+      ) : (
+        place
+      );
+    }
     case "languages":
       return languages.length > 0 ? listFormat.format(languages.map(getLanguageName)) : null;
     case "price": {
-      if (price) return `From ${formatPrice(price)} per session`;
+      if (price) {
+        const amount = `${formatPrice(price)} per session`;
+        return profile.priceType === "fixed" ? amount : `From ${amount}`;
+      }
       // Общей цены нет — самая низкая цена услуг: стоимость видна до карточек услуг
       const servicePrices = profile.services.flatMap((service) =>
         service.price ? [service.price] : [],

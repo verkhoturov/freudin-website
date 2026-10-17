@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProfileInput } from "../model/schemas";
-import { getEmptySettingsInput, getProfileChanges } from "./profile-changes";
+import { getEmptySettingsInput, getProfileChanges, rebaseProfileDraft } from "./profile-changes";
 
 // Сохранённые значения — как их отдаёт toProfileInput: уже нормализованные
 const saved: ProfileInput = {
@@ -58,5 +58,23 @@ describe("getProfileChanges", () => {
   it("неверные данные отправляет целиком, чтобы сервер ответил ошибками по полям", () => {
     const input = { ...saved, username: "ab" };
     expect(getProfileChanges(saved, input)).toBe(input);
+  });
+});
+
+describe("rebaseProfileDraft", () => {
+  // Другая вкладка сохранила цену 200; в этой форма открыта с ценой 150, правят только Bio
+  const latest: ProfileInput = { ...saved, priceAmount: "200", concerns: ["anxiety"] };
+  const base: ProfileInput = { ...saved, priceAmount: "150" };
+
+  it("неизменённые поля берёт из свежих данных: старая цена не уходит как правка", () => {
+    const draft = rebaseProfileDraft(base, { ...base, bio: "Hi" }, latest);
+    expect(draft).toEqual({ ...latest, bio: "Hi" });
+    expect(getProfileChanges(latest, draft)).toEqual({ bio: "Hi" });
+  });
+
+  it("изменённые в этой вкладке поля оставляет из черновика", () => {
+    const draft = rebaseProfileDraft(base, { ...base, priceAmount: "180" }, latest);
+    expect(draft.priceAmount).toBe("180");
+    expect(draft.concerns).toEqual(["anxiety"]);
   });
 });

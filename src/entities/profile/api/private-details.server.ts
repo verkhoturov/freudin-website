@@ -37,20 +37,25 @@ export async function getPrivateDetails(
 
 type PrivateDetailsData = Pick<ProfileUpdateData, "birthDate" | "gender" | "concerns">;
 
+/** Переданные поля после zod-схем колонками `profile_private`; пустая строка — значение стёрто. */
+export function toPrivateDetailsRow(data: PrivateDetailsData) {
+  return {
+    birth_date: data.birthDate === undefined ? undefined : data.birthDate || null,
+    gender: data.gender === undefined ? undefined : data.gender || null,
+    concerns: data.concerns,
+  };
+}
+
 /**
- * Сохраняет переданные поля после zod-схем; пустая строка — значение стёрто. Повторная запись
- * безопасна, поэтому, как контактную почту, её делаем до профиля.
+ * Сохраняет переданные поля на онбординге. Повторная запись безопасна, поэтому, как контактную
+ * почту, её делаем до профиля.
  */
 export async function setPrivateDetails(
   supabase: SupabaseClient,
   userId: string,
   data: PrivateDetailsData,
 ): Promise<void> {
-  const row = {
-    birth_date: data.birthDate === undefined ? undefined : data.birthDate || null,
-    gender: data.gender === undefined ? undefined : data.gender || null,
-    concerns: data.concerns,
-  };
+  const row = toPrivateDetailsRow(data);
   if (Object.values(row).every((value) => value === undefined)) return;
 
   // Upsert меняет только переданные колонки: undefined в JSON не попадает

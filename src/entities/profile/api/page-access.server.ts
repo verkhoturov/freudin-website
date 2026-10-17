@@ -41,31 +41,6 @@ export async function getProfileVisibility(
   return data ? (pickKnown([data], visibilityIds)[0] ?? null) : null;
 }
 
-export type SetProfileVisibilityResult =
-  | { ok: true }
-  | { ok: false; reason: "page_password_required" };
-
-/**
- * Режим страницы текущего пользователя и новый пароль (пустая строка — пароль не меняется).
- * Новый пароль или смена режима отзывают доступ, выданный гостям раньше.
- */
-export async function setProfileVisibility(
-  supabase: SupabaseClient,
-  visibility: ProfileVisibility,
-  password: string | undefined,
-): Promise<SetProfileVisibilityResult> {
-  const { error } = await supabase.rpc("set_profile_visibility", {
-    p_visibility: visibility,
-    p_password: password || undefined,
-  });
-  if (!error) return { ok: true };
-  // Режим password без заданного пароля: исключение из функции базы
-  if (error.message === "page_password_required") {
-    return { ok: false, reason: "page_password_required" };
-  }
-  throw error;
-}
-
 /** Токен доступа к странице с паролем, если пароль верный, иначе `null`. */
 export async function unlockProfilePage(
   supabase: SupabaseClient,

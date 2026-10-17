@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { cn } from "cn";
 import type { ReactNode } from "react";
-import { cn } from "@/shared/lib/utils";
 
 const meta = {
   title: "Foundations/Tokens",

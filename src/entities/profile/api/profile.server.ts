@@ -11,7 +11,13 @@ import { demoProfile } from "../config/demo-profile";
 import { languageCodes } from "../config/languages";
 import { DEMO_USERNAME, USERNAME_MAX_LENGTH } from "../config/limits";
 import { pageThemeIds } from "../config/page-theme";
-import { approachIds, clientTypeIds, workFormatIds } from "../config/practice";
+import {
+  acceptingClientsIds,
+  approachIds,
+  clientTypeIds,
+  priceTypeIds,
+  workFormatIds,
+} from "../config/practice";
 import { profileSectionIds } from "../config/sections";
 import { AVATARS_BUCKET, DOCUMENTS_BUCKET } from "../config/storage";
 import { visibilityIds } from "../config/visibility";
@@ -27,14 +33,18 @@ import {
   storedFaqItemSchema,
   storedServiceSchema,
 } from "../model/schemas";
-import type { ProfileContacts, PublicProfile } from "../model/types";
-import { setContactEmail } from "./contact-email.server";
-import { getProfileVisibility, setProfileVisibility } from "./page-access.server";
-import { setPrivateDetails } from "./private-details.server";
+import type { ProfileContacts, PublicProfile, SavedProfile } from "../model/types";
+import { getContactEmail, setContactEmail } from "./contact-email.server";
+import { getProfileVisibility } from "./page-access.server";
+import {
+  getPrivateDetails,
+  setPrivateDetails,
+  toPrivateDetailsRow,
+} from "./private-details.server";
 
 /** Колонки публичной страницы. Гостю (`anon`) миграциями открыты только они. */
 export const PUBLIC_PROFILE_COLUMNS =
-  `username, display_name, bio, avatar_path, social_links, country, work_formats, client_types, approaches, languages, price_amount, price_currency, documents, section_order, practice_started_on, education, contacts, preferred_contact, faq, services, highlighted_sections, cover, page_theme, link_icons, cta_placement, visibility, city:cities(${CITY_COLUMNS})` as const;
+  `username, display_name, professional_role, bio, avatar_path, social_links, country, work_formats, client_types, approaches, languages, price_amount, price_currency, documents, section_order, practice_started_on, education, contacts, preferred_contact, faq, services, highlighted_sections, cover, page_theme, link_icons, cta_placement, visibility, price_type, accepting_clients, in_person_area, city:cities(${CITY_COLUMNS})` as const;
 
 // Коды Postgres для нарушения уникальности и внешнего ключа и имена ограничений из миграций
 const UNIQUE_VIOLATION = "23505";
@@ -46,6 +56,7 @@ type PublicProfileRow = Pick<
   Tables<"profiles">,
   | "username"
   | "display_name"
+  | "professional_role"
   | "bio"
   | "avatar_path"
   | "social_links"
@@ -70,6 +81,9 @@ type PublicProfileRow = Pick<
   | "link_icons"
   | "cta_placement"
   | "visibility"
+  | "price_type"
+  | "accepting_clients"
+  | "in_person_area"
 > & { city: CityRow | null };
 
 type PostgrestErrorLike = { code: string; message: string };
@@ -136,6 +150,7 @@ export function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow)
   return {
     username: row.username,
     displayName: row.display_name,
+    professionalRole: row.professional_role,
     bio: row.bio,
     avatarUrl: row.avatar_path
       ? supabase.storage.from(AVATARS_BUCKET).getPublicUrl(row.avatar_path).data.publicUrl
@@ -149,6 +164,9 @@ export function toPublicProfile(supabase: SupabaseClient, row: PublicProfileRow)
     languages: row.languages.filter((code) => languageCodeSet.has(code)),
     currency,
     price: row.price_amount === null ? null : { amount: row.price_amount, currency },
+    priceType: pickKnown([row.price_type], priceTypeIds)[0] ?? "from",
+    acceptingClients: pickKnown([row.accepting_clients ?? ""], acceptingClientsIds)[0] ?? null,
+    inPersonArea: row.in_person_area,
     documents: parseStoredDocuments(row.documents).map((document) => ({
       id: document.id,
       url: documentsBucket.getPublicUrl(document.path).data.publicUrl,
@@ -180,6 +198,7 @@ function toProfileRow(data: ProfileUpdateData): TablesUpdate<"profiles"> {
   return {
     username: data.username,
     display_name: data.displayName,
+    professional_role: data.professionalRole,
     bio: data.bio,
     social_links: data.socialLinks,
     country: data.country === undefined ? undefined : data.country || null,
@@ -194,8 +213,12 @@ function toProfileRow(data: ProfileUpdateData): TablesUpdate<"profiles"> {
         : data.priceAmount
           ? Number(data.priceAmount)
           : null,
+    price_type: data.priceType,
     // Колонка с прежним именем — валюта всех цен профиля (шаг 54)
     price_currency: data.currency,
+    accepting_clients:
+      data.acceptingClients === undefined ? undefined : data.acceptingClients || null,
+    in_person_area: data.inPersonArea,
     section_order: data.sectionOrder,
     practice_started_on:
       data.practiceStartedOn === undefined ? undefined : data.practiceStartedOn || null,
@@ -317,45 +340,64 @@ export async function createProfile(
 }
 
 export type UpdateProfileResult =
-  | { ok: true; profile: PublicProfile }
+  | { ok: true; saved: SavedProfile }
   | {
       ok: false;
-      reason: "username_taken" | "profile_missing" | "city_invalid" | "page_password_required";
+      reason:
+        | "username_taken"
+        | "profile_missing"
+        | "city_invalid"
+        | "page_password_required"
+        | "version_conflict";
     };
 
+// Ошибки, которые функция save_profile поднимает сама
+const SAVE_PROFILE_ERRORS = [
+  "profile_missing",
+  "page_password_required",
+  "version_conflict",
+] as const;
+
+/** Версия сохранения настроек (шаг 66) или `null`, если профиля ещё нет. */
+export async function getProfileVersion(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<number | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("version")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.version ?? null;
+}
+
 /**
- * Обновляет переданные поля профиля пользователя, а также контактную почту, закрытые данные
- * (`profile_private`) и режим страницы с паролем, если они переданы.
+ * Обновляет переданные поля профиля, контактную почту, закрытые данные (`profile_private`)
+ * и режим страницы с паролем одной транзакцией (`save_profile`): ошибка любой части не
+ * применяет ничего. `expectedVersion` — версия, с которой открыта форма: если профиль с тех
+ * пор сохранили в другой вкладке, ответ — `version_conflict`.
  */
 export async function updateProfile(
   supabase: SupabaseClient,
   userId: string,
   data: ProfileUpdateData,
+  expectedVersion: number,
 ): Promise<UpdateProfileResult> {
-  if (data.contactEmail !== undefined) await setContactEmail(supabase, userId, data.contactEmail);
-  await setPrivateDetails(supabase, userId, data);
-  if (data.visibility !== undefined) {
-    const result = await setProfileVisibility(supabase, data.visibility, data.pagePassword);
-    if (!result.ok) return result;
-  }
-
-  const changes = toProfileRow(data);
-  const hasChanges = Object.values(changes).some((value) => value !== undefined);
-
-  // Пустое обновление PostgREST не принимает: просто возвращаем текущий профиль
-  if (!hasChanges) {
-    const profile = await getProfileByUserId(supabase, userId);
-    return profile ? { ok: true, profile } : { ok: false, reason: "profile_missing" };
-  }
-
-  const { data: row, error } = await supabase
-    .from("profiles")
-    .update(changes)
-    .eq("id", userId)
-    .select(PUBLIC_PROFILE_COLUMNS)
-    .maybeSingle();
+  // undefined в JSON не попадает: функция меняет только переданные колонки
+  const { data: version, error } = await supabase.rpc("save_profile", {
+    p_changes: toProfileRow(data),
+    p_contact_email: data.contactEmail,
+    p_private: toPrivateDetailsRow(data),
+    p_visibility: data.visibility,
+    // Пустой пароль — пароль не меняется
+    p_password: data.pagePassword || undefined,
+    p_expected_version: expectedVersion,
+  });
 
   if (error) {
+    const reason = SAVE_PROFILE_ERRORS.find((code) => error.message === code);
+    if (reason) return { ok: false, reason };
     if (isViolation(error, UNIQUE_VIOLATION, USERNAME_UNIQUE_CONSTRAINT)) {
       return { ok: false, reason: "username_taken" };
     }
@@ -365,6 +407,12 @@ export async function updateProfile(
     }
     throw error;
   }
-  if (!row) return { ok: false, reason: "profile_missing" };
-  return { ok: true, profile: toPublicProfile(supabase, row) };
+
+  const [profile, contactEmail, privateDetails] = await Promise.all([
+    getProfileByUserId(supabase, userId),
+    getContactEmail(supabase, userId),
+    getPrivateDetails(supabase, userId),
+  ]);
+  if (!profile) return { ok: false, reason: "profile_missing" };
+  return { ok: true, saved: { profile, contactEmail, privateDetails, version } };
 }

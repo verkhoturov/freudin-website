@@ -1,6 +1,6 @@
+import { cn } from "cn";
 import { ChevronRightIcon } from "lucide-react";
 import type { ComponentProps } from "react";
-import { cn } from "@/shared/lib/utils";
 
 type DisclosureButtonProps = Omit<ComponentProps<"button">, "type"> & {
   expanded: boolean;

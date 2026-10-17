@@ -52,6 +52,7 @@ export function toPreviewProfile(input: ProfileInput, extras: PreviewExtras): Pu
   return {
     username: input.username.trim().toLowerCase(),
     displayName: input.displayName.trim(),
+    professionalRole: parseOr(fields.professionalRole, input.professionalRole, ""),
     bio: input.bio.trim(),
     avatarUrl: extras.avatarUrl,
     socialLinks,
@@ -63,6 +64,9 @@ export function toPreviewProfile(input: ProfileInput, extras: PreviewExtras): Pu
     languages: parseOr(fields.languages, input.languages, []),
     currency,
     price: priceAmount ? { amount: Number(priceAmount), currency } : null,
+    priceType: parseOr(fields.priceType, input.priceType, "from"),
+    acceptingClients: parseOr(fields.acceptingClients, input.acceptingClients, "") || null,
+    inPersonArea: parseOr(fields.inPersonArea, input.inPersonArea, ""),
     documents: [],
     sectionOrder: normalizeSectionOrder(input.sectionOrder),
     practiceStartedOn: parseOr(fields.practiceStartedOn, input.practiceStartedOn, "") || null,

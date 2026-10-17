@@ -3,6 +3,7 @@ export { useLinkIdentityMutation, useUnlinkIdentityMutation } from "./api/use-id
 export {
   type CreateProfileResult,
   type CreateProfileVariables,
+  type UpdateProfileVariables,
   type UploadDocumentVariables,
   useCreateProfileMutation,
   useDeleteAvatarMutation,

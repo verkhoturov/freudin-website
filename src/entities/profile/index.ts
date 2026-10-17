@@ -31,10 +31,12 @@ export {
   FAQ_ANSWER_MAX_LENGTH,
   FAQ_MAX,
   FAQ_QUESTION_MAX_LENGTH,
+  IN_PERSON_AREA_MAX_LENGTH,
   LANGUAGES_MAX,
   MIN_AGE,
   PHONE_MAX_LENGTH,
   PRICE_AMOUNT_MAX,
+  PROFESSIONAL_ROLE_MAX_LENGTH,
   SERVICE_DESCRIPTION_MAX_LENGTH,
   SERVICE_DURATION_MAX,
   SERVICE_TITLE_MAX_LENGTH,
@@ -44,12 +46,16 @@ export {
 } from "./config/limits";
 export { type PageTheme, pageThemeIds, pageThemeLabels } from "./config/page-theme";
 export {
+  type AcceptingClients,
   type Approach,
+  acceptingClientsIds,
+  acceptingClientsLabels,
   approachIds,
   approachLabels,
   type ClientType,
   clientTypeIds,
   clientTypeLabels,
+  type PriceType,
   type WorkFormat,
   workFormatIds,
   workFormatLabels,
@@ -81,7 +87,12 @@ export {
   getLanguageName,
 } from "./lib/display-names";
 export { toPreviewProfile } from "./lib/preview-profile";
-export { getEmptySettingsInput, getProfileChanges, toProfileInput } from "./lib/profile-changes";
+export {
+  getEmptySettingsInput,
+  getProfileChanges,
+  rebaseProfileDraft,
+  toProfileInput,
+} from "./lib/profile-changes";
 export { normalizeSectionOrder } from "./lib/section-order";
 export {
   contactsSchema,
@@ -103,6 +114,7 @@ export type {
   ProfilePrice,
   ProfileService,
   PublicProfile,
+  SavedProfile,
   UsernameAvailability,
 } from "./model/types";
 export { usernameSchema } from "./model/username";

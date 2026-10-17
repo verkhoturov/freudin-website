@@ -8,14 +8,18 @@ export function jsonOk<T>(data: T, init?: ResponseInit): Response {
   return Response.json(data, init);
 }
 
-function jsonError(status: number, error: ApiErrorBody["error"]): Response {
-  return Response.json({ error } satisfies ApiErrorBody, { status });
+function jsonError(
+  status: number,
+  error: ApiErrorBody["error"],
+  headers?: Record<string, string>,
+): Response {
+  return Response.json({ error } satisfies ApiErrorBody, { status, headers });
 }
 
 export function errorResponse(error: unknown): Response {
   if (error instanceof HttpError) {
-    const { status, code, message, fields } = error;
-    return jsonError(status, { code, message, fields });
+    const { status, code, message, fields, headers } = error;
+    return jsonError(status, { code, message, fields }, headers);
   }
 
   console.error(error);

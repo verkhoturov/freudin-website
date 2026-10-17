@@ -26,6 +26,10 @@ These are required rules from [`AGENTS.md`](../../AGENTS.md); the process is in 
   [access flow](../architecture/dynamic.md#hidden-page)). The password is stored in plain
   text (decision 24) and visible only to the owner. New code that reads other users' profiles
   (search, sitemap) must not expose hidden ones.
+- Settings are saved only through the `save_profile` function: one transaction for the
+  `profiles` columns, contact email, private data, mode and password, with a check and
+  increment of `profiles.version`. A new editable column goes into its column list
+  (a new migration) and into `toProfileRow`. Photos and documents do not change `version`.
 - `anon` reads only the public page columns of `profiles` (`PUBLIC_PROFILE_COLUMNS`): a guest's
   `select *` or `select("id")` gets `permission denied`. Add a new public column both to
   `PUBLIC_PROFILE_COLUMNS` and, through a migration, to `grant select (…) … to anon`. Do not

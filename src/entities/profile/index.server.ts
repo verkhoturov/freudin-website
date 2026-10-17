@@ -22,6 +22,7 @@ export {
   createProfile,
   getProfileByUserId,
   getProfileByUsername,
+  getProfileVersion,
   isUsernameAvailable,
   type UpdateProfileResult,
   updateProfile,
@@ -50,6 +51,7 @@ export {
 export type {
   PrivateProfileDetails,
   PublicProfile,
+  SavedProfile,
   UsernameAvailability,
 } from "./model/types";
 export { usernameSchema } from "./model/username";

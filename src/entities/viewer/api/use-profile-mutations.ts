@@ -4,9 +4,11 @@ import {
   type PrivateProfileDetails,
   type ProfileInput,
   type ProfileUpdateInput,
+  type ProfileUpdateRequest,
   type ProviderAvatarRequest,
   type PublicProfile,
   profileQueries,
+  type SavedProfile,
   usernameQueries,
 } from "@/entities/profile/@x/viewer";
 import { ApiError, apiClient } from "@/shared/api";
@@ -96,6 +98,10 @@ export function useCreateProfileMutation() {
     onSuccess: ({ profile }, variables) => {
       syncContactEmailCache(queryClient, variables.profile.contactEmail || undefined);
       syncPrivateDetailsCache(queryClient, variables.profile);
+      // Новый профиль начинается с версии 1 (значение колонки по умолчанию)
+      queryClient.setQueryData(viewerQueries.me().queryKey, (viewer) =>
+        viewer ? { ...viewer, profileVersion: 1 } : viewer,
+      );
       syncProfileCache(queryClient, profile);
     },
     onError: (error) => {
@@ -110,15 +116,36 @@ export function useCreateProfileMutation() {
   });
 }
 
-/** Обновление профиля: передаются только изменённые поля. Ошибки — как при создании. */
+export type UpdateProfileVariables = {
+  /** Только изменённые поля (`getProfileChanges`). */
+  changes: ProfileUpdateInput;
+  /** Версия, с которой открыта форма (`Viewer.profileVersion`). */
+  expectedVersion: number;
+};
+
+/**
+ * Обновление профиля. Ошибки — как при создании; профиль сохранили после открытия формы
+ * (другая вкладка) — `ApiError` 409 с кодом `version_conflict`, ничего не сохранено.
+ */
 export function useUpdateProfileMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: ProfileUpdateInput) =>
-      apiClient.patch<PublicProfile>(apiRoutes.profile, input),
-    onSuccess: (profile, input) => {
-      syncContactEmailCache(queryClient, input.contactEmail);
-      syncPrivateDetailsCache(queryClient, input);
+    mutationFn: ({ changes, expectedVersion }: UpdateProfileVariables) =>
+      apiClient.patch<SavedProfile>(apiRoutes.profile, {
+        ...changes,
+        expectedVersion,
+      } satisfies ProfileUpdateRequest),
+    onSuccess: ({ profile, contactEmail, privateDetails, version }) => {
+      queryClient.setQueryData(viewerQueries.me().queryKey, (viewer) =>
+        viewer
+          ? {
+              ...viewer,
+              user: { ...viewer.user, contactEmail },
+              privateDetails,
+              profileVersion: version,
+            }
+          : viewer,
+      );
       syncProfileCache(queryClient, profile);
     },
   });

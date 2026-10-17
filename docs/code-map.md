@@ -22,6 +22,8 @@ reading; cross-slice imports still go only through the public API, see the [rule
 | Countries, cities and directory search | [location](#entities-location); search key — [transliterate.ts](../src/shared/lib/transliterate.ts) |
 | Cover, theme, block order and Highlight | [profile-form](#widgets-profile-form), [profile-card](#widgets-profile-card), [UI and tokens](#shared-ui) |
 | API errors, session and HTTP validation | [api/_lib](../src/app/api/_lib/index.ts), [shared/api](#shared-api); [API flow](architecture/dynamic.md#request-from-the-browser-to-the-api) |
+| Rate limits (429) | [rate-limit.ts](../src/app/api/_lib/rate-limit.ts), counters — migration `*_add_rate_limits.sql`; [hidden page flow](architecture/dynamic.md#hidden-page) |
+| Security headers and CI | [next.config.ts](../next.config.ts), [ci.yml](../.github/workflows/ci.yml) |
 | Route, env, operator details and site address | [shared/config](#shared-config), [README routes](../README.md#роуты) |
 
 ## Code layers
@@ -133,7 +135,9 @@ the same job.
 - **Access and files:** [visitor-profile.server.ts](../src/entities/profile/api/visitor-profile.server.ts),
   [page-access.server.ts](../src/entities/profile/api/page-access.server.ts),
   [avatar.server.ts](../src/entities/profile/api/avatar.server.ts),
-  [document.server.ts](../src/entities/profile/api/document.server.ts).
+  [document.server.ts](../src/entities/profile/api/document.server.ts). Avatar rendering —
+  [profile-avatar.tsx](../src/entities/profile/ui/profile-avatar.tsx): server-visible image,
+  responsive Storage variants through Next.js; provider URLs and local blobs stay direct.
 - **Boundary:** `PUBLIC_PROFILE_COLUMNS` limits guest reads. Private data and the password do
   not reach the preview; the view adds documents to it separately. PATCH groups are defined by
   `linkedFieldGroups` in the schemas; DB rules — [database.md](workflows/database.md). The
@@ -293,8 +297,10 @@ routes and access — in the [README](../README.md#страницы), SSR rules 
 <a id="views-settings"></a>
 
 - **settings:** [settings-view.tsx](../src/views/settings/ui/settings-view.tsx) — assembles the
-  editor, saving and syncing the form's initial values. The section is `?section=`; `key`
-  recreates the form only after Save. Collapsing —
+  editor, saving, the form's base snapshot (saved values and version) and the
+  `version_conflict` recovery. The section is `?section=`; `key` recreates the form only after
+  Save or a version conflict. Sections mount on first visit and stay mounted;
+  the preview subscribes to form values only while visible (container width or Preview). Collapsing —
   [collapsed-blocks-store.ts](../src/views/settings/model/collapsed-blocks-store.ts),
   localStorage per user. View my page stays in the sidebar for every section and uses the
   saved username. Unsaved edits left with the browser Back button —
@@ -369,7 +375,7 @@ routes and access — in the [README](../README.md#страницы), SSR rules 
 #### shared/lib
 
 - **Area:** utilities without business logic; there is no shared barrel API, import by file.
-- **Look in:** [cn](../src/shared/lib/utils.ts), [cva](../src/shared/lib/cva.ts),
+- **Look in:** [cva](../src/shared/lib/cva.ts),
   [safe redirect](../src/shared/lib/safe-redirect.ts),
   [form errors](../src/shared/lib/field-errors.ts),
   [crop](../src/shared/lib/crop-image.ts), [canvas](../src/shared/lib/canvas-image.ts),

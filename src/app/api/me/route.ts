@@ -11,6 +11,7 @@ import {
   getPrivateDetails,
   getProfileByUserId,
   getProfileSuggestions,
+  getProfileVersion,
   removeUserAvatarFiles,
   removeUserDocumentFiles,
 } from "@/entities/profile/index.server";
@@ -27,8 +28,9 @@ import { createSupabaseAdminClient } from "@/shared/api/index.server";
 export const GET = withErrorHandling(async () => {
   const { supabase, claims } = await requireUser();
   const email = claims.email || null;
-  const [profile, contactEmail, privateDetails, identities] = await Promise.all([
+  const [profile, profileVersion, contactEmail, privateDetails, identities] = await Promise.all([
     getProfileByUserId(supabase, claims.sub),
+    getProfileVersion(supabase, claims.sub),
     getContactEmail(supabase, claims.sub),
     getPrivateDetails(supabase, claims.sub),
     getLinkedIdentities(supabase),
@@ -43,6 +45,7 @@ export const GET = withErrorHandling(async () => {
         signInMethods: identities.map(toSignInMethod),
       },
       profile,
+      profileVersion,
       privateDetails,
       suggestions: getProfileSuggestions(claims.user_metadata, email),
     },

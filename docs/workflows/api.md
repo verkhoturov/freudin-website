@@ -52,7 +52,13 @@ How it works — [containers](../architecture/2.containers.md) and
   cookies. Then work through this `supabase` (RLS applies). Public routes without a session read
   data through `createSupabasePublicClient()` (the `anon` role, no cookies).
   `createSupabaseAdminClient()` bypasses RLS, so it is only for service operations such as
-  account deletion.
+  account deletion and rate limit counters.
+- Limit guessing-prone public routes with `enforceRateLimits(rules, field?)` from
+  `@/app/api/_lib`: counters live in the database (`consume_rate_limit`), shared by all server
+  instances, keyed by a scope and an HMAC of the subject (`getClientIp(request)`, a page
+  address); a cookie is never the only protection. Over the limit it throws 429
+  `too_many_requests` with `Retry-After`, and with `field` the message also goes to that form
+  field.
 - Entity server functions take a `SupabaseClient` from `@/shared/api/index.server` and do not
   throw `HttpError` (the `app` layer is out of their reach). An expected outcome such as a taken
   username is returned as `{ ok: false, reason }`, and the route turns it into a status code.
@@ -76,8 +82,9 @@ How it works — [containers](../architecture/2.containers.md) and
   methods are read by `getLinkedIdentities` through `auth.getUser()`: identities are not in the JWT.
 - API error format: `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }`
   plus the right HTTP status. Codes: `bad_request` and `validation_error` (400), `unauthorized`
-  (401), `forbidden` (403), `not_found` (404), `conflict` (409), `payload_too_large` (413),
-  `internal_error` (500). On the client `ApiError` also has `network_error` (status 0: no
+  (401), `forbidden` (403), `not_found` (404), `conflict` (409), `version_conflict` (409: the
+  profile was saved after the form opened), `payload_too_large` (413), `too_many_requests`
+  (429), `internal_error` (500). On the client `ApiError` also has `network_error` (status 0: no
   network or no response for over 30 s, file uploads 120 s) and `unexpected_response`. Write
   `message` for the user, in English.
 - Server code imports only types from `@/shared/api` (`import type`): the module is

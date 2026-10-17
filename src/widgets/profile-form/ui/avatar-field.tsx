@@ -78,7 +78,7 @@ export function AvatarField({
     <FieldSet id="photo">
       <FieldLegend variant="label">Photo</FieldLegend>
       <div className="flex items-center gap-4">
-        <ProfileAvatar displayName={displayName} avatarUrl={previewUrl} />
+        <ProfileAvatar displayName={displayName} avatarUrl={previewUrl} highPriority />
         <div className="flex flex-col items-start gap-1">
           <Button
             type="button"

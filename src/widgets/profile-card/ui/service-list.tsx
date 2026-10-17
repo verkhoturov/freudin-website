@@ -1,5 +1,5 @@
+import { cn } from "cn";
 import { clientTypeLabels, formatPrice, type ProfileService } from "@/entities/profile";
-import { cn } from "@/shared/lib/utils";
 
 type ServiceListProps = {
   services: ProfileService[];

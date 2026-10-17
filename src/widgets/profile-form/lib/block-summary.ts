@@ -47,7 +47,10 @@ export function getBlockSummary(
     case "languages":
       return list(profile.languages.map(getLanguageName));
     case "price":
-      return profile.price ? `From ${formatPrice(profile.price)}` : NOT_FILLED;
+      if (!profile.price) return NOT_FILLED;
+      return profile.priceType === "fixed"
+        ? formatPrice(profile.price)
+        : `From ${formatPrice(profile.price)}`;
     case "education":
       return list(profile.education.map((entry) => entry.qualification));
     case "contacts":

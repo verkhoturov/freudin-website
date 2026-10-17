@@ -16,6 +16,7 @@ export const approachIds = [
   "person-centered",
   "systemic-family",
   "emotion-focused",
+  "dbt",
 ] as const;
 
 export type Approach = (typeof approachIds)[number];
@@ -31,6 +32,7 @@ export const approachLabels: Record<Approach, string> = {
   "person-centered": "Person-centered therapy",
   "systemic-family": "Systemic family therapy",
   "emotion-focused": "Emotion-focused therapy (EFT)",
+  dbt: "Dialectical behavior therapy (DBT)",
 };
 
 /** С кем работает психолог. */
@@ -54,4 +56,20 @@ export type WorkFormat = (typeof workFormatIds)[number];
 export const workFormatLabels: Record<WorkFormat, string> = {
   online: "Online",
   "in-person": "In person",
+};
+
+/** Общая цена сессии: «от» (прежнее значение) или фиксированная. */
+export const priceTypeIds = ["from", "fixed"] as const;
+
+export type PriceType = (typeof priceTypeIds)[number];
+
+/** Приём новых клиентов, как его заявил психолог. Не указан — на странице ничего нет. */
+export const acceptingClientsIds = ["accepting", "waitlist", "not-accepting"] as const;
+
+export type AcceptingClients = (typeof acceptingClientsIds)[number];
+
+export const acceptingClientsLabels: Record<AcceptingClients, string> = {
+  accepting: "Accepting new clients",
+  waitlist: "Waitlist for new clients",
+  "not-accepting": "Not accepting new clients",
 };

@@ -1,6 +1,9 @@
 export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 30;
 export const DISPLAY_NAME_MAX_LENGTH = 60;
+/** Роль под именем и район очного приёма: CHECK миграции add_practice_details. */
+export const PROFESSIONAL_ROLE_MAX_LENGTH = 60;
+export const IN_PERSON_AREA_MAX_LENGTH = 100;
 export const BIO_MAX_LENGTH = 500;
 export const SOCIAL_LINKS_MAX = 10;
 /** Контактная почта: предел длины адреса по RFC 5321. */

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { DOCUMENTS_MAX, type ProfileDocument } from "@/entities/profile";
 import { AddDocumentDialog } from "./add-document-dialog";
 import { DeleteDocumentButton } from "./delete-document-button";
@@ -27,12 +28,12 @@ export function ProfileDocuments({ documents }: ProfileDocumentsProps) {
           {documents.map((profileDocument) => (
             <li key={profileDocument.id} className="flex items-center gap-3">
               {/* Подпись стоит рядом, поэтому alt пустой: иначе скринридер прочтёт её дважды */}
-              {/* biome-ignore lint/performance/noImgElement: файл из Supabase Storage, next/image для него не настроен */}
-              <img
+              <Image
                 src={profileDocument.thumbnailUrl}
                 alt=""
                 width={profileDocument.width}
                 height={profileDocument.height}
+                sizes="64px"
                 loading="lazy"
                 className="size-16 shrink-0 rounded-md border bg-muted object-contain"
               />

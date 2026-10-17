@@ -9,6 +9,7 @@ import { ProfileCard } from "./profile-card";
 const fullProfile: PublicProfile = {
   username: "anna",
   displayName: "Anna Smith",
+  professionalRole: "Clinical psychologist",
   bio: "I help adults and couples cope with anxiety, burnout, and relationship difficulties.",
   avatarUrl: null,
   socialLinks: [
@@ -28,6 +29,9 @@ const fullProfile: PublicProfile = {
   approaches: ["cbt", "act"],
   languages: ["en", "ru"],
   currency: "USD",
+  priceType: "from",
+  acceptingClients: "accepting",
+  inPersonArea: "Vake",
   price: { amount: 60, currency: "USD" },
   documents: [
     {

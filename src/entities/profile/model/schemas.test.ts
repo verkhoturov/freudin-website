@@ -160,6 +160,19 @@ describe("profileInputSchema", () => {
     });
   });
 
+  it("роль и район — до 60 и 100 символов, статус приёма — из справочника или пустой", () => {
+    expect(
+      issuePaths(input({ professionalRole: "x".repeat(60), inPersonArea: "x".repeat(100) })),
+    ).toEqual([]);
+    expect(
+      issuePaths(input({ professionalRole: "x".repeat(61), inPersonArea: "x".repeat(101) })),
+    ).toEqual(["professionalRole", "inPersonArea"]);
+    expect(issuePaths(input({ acceptingClients: "" }))).toEqual([]);
+    expect(issuePaths(input({ priceType: "fixed", acceptingClients: "not-accepting" }))).toEqual(
+      [],
+    );
+  });
+
   it("ссылки не повторяются даже в разной записи", () => {
     const socialLinks = [
       { platform: "telegram", url: "@anna", title: "", highlighted: false },
@@ -170,34 +183,39 @@ describe("profileInputSchema", () => {
 });
 
 describe("profileUpdateSchema", () => {
+  const parseUpdate = (fields: object) =>
+    profileUpdateSchema.safeParse({ expectedVersion: 1, ...fields });
+
+  it("требует версию, с которой открыта форма", () => {
+    const result = profileUpdateSchema.safeParse({ bio: "Hello" });
+    expect(result.error?.issues.map((issue) => issue.path.join("."))).toEqual(["expectedVersion"]);
+    expect(parseUpdate({ expectedVersion: 0 }).success).toBe(false);
+  });
+
   it("принимает отдельные несвязанные поля", () => {
-    expect(profileUpdateSchema.safeParse({ bio: "Hello" }).success).toBe(true);
+    expect(parseUpdate({ bio: "Hello" }).success).toBe(true);
   });
 
   it("требует связанные поля группой", () => {
-    const result = profileUpdateSchema.safeParse({ workFormats: ["online"] });
+    const result = parseUpdate({ workFormats: ["online"] });
     expect(result.success).toBe(false);
     expect(result.error?.issues.map((issue) => issue.path.join("."))).toEqual([
       "country",
       "cityId",
     ]);
     // Цена и валюта не связаны: валюту меняют в Account, цену — в Public profile
-    expect(profileUpdateSchema.safeParse({ priceAmount: "50" }).success).toBe(true);
-    expect(profileUpdateSchema.safeParse({ currency: "GEL" }).success).toBe(true);
+    expect(parseUpdate({ priceAmount: "50" }).success).toBe(true);
+    expect(parseUpdate({ currency: "GEL" }).success).toBe(true);
 
-    const visibility = profileUpdateSchema.safeParse({ visibility: "password" });
+    const visibility = parseUpdate({ visibility: "password" });
     expect(visibility.error?.issues.map((issue) => issue.path.join("."))).toEqual(["pagePassword"]);
   });
 
   it("проверяет согласованность переданной группы", () => {
     const location = { country: "GE", cityId: 611717, workFormats: ["in-person"] } as const;
-    expect(
-      profileUpdateSchema.safeParse({ ...location, workFormats: [...location.workFormats] })
-        .success,
-    ).toBe(true);
-    expect(
-      profileUpdateSchema.safeParse({ ...location, cityId: null, workFormats: ["in-person"] })
-        .success,
-    ).toBe(false);
+    expect(parseUpdate({ ...location, workFormats: [...location.workFormats] }).success).toBe(true);
+    expect(parseUpdate({ ...location, cityId: null, workFormats: ["in-person"] }).success).toBe(
+      false,
+    );
   });
 });

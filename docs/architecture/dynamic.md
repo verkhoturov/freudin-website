@@ -170,6 +170,10 @@ sequenceDiagram
     participant DB as unlock_profile_page
 
     G->>API: POST { password }
+    API->>API: enforceRateLimits (consume_rate_limit, admin client)
+    alt limit exceeded
+        API-->>G: 429, Retry-After, fields.password
+    end
     API->>DB: rpc(username, password)
     alt password correct
         DB-->>API: access_token
@@ -180,11 +184,13 @@ sequenceDiagram
     end
 ```
 
-- `updateProfile` writes the mode and password through `set_profile_visibility`: the same
+- `save_profile` writes the mode and password through `set_profile_visibility`: the same
   password keeps the token, a new one issues a new token and closes access for old cookies.
 - The password is stored in plain text (the user's decision of 03.10.2026) in
-  `profile_page_access` and visible only to the owner. There is no brute-force protection: it
-  is a soft lock.
+  `profile_page_access` and visible only to the owner. Guessing is limited (decision 41):
+  10 attempts per IP and page in 15 minutes, 100 per page in an hour. Counters live in
+  `rate_limits` under an HMAC of the IP or address; the same helper limits
+  `GET /api/usernames/[username]` (60 per IP in 10 minutes).
 - Storage files are public: direct links to photos and documents obtained before hiding keep
   working.
 
@@ -227,13 +233,28 @@ sequenceDiagram
   fields go as a group (`linkedFieldGroups`): country, city and work formats; links, contacts
   and the preferred contact method; client categories, concerns and services; hiding mode and
   password.
-- `updateProfile` writes in order: the contact email (`account_contacts`), private data
-  (`profile_private`), the hiding mode (`set_profile_visibility`), then the `profiles` columns.
-  A username uniqueness violation is `username_taken` (409), a foreign city `city_invalid` (400).
+- `updateProfile` calls one database function, `save_profile`, so a PostgREST RPC is one
+  transaction: the contact email (`account_contacts`), private data (`profile_private`), the
+  hiding mode (`set_profile_visibility`) and the `profiles` columns are applied together or
+  not at all. A username uniqueness violation is `username_taken` (409), a foreign city
+  `city_invalid` (400), password mode without a password `page_password_required` (400).
+- **Version check.** `profiles.version` grows with every `save_profile` call; photos and
+  documents do not change it. The form keeps a base snapshot (saved values and version) from
+  when it was mounted, and a background `/api/me` refetch does not replace it. `PATCH` sends
+  `expectedVersion`; if the profile was saved elsewhere since, the function locks the row,
+  writes nothing and the route answers 409 `version_conflict`. Settings then refetch `/api/me`,
+  move the draft onto the fresh data with `rebaseProfileDraft` (fields not edited in this tab
+  take the fresh values), remount the form and ask to review and save again; a selected photo
+  has to be chosen again.
+- **Photo after the text.** The photo is uploaded or deleted after `PATCH`; the transaction
+  does not cover Storage. If the photo fails, the text stays saved: the base becomes the saved
+  values, the toast says that only the photo was not applied, and the next Save sends only the
+  photo.
 - The editor preview is built from the form values (`toPreviewProfile`) without a server request.
 - Switching settings sections keeps the same form mounted. Leaving with the browser Back
   button stores its field values in `useSettingsDraftStore` in tab memory, scoped to the user;
-  reloading clears this draft. A successful Save recreates the form from the updated query data.
+  reloading clears this draft, which is stored with its base snapshot. A successful Save
+  recreates the form from the saved response.
 - A link leaving settings opens Save and continue / Discard changes / Stay. Save and continue
   navigates only after a successful save; validation or API errors keep the draft. Discard
   resets the form before navigation. View my page is available from every section and uses

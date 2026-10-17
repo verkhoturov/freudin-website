@@ -2,6 +2,7 @@
 
 import { type DeepKeys, useForm, useStore } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { cn } from "cn";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -17,7 +18,10 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import type { City } from "@/entities/location";
 import {
+  type AcceptingClients,
   APPROACHES_MAX,
+  acceptingClientsIds,
+  acceptingClientsLabels,
   approachIds,
   approachLabels,
   BIO_MAX_LENGTH,
@@ -38,12 +42,14 @@ import {
   genderLabels,
   getCurrencyName,
   hiddenVisibilityLabels,
+  IN_PERSON_AREA_MAX_LENGTH,
   LANGUAGES_MAX,
   MIN_AGE,
   normalizeSectionOrder,
   PAGE_PASSWORD_MAX_LENGTH,
   PHONE_MAX_LENGTH,
   PRICE_AMOUNT_MAX,
+  PROFESSIONAL_ROLE_MAX_LENGTH,
   type ProfileInput,
   type ProfileSection,
   type ProfileVisibility,
@@ -72,7 +78,6 @@ import { ApiError } from "@/shared/api";
 import { routes, siteConfig } from "@/shared/config";
 import { toFieldErrors, toFormFieldName } from "@/shared/lib/field-errors";
 import { useUnsavedChangesWarning } from "@/shared/lib/use-unsaved-changes-warning";
-import { cn } from "@/shared/lib/utils";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -214,6 +219,8 @@ function getFieldSection(field: string): ProfileFormSection {
 const fieldInfo: Record<keyof ProfileInput, { label: string; block: string | null }> = {
   username: { label: "Username", block: null },
   displayName: { label: "Name", block: null },
+  professionalRole: { label: "Professional role", block: null },
+  acceptingClients: { label: "New clients", block: null },
   contactEmail: { label: "Email", block: null },
   sectionOrder: { label: "Block order", block: null },
   bio: { label: "Bio", block: "bio" },
@@ -225,7 +232,9 @@ const fieldInfo: Record<keyof ProfileInput, { label: string; block: string | nul
   country: { label: "Country", block: null },
   cityId: { label: "City", block: null },
   languages: { label: "Languages", block: "languages" },
-  priceAmount: { label: "Starting price per session", block: "price" },
+  priceAmount: { label: "Price per session", block: "price" },
+  priceType: { label: "Fixed price", block: "price" },
+  inPersonArea: { label: "Area for in-person sessions", block: "work-formats" },
   currency: { label: "Currency", block: null },
   education: { label: "Education", block: "education" },
   contacts: { label: "Contacts", block: "contacts" },
@@ -300,7 +309,7 @@ type ProfileFormProps = {
   collapsedBlocks?: readonly string[];
   onCollapsedChange?: (blockId: string, collapsed: boolean) => void;
   /**
-   * Раздел настроек: видна только его часть формы, остальные скрыты атрибутом `hidden`. Форма
+   * Раздел настроек: часть формы монтируется при первом открытии, затем скрывается через `hidden`. Форма
    * при смене раздела остаётся: правки всех разделов сохраняются вместе по Save. В Account
    * кнопка Save стоит под полями, в остальных разделах — в липкой панели. Без раздела видна
    * вся форма: онбординг.
@@ -447,6 +456,27 @@ export function ProfileForm({
   const [reveal, setReveal] = useState<RevealTarget | null>(null);
   // Превью на телефоне: форма прячется, но остаётся в DOM, и введённое не теряется
   const [isPreviewShown, setIsPreviewShown] = useState(false);
+  const [isWidePreview, setIsWidePreview] = useState(false);
+  // Открытые разделы оставляем смонтированными: метаданные и async-валидаторы полей сохраняются.
+  const [visitedSections, setVisitedSections] = useState(() => new Set([section]));
+  useEffect(() => {
+    setVisitedSections((visited) =>
+      visited.has(section) ? visited : new Set([...visited, section]),
+    );
+  }, [section]);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    // Тот же порог 48rem, что у @3xl container query: сайдбар не входит в ширину редактора.
+    const observer = new ResizeObserver(([entry]) => {
+      setIsWidePreview(
+        entry.contentRect.width >=
+          48 * Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
+      );
+    });
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
   const [previewWidth, setPreviewWidth] = useState<PreviewWidth>("desktop");
   const [isPagePasswordShown, setIsPagePasswordShown] = useState(false);
   const queryClient = useQueryClient();
@@ -505,6 +535,9 @@ export function ProfileForm({
 
   // Любой выбор фото создаёт новый объект, поэтому изменение фото — это смена ссылки
   const isFormDefault = useStore(form.store, (state) => state.isDefaultValue);
+  // Пока идёт сохранение, поля недоступны: после ответа форма пересоздаётся, и ввод за время
+  // запроса пропал бы (шаг 81)
+  const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
   const hasChanges = !isFormDefault || avatar !== initialAvatar;
   const isEditMode = mode === "edit";
   useUnsavedChangesWarning(isEditMode && hasChanges, setLeaveUrl);
@@ -533,6 +566,8 @@ export function ProfileForm({
   const isCollapsed = (blockId: string) =>
     Boolean(onCollapsedChange) && collapsedBlocks.includes(blockId);
   const isSectionHidden = (id: ProfileFormSection) => section !== undefined && section !== id;
+  const isSectionMounted = (id: ProfileFormSection) =>
+    section === undefined || section === id || visitedSections.has(id);
   // В онбординге и разделе Public profile превью есть всегда, в редакторе на весь экран — во всех
   // разделах, кроме Search details: его закрытых данных на странице нет
   const hasPreview =
@@ -975,27 +1010,63 @@ export function ProfileForm({
               // Город выбирают в Account: без него очный формат не выбрать
               const hasCity = form.getFieldValue("cityId") !== null;
               return (
-                <CheckboxGroup
-                  name={field.name}
-                  legend="Work format"
-                  legendClassName={titleClassName}
-                  options={workFormatOptions.map((option) => ({
-                    ...option,
-                    disabled: option.value === "in-person" && !hasCity,
-                  }))}
-                  description={
-                    hasCity ? undefined : (
-                      <>
-                        To offer in-person sessions, add your city in{" "}
-                        <Link href={routes.settingsSection("account")}>Account</Link>.
-                      </>
-                    )
-                  }
-                  value={field.state.value}
-                  onChange={field.handleChange}
-                  onBlur={field.handleBlur}
-                  errors={field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []}
-                />
+                <div className="flex flex-col gap-4">
+                  <CheckboxGroup
+                    name={field.name}
+                    legend="Work format"
+                    legendClassName={titleClassName}
+                    options={workFormatOptions.map((option) => ({
+                      ...option,
+                      disabled: option.value === "in-person" && !hasCity,
+                    }))}
+                    description={
+                      hasCity ? undefined : (
+                        <>
+                          To offer in-person sessions, add your city in{" "}
+                          <Link href={routes.settingsSection("account")}>Account</Link>.
+                        </>
+                      )
+                    }
+                    value={field.state.value}
+                    onChange={field.handleChange}
+                    onBlur={field.handleBlur}
+                    errors={
+                      field.state.meta.isTouched ? toFieldErrors(field.state.meta.errors) : []
+                    }
+                  />
+                  {field.state.value.includes("in-person") ? (
+                    <form.Field name="inPersonArea">
+                      {(areaField) => {
+                        const isInvalid =
+                          areaField.state.meta.isTouched && !areaField.state.meta.isValid;
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={areaField.name}>
+                              Area for in-person sessions
+                            </FieldLabel>
+                            <Input
+                              id={areaField.name}
+                              name={areaField.name}
+                              value={areaField.state.value}
+                              onBlur={areaField.handleBlur}
+                              onChange={(event) => areaField.handleChange(event.target.value)}
+                              aria-invalid={isInvalid}
+                              aria-describedby={`${areaField.name}-description`}
+                              placeholder="Vake, near the metro"
+                              maxLength={IN_PERSON_AREA_MAX_LENGTH}
+                            />
+                            <FieldDescription id={`${areaField.name}-description`}>
+                              Optional and shown on your page. Don’t enter your exact address.
+                            </FieldDescription>
+                            {isInvalid ? (
+                              <FieldError errors={toFieldErrors(areaField.state.meta.errors)} />
+                            ) : null}
+                          </Field>
+                        );
+                      }}
+                    </form.Field>
+                  ) : null}
+                </div>
               );
             }}
           </form.Field>
@@ -1052,7 +1123,7 @@ export function ProfileForm({
               const currency = form.getFieldValue("currency");
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Starting price per session</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Price per session</FieldLabel>
                   {/* Поле узкое: Field растягивает прямых потомков на всю ширину */}
                   <div>
                     <InputGroup className="w-36">
@@ -1081,6 +1152,23 @@ export function ProfileForm({
                   {isInvalid ? (
                     <FieldError errors={toFieldErrors(field.state.meta.errors)} />
                   ) : null}
+                  <form.Field name="priceType">
+                    {(typeField) => (
+                      <Field orientation="horizontal">
+                        <Checkbox
+                          id={typeField.name}
+                          checked={typeField.state.value === "fixed"}
+                          onCheckedChange={(checked) => {
+                            typeField.handleChange(checked === true ? "fixed" : "from");
+                            typeField.handleBlur();
+                          }}
+                        />
+                        <FieldLabel htmlFor={typeField.name} className="font-normal">
+                          Fixed price. Without it, your page shows “From”
+                        </FieldLabel>
+                      </Field>
+                    )}
+                  </form.Field>
                 </Field>
               );
             }}
@@ -1125,6 +1213,10 @@ export function ProfileForm({
                 <FieldLegend variant="label" className={titleClassName}>
                   Education
                 </FieldLegend>
+                <FieldDescription>
+                  For a long program, add its length to the qualification, like “Gestalt therapy,
+                  3-year program, 600 hours”.
+                </FieldDescription>
                 {educationField.state.value.length > 0 ? (
                   <ul className="flex flex-col gap-4">
                     {educationField.state.value.map((_, index) => (
@@ -1259,6 +1351,7 @@ export function ProfileForm({
       case "contacts":
         return (
           <FieldGroup>
+            <FieldDescription>Shown on your page so clients can reach you.</FieldDescription>
             {contactTypeIds.map((type) => (
               <form.Field key={type} name={`contacts.${type}`}>
                 {(field) => {
@@ -1487,16 +1580,16 @@ export function ProfileForm({
               <form.Subscribe selector={(state) => state.values.clientTypes}>
                 {(clientTypes) => {
                   const count = servicesField.state.value.length;
-                  const canAdd = clientTypes.length >= 2 && count < SERVICES_MAX;
+                  const canAdd = clientTypes.length > 0 && count < SERVICES_MAX;
                   return (
                     <FieldSet>
                       <FieldLegend variant="label" className={titleClassName}>
                         Services
                       </FieldLegend>
                       <FieldDescription>
-                        {clientTypes.length >= 2
-                          ? "A card for each client group, with its own price and duration."
-                          : "Choose two or more groups in Works with to add a service card for each."}
+                        {clientTypes.length > 0
+                          ? "A card for each service, with its own client group, price and duration. A group can have several services."
+                          : "Choose who you work with in Works with to add services."}
                       </FieldDescription>
                       {count > 0 ? (
                         <ul className="flex flex-col gap-4">
@@ -1816,328 +1909,38 @@ export function ProfileForm({
               event.preventDefault();
               void submit();
             }}>
-            <FieldGroup>
-              {/* Скрытые разделы — `contents`: поля остаются прямыми детьми FieldGroup */}
-              <div hidden={isSectionHidden("profile")} className="contents">
-                <form.Subscribe selector={(state) => state.values.displayName}>
-                  {(displayName) => (
-                    <AvatarField
-                      value={avatar}
-                      onChange={setAvatar}
-                      displayName={displayName}
-                      currentAvatarUrl={currentAvatarUrl}
-                      accountPhotos={accountPhotos}
-                    />
-                  )}
-                </form.Subscribe>
-
-                <form.Field name="displayName">
-                  {(field) => {
-                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Name</FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(event) => field.handleChange(event.target.value)}
-                          aria-invalid={isInvalid}
-                          autoComplete="name"
-                          maxLength={DISPLAY_NAME_MAX_LENGTH}
+            <fieldset disabled={isSubmitting} className="contents">
+              <FieldGroup>
+                {/* Скрытые разделы — `contents`: поля остаются прямыми детьми FieldGroup */}
+                {isSectionMounted("profile") ? (
+                  <div hidden={isSectionHidden("profile")} className="contents">
+                    <form.Subscribe selector={(state) => state.values.displayName}>
+                      {(displayName) => (
+                        <AvatarField
+                          value={avatar}
+                          onChange={setAvatar}
+                          displayName={displayName}
+                          currentAvatarUrl={currentAvatarUrl}
+                          accountPhotos={accountPhotos}
                         />
-                        {isInvalid ? (
-                          <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                        ) : null}
-                      </Field>
-                    );
-                  }}
-                </form.Field>
-              </div>
+                      )}
+                    </form.Subscribe>
 
-              <div hidden={isSectionHidden("account")} className="contents">
-                <form.Field
-                  name="username"
-                  validators={{
-                    onChangeAsyncDebounceMs: USERNAME_CHECK_DEBOUNCE_MS,
-                    onChangeAsync: async ({ value }) => {
-                      // Формат проверяет схема формы: сюда доходит только корректный адрес
-                      const username = usernameSchema.safeParse(value);
-                      if (!username.success || username.data === currentUsername) return undefined;
-                      try {
-                        const { available } = await queryClient.fetchQuery(
-                          usernameQueries.availability(username.data),
-                        );
-                        return available ? undefined : "This username is already taken";
-                      } catch {
-                        // Без связи не блокируем форму: занятый адрес всё равно отклонит сервер
-                        return undefined;
-                      }
-                    },
-                  }}>
-                  {(field) => {
-                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                    const username = field.state.value.trim().toLowerCase();
-                    const isUsernameChanged = Boolean(
-                      currentUsername && username !== currentUsername,
-                    );
-                    const parsedUsername = usernameSchema.safeParse(field.state.value);
-                    const checkedUsername =
-                      field.state.meta.isValid &&
-                      parsedUsername.success &&
-                      parsedUsername.data !== currentUsername
-                        ? parsedUsername.data
-                        : null;
-                    const describedBy = isUsernameChanged
-                      ? `${field.name}-description ${field.name}-warning`
-                      : `${field.name}-description`;
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Username</FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(event) => field.handleChange(event.target.value)}
-                          aria-invalid={isInvalid}
-                          aria-describedby={describedBy}
-                          autoComplete="off"
-                          autoCapitalize="none"
-                          autoCorrect="off"
-                          spellCheck={false}
-                          maxLength={USERNAME_MAX_LENGTH}
-                        />
-                        <FieldDescription id={`${field.name}-description`} aria-live="polite">
-                          <UsernameHint
-                            username={username}
-                            isChecking={field.state.meta.isValidating}
-                            checkedUsername={checkedUsername}
-                          />
-                        </FieldDescription>
-                        {isUsernameChanged ? (
-                          <FieldDescription id={`${field.name}-warning`}>
-                            The old link {SITE_HOST}/{currentUsername} will stop working.
-                          </FieldDescription>
-                        ) : null}
-                        {isInvalid ? (
-                          <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                        ) : null}
-                      </Field>
-                    );
-                  }}
-                </form.Field>
-              </div>
-
-              <div hidden={isSectionHidden("profile")} className="contents">
-                {showSectionOrder ? (
-                  <form.Field name="pageTheme">
-                    {(themeField) => (
-                      <form.Field name="cover">
-                        {(coverField) => (
-                          <form.Field name="linkIcons">
-                            {(linkIconsField) => (
-                              <form.Field name="ctaPlacement">
-                                {(ctaField) => (
-                                  <form.Subscribe
-                                    selector={(state) => Boolean(state.values.preferredContact)}>
-                                    {(hasPreferredContact) => (
-                                      <AppearanceBlock
-                                        theme={themeField.state.value}
-                                        onThemeChange={(theme) => {
-                                          themeField.handleChange(theme);
-                                          themeField.handleBlur();
-                                        }}
-                                        cover={coverField.state.value}
-                                        onCoverChange={(cover) => {
-                                          coverField.handleChange(cover);
-                                          coverField.handleBlur();
-                                        }}
-                                        linkIcons={linkIconsField.state.value}
-                                        onLinkIconsChange={(linkIcons) => {
-                                          linkIconsField.handleChange(linkIcons);
-                                          linkIconsField.handleBlur();
-                                        }}
-                                        ctaPlacement={
-                                          hasPreferredContact ? ctaField.state.value : null
-                                        }
-                                        onChooseMainButton={() =>
-                                          revealField("#preferredContact", "contacts")
-                                        }
-                                        onCtaPlacementChange={(placement) => {
-                                          ctaField.handleChange(placement);
-                                          ctaField.handleBlur();
-                                        }}
-                                        collapsed={isCollapsed("appearance")}
-                                        onCollapsedChange={
-                                          onCollapsedChange
-                                            ? (collapsed) =>
-                                                onCollapsedChange("appearance", collapsed)
-                                            : undefined
-                                        }
-                                      />
-                                    )}
-                                  </form.Subscribe>
-                                )}
-                              </form.Field>
-                            )}
-                          </form.Field>
-                        )}
-                      </form.Field>
-                    )}
-                  </form.Field>
-                ) : null}
-
-                <form.Field name="sectionOrder">
-                  {(field) => (
-                    <SortableBlocks
-                      order={normalizeSectionOrder(field.state.value).filter(isBlockShown)}
-                      onChange={showSectionOrder ? field.handleChange : undefined}
-                      renderBlock={renderEditableBlock}
-                      collapsedBlocks={collapsedBlocks}
-                      onCollapsedChange={showSectionOrder ? onCollapsedChange : undefined}
-                      renderSummary={renderSummary}
-                    />
-                  )}
-                </form.Field>
-              </div>
-
-              {showPractice ? (
-                <div hidden={isSectionHidden("search")} className="contents">
-                  <form.Field name="birthDate">
-                    {(field) => {
-                      const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                      return (
-                        <Field data-invalid={isInvalid}>
-                          <FieldLabel htmlFor={field.name}>Date of birth</FieldLabel>
-                          <Input
-                            id={field.name}
-                            name={field.name}
-                            type="date"
-                            max={utcDateYearsAgo(MIN_AGE)}
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(event) => field.handleChange(event.target.value)}
-                            aria-invalid={isInvalid}
-                            autoComplete="bday"
-                            className="w-auto"
-                          />
-                          {isInvalid ? (
-                            <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                          ) : null}
-                        </Field>
-                      );
-                    }}
-                  </form.Field>
-                  <form.Field name="gender">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>Gender</FieldLabel>
-                        <Select
-                          value={field.state.value || NOT_SELECTED}
-                          onValueChange={(next) => {
-                            if (!next) return;
-                            field.handleChange(next === NOT_SELECTED ? "" : (next as Gender));
-                            field.handleBlur();
-                          }}>
-                          <SelectTrigger id={field.name} className="w-48">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={NOT_SELECTED}>Not specified</SelectItem>
-                            {genderIds.map((gender) => (
-                              <SelectItem key={gender} value={gender}>
-                                {genderLabels[gender]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                    )}
-                  </form.Field>
-                  <form.Field name="concerns">
-                    {(field) => (
-                      <form.Subscribe selector={(state) => state.values.clientTypes}>
-                        {(clientTypes) => (
-                          <ConcernsField
-                            value={field.state.value}
-                            onChange={field.handleChange}
-                            onBlur={field.handleBlur}
-                            clientTypes={clientTypes}
-                            errors={
-                              field.state.meta.isTouched && !field.state.meta.isValid
-                                ? toFieldErrors(field.state.meta.errors)
-                                : []
-                            }
-                          />
-                        )}
-                      </form.Subscribe>
-                    )}
-                  </form.Field>
-                </div>
-              ) : null}
-
-              {showContactEmail ? (
-                <div hidden={isSectionHidden("account")} className="contents">
-                  <form.Field name="contactEmail">
-                    {(field) => {
-                      const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                      return (
-                        <Field data-invalid={isInvalid}>
-                          <FieldLabel htmlFor={field.name}>Email (optional)</FieldLabel>
-                          <Input
-                            id={field.name}
-                            name={field.name}
-                            type="email"
-                            inputMode="email"
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(event) => field.handleChange(event.target.value)}
-                            aria-invalid={isInvalid}
-                            aria-describedby={`${field.name}-description`}
-                            autoComplete="email"
-                            autoCapitalize="none"
-                            autoCorrect="off"
-                            spellCheck={false}
-                            maxLength={CONTACT_EMAIL_MAX_LENGTH}
-                          />
-                          <FieldDescription id={`${field.name}-description`}>
-                            Your sign-in account didn’t share an email address. Add one if you’d
-                            like us to be able to contact you about your account. It isn’t shown on
-                            your page.
-                          </FieldDescription>
-                          {isInvalid ? (
-                            <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                          ) : null}
-                        </Field>
-                      );
-                    }}
-                  </form.Field>
-                </div>
-              ) : null}
-
-              {/* Место и валюта — данные практики: в онбординге их нет */}
-              {showPractice ? (
-                <div hidden={isSectionHidden("account")} className="contents">
-                  <FieldGroup>
-                    <form.Field name="country">
+                    <form.Field name="displayName">
                       {(field) => {
                         const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
                         return (
                           <Field data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>Country</FieldLabel>
-                            <CountrySelect
+                            <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                            <Input
                               id={field.name}
+                              name={field.name}
                               value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(event) => field.handleChange(event.target.value)}
                               aria-invalid={isInvalid}
-                              onChange={(country) => {
-                                // Город выбирается внутри страны: при смене страны он сбрасывается
-                                if (country !== field.state.value)
-                                  form.setFieldValue("cityId", null);
-                                field.handleChange(country);
-                                field.handleBlur();
-                              }}
+                              autoComplete="name"
+                              maxLength={DISPLAY_NAME_MAX_LENGTH}
                             />
                             {isInvalid ? (
                               <FieldError errors={toFieldErrors(field.state.meta.errors)} />
@@ -2146,173 +1949,30 @@ export function ProfileForm({
                         );
                       }}
                     </form.Field>
-                    <form.Field name="cityId">
-                      {(field) => {
-                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                        return (
-                          <Field data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>City</FieldLabel>
-                            <form.Subscribe selector={(state) => state.values.country}>
-                              {(country) => (
-                                <CitySelect
-                                  id={field.name}
-                                  country={country}
-                                  value={findCity(field.state.value)}
-                                  aria-invalid={isInvalid}
-                                  aria-describedby={`${field.name}-description`}
-                                  onChange={(next) => {
-                                    if (next) setPickedCity(next);
-                                    field.handleChange(next?.id ?? null);
-                                    field.handleBlur();
-                                  }}
-                                />
-                              )}
-                            </form.Subscribe>
-                            <FieldDescription id={`${field.name}-description`}>
-                              Required for in-person sessions.
-                            </FieldDescription>
-                            {isInvalid ? (
-                              <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                            ) : null}
-                          </Field>
-                        );
-                      }}
-                    </form.Field>
-                  </FieldGroup>
-                  <form.Field name="currency">
-                    {(field) => {
-                      const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                      return (
-                        <Field data-invalid={isInvalid}>
-                          <FieldLabel htmlFor={field.name}>Currency</FieldLabel>
-                          <CurrencySelect
-                            id={field.name}
-                            value={field.state.value}
-                            aria-invalid={isInvalid}
-                            aria-describedby={`${field.name}-description`}
-                            onChange={(currency) => {
-                              field.handleChange(currency);
-                              field.handleBlur();
-                            }}
-                          />
-                          <FieldDescription id={`${field.name}-description`}>
-                            For the price per session and service prices on your page.
-                          </FieldDescription>
-                          {isInvalid ? (
-                            <FieldError errors={toFieldErrors(field.state.meta.errors)} />
-                          ) : null}
-                        </Field>
-                      );
-                    }}
-                  </form.Field>
-                </div>
-              ) : null}
 
-              {/* Скрыть страницу можно только в настройках: в онбординге её ещё нет */}
-              {isEditMode ? (
-                <div hidden={isSectionHidden("account")} className="contents">
-                  <form.Field name="visibility">
-                    {(field) => {
-                      const isHidden = field.state.value !== "public";
-                      return (
-                        <div className="flex flex-col gap-3">
-                          <Field orientation="horizontal">
-                            <Checkbox
-                              id="hide-page"
-                              aria-describedby="hide-page-description"
-                              checked={isHidden}
-                              onCheckedChange={(checked) => {
-                                field.handleChange(checked === true ? "private" : "public");
-                                field.handleBlur();
-                              }}
-                            />
-                            <FieldLabel htmlFor="hide-page" className="font-normal">
-                              Hide my page
-                            </FieldLabel>
-                          </Field>
-                          <FieldDescription id="hide-page-description">
-                            This setting takes effect after Save. Hiding your page doesn’t revoke
-                            access to photos or documents through previously saved direct image
-                            links.
-                          </FieldDescription>
-                          {isHidden ? (
-                            <RadioGroup
-                              value={field.state.value}
-                              onValueChange={(next) => {
-                                field.handleChange(next as ProfileVisibility);
-                                field.handleBlur();
-                              }}
-                              aria-label="Who can see your page"
-                              className="pl-6">
-                              {(["private", "password"] as const).map((value) => (
-                                <Field key={value} orientation="horizontal">
-                                  <RadioGroupItem id={`visibility-${value}`} value={value} />
-                                  <FieldLabel
-                                    htmlFor={`visibility-${value}`}
-                                    className="font-normal">
-                                    {hiddenVisibilityLabels[value]}
-                                  </FieldLabel>
-                                </Field>
-                              ))}
-                            </RadioGroup>
-                          ) : null}
-                        </div>
-                      );
-                    }}
-                  </form.Field>
-                  {/* Поле смонтировано всегда: ошибку схемы «нужен пароль» форма кладёт в него
-                      сразу при выборе режима */}
-                  <form.Subscribe selector={(state) => state.values.visibility}>
-                    {(visibility) => (
-                      <div hidden={visibility !== "password"} className="contents">
-                        <form.Field name="pagePassword">
+                    {showPractice ? (
+                      <>
+                        <form.Field name="professionalRole">
                           {(field) => {
                             const isInvalid =
                               field.state.meta.isTouched && !field.state.meta.isValid;
                             return (
                               <Field data-invalid={isInvalid}>
-                                <FieldLabel htmlFor={field.name}>Password</FieldLabel>
-                                <InputGroup>
-                                  {/* Не type="password": с ним браузер при каждом Save предлагает
-                                      сохранить пароль страницы как пароль от аккаунта. Символы
-                                      скрывает стиль */}
-                                  <InputGroupInput
-                                    id={field.name}
-                                    name={field.name}
-                                    type="text"
-                                    className={
-                                      isPagePasswordShown
-                                        ? undefined
-                                        : "[-webkit-text-security:disc]"
-                                    }
-                                    value={field.state.value}
-                                    onBlur={field.handleBlur}
-                                    onChange={(event) => field.handleChange(event.target.value)}
-                                    aria-invalid={isInvalid}
-                                    aria-describedby={`${field.name}-description`}
-                                    autoComplete="off"
-                                    autoCapitalize="none"
-                                    autoCorrect="off"
-                                    spellCheck={false}
-                                    maxLength={PAGE_PASSWORD_MAX_LENGTH}
-                                  />
-                                  <InputGroupAddon align="inline-end">
-                                    <InputGroupButton
-                                      size="icon-xs"
-                                      aria-label="Show password"
-                                      aria-pressed={isPagePasswordShown}
-                                      onClick={() => setIsPagePasswordShown(!isPagePasswordShown)}>
-                                      {isPagePasswordShown ? (
-                                        <EyeOffIcon aria-hidden="true" />
-                                      ) : (
-                                        <EyeIcon aria-hidden="true" />
-                                      )}
-                                    </InputGroupButton>
-                                  </InputGroupAddon>
-                                </InputGroup>
+                                <FieldLabel htmlFor={field.name}>Professional role</FieldLabel>
+                                <Input
+                                  id={field.name}
+                                  name={field.name}
+                                  value={field.state.value}
+                                  onBlur={field.handleBlur}
+                                  onChange={(event) => field.handleChange(event.target.value)}
+                                  aria-invalid={isInvalid}
+                                  aria-describedby={`${field.name}-description`}
+                                  placeholder="Clinical psychologist"
+                                  maxLength={PROFESSIONAL_ROLE_MAX_LENGTH}
+                                />
                                 <FieldDescription id={`${field.name}-description`}>
-                                  4 to 8 characters. Share it with people who should see your page.
-                                  Don’t reuse a password from other accounts.
+                                  Shown under your name, in your own words. Freudin doesn’t verify
+                                  qualifications.
                                 </FieldDescription>
                                 {isInvalid ? (
                                   <FieldError errors={toFieldErrors(field.state.meta.errors)} />
@@ -2321,28 +1981,545 @@ export function ProfileForm({
                             );
                           }}
                         </form.Field>
-                      </div>
-                    )}
-                  </form.Subscribe>
-                </div>
-              ) : null}
 
-              {section === "account" ? (
-                // Без кнопки Preview: на телефоне она спрятала бы форму вместе с собой
-                <div className="flex flex-wrap items-center gap-3">
-                  {saveButton}
-                  {status}
-                </div>
-              ) : null}
-            </FieldGroup>
+                        <form.Field name="acceptingClients">
+                          {(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>New clients</FieldLabel>
+                              <Select
+                                value={field.state.value || NOT_SELECTED}
+                                onValueChange={(next) => {
+                                  field.handleChange(
+                                    next === NOT_SELECTED ? "" : (next as AcceptingClients),
+                                  );
+                                  field.handleBlur();
+                                }}>
+                                <SelectTrigger
+                                  id={field.name}
+                                  aria-describedby={`${field.name}-description`}
+                                  className="w-full sm:w-72">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={NOT_SELECTED}>Don’t show</SelectItem>
+                                  {acceptingClientsIds.map((id) => (
+                                    <SelectItem key={id} value={id}>
+                                      {acceptingClientsLabels[id]}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FieldDescription id={`${field.name}-description`}>
+                                Shown under your name. Your page and contact button stay available.
+                              </FieldDescription>
+                            </Field>
+                          )}
+                        </form.Field>
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {isSectionMounted("account") ? (
+                  <div hidden={isSectionHidden("account")} className="contents">
+                    <form.Field
+                      name="username"
+                      validators={{
+                        onChangeAsyncDebounceMs: USERNAME_CHECK_DEBOUNCE_MS,
+                        onChangeAsync: async ({ value }) => {
+                          // Формат проверяет схема формы: сюда доходит только корректный адрес
+                          const username = usernameSchema.safeParse(value);
+                          if (!username.success || username.data === currentUsername)
+                            return undefined;
+                          try {
+                            const { available } = await queryClient.fetchQuery(
+                              usernameQueries.availability(username.data),
+                            );
+                            return available ? undefined : "This username is already taken";
+                          } catch {
+                            // Без связи не блокируем форму: занятый адрес всё равно отклонит сервер
+                            return undefined;
+                          }
+                        },
+                      }}>
+                      {(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                        const username = field.state.value.trim().toLowerCase();
+                        const isUsernameChanged = Boolean(
+                          currentUsername && username !== currentUsername,
+                        );
+                        const parsedUsername = usernameSchema.safeParse(field.state.value);
+                        const checkedUsername =
+                          field.state.meta.isValid &&
+                          parsedUsername.success &&
+                          parsedUsername.data !== currentUsername
+                            ? parsedUsername.data
+                            : null;
+                        const describedBy = isUsernameChanged
+                          ? `${field.name}-description ${field.name}-warning`
+                          : `${field.name}-description`;
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Username</FieldLabel>
+                            <Input
+                              id={field.name}
+                              name={field.name}
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(event) => field.handleChange(event.target.value)}
+                              aria-invalid={isInvalid}
+                              aria-describedby={describedBy}
+                              autoComplete="off"
+                              autoCapitalize="none"
+                              autoCorrect="off"
+                              spellCheck={false}
+                              maxLength={USERNAME_MAX_LENGTH}
+                            />
+                            <FieldDescription id={`${field.name}-description`} aria-live="polite">
+                              <UsernameHint
+                                username={username}
+                                isChecking={field.state.meta.isValidating}
+                                checkedUsername={checkedUsername}
+                              />
+                            </FieldDescription>
+                            {isUsernameChanged ? (
+                              <FieldDescription id={`${field.name}-warning`}>
+                                The old link {SITE_HOST}/{currentUsername} will stop working.
+                              </FieldDescription>
+                            ) : null}
+                            {isInvalid ? (
+                              <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                            ) : null}
+                          </Field>
+                        );
+                      }}
+                    </form.Field>
+                  </div>
+                ) : null}
+
+                {isSectionMounted("profile") ? (
+                  <div hidden={isSectionHidden("profile")} className="contents">
+                    {showSectionOrder ? (
+                      <form.Field name="pageTheme">
+                        {(themeField) => (
+                          <form.Field name="cover">
+                            {(coverField) => (
+                              <form.Field name="linkIcons">
+                                {(linkIconsField) => (
+                                  <form.Field name="ctaPlacement">
+                                    {(ctaField) => (
+                                      <form.Subscribe
+                                        selector={(state) =>
+                                          Boolean(state.values.preferredContact)
+                                        }>
+                                        {(hasPreferredContact) => (
+                                          <AppearanceBlock
+                                            theme={themeField.state.value}
+                                            onThemeChange={(theme) => {
+                                              themeField.handleChange(theme);
+                                              themeField.handleBlur();
+                                            }}
+                                            cover={coverField.state.value}
+                                            onCoverChange={(cover) => {
+                                              coverField.handleChange(cover);
+                                              coverField.handleBlur();
+                                            }}
+                                            linkIcons={linkIconsField.state.value}
+                                            onLinkIconsChange={(linkIcons) => {
+                                              linkIconsField.handleChange(linkIcons);
+                                              linkIconsField.handleBlur();
+                                            }}
+                                            ctaPlacement={
+                                              hasPreferredContact ? ctaField.state.value : null
+                                            }
+                                            onChooseMainButton={() =>
+                                              revealField("#preferredContact", "contacts")
+                                            }
+                                            onCtaPlacementChange={(placement) => {
+                                              ctaField.handleChange(placement);
+                                              ctaField.handleBlur();
+                                            }}
+                                            collapsed={isCollapsed("appearance")}
+                                            onCollapsedChange={
+                                              onCollapsedChange
+                                                ? (collapsed) =>
+                                                    onCollapsedChange("appearance", collapsed)
+                                                : undefined
+                                            }
+                                          />
+                                        )}
+                                      </form.Subscribe>
+                                    )}
+                                  </form.Field>
+                                )}
+                              </form.Field>
+                            )}
+                          </form.Field>
+                        )}
+                      </form.Field>
+                    ) : null}
+
+                    <form.Field name="sectionOrder">
+                      {(field) => (
+                        <SortableBlocks
+                          order={normalizeSectionOrder(field.state.value).filter(isBlockShown)}
+                          onChange={showSectionOrder ? field.handleChange : undefined}
+                          renderBlock={renderEditableBlock}
+                          collapsedBlocks={collapsedBlocks}
+                          onCollapsedChange={showSectionOrder ? onCollapsedChange : undefined}
+                          renderSummary={renderSummary}
+                        />
+                      )}
+                    </form.Field>
+                  </div>
+                ) : null}
+
+                {showPractice && isSectionMounted("search") ? (
+                  <div hidden={isSectionHidden("search")} className="contents">
+                    <form.Field name="birthDate">
+                      {(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Date of birth</FieldLabel>
+                            <Input
+                              id={field.name}
+                              name={field.name}
+                              type="date"
+                              max={utcDateYearsAgo(MIN_AGE)}
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(event) => field.handleChange(event.target.value)}
+                              aria-invalid={isInvalid}
+                              autoComplete="bday"
+                              className="w-auto"
+                            />
+                            {isInvalid ? (
+                              <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                            ) : null}
+                          </Field>
+                        );
+                      }}
+                    </form.Field>
+                    <form.Field name="gender">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel htmlFor={field.name}>Gender</FieldLabel>
+                          <Select
+                            value={field.state.value || NOT_SELECTED}
+                            onValueChange={(next) => {
+                              if (!next) return;
+                              field.handleChange(next === NOT_SELECTED ? "" : (next as Gender));
+                              field.handleBlur();
+                            }}>
+                            <SelectTrigger id={field.name} className="w-48">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={NOT_SELECTED}>Not specified</SelectItem>
+                              {genderIds.map((gender) => (
+                                <SelectItem key={gender} value={gender}>
+                                  {genderLabels[gender]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      )}
+                    </form.Field>
+                    <form.Field name="concerns">
+                      {(field) => (
+                        <form.Subscribe selector={(state) => state.values.clientTypes}>
+                          {(clientTypes) => (
+                            <ConcernsField
+                              value={field.state.value}
+                              onChange={field.handleChange}
+                              onBlur={field.handleBlur}
+                              clientTypes={clientTypes}
+                              errors={
+                                field.state.meta.isTouched && !field.state.meta.isValid
+                                  ? toFieldErrors(field.state.meta.errors)
+                                  : []
+                              }
+                            />
+                          )}
+                        </form.Subscribe>
+                      )}
+                    </form.Field>
+                  </div>
+                ) : null}
+
+                {showContactEmail && isSectionMounted("account") ? (
+                  <div hidden={isSectionHidden("account")} className="contents">
+                    <form.Field name="contactEmail">
+                      {(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Email (optional)</FieldLabel>
+                            <Input
+                              id={field.name}
+                              name={field.name}
+                              type="email"
+                              inputMode="email"
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(event) => field.handleChange(event.target.value)}
+                              aria-invalid={isInvalid}
+                              aria-describedby={`${field.name}-description`}
+                              autoComplete="email"
+                              autoCapitalize="none"
+                              autoCorrect="off"
+                              spellCheck={false}
+                              maxLength={CONTACT_EMAIL_MAX_LENGTH}
+                            />
+                            <FieldDescription id={`${field.name}-description`}>
+                              Your sign-in account didn’t share an email address. Add one if you’d
+                              like us to be able to contact you about your account. It isn’t shown
+                              on your page.
+                            </FieldDescription>
+                            {isInvalid ? (
+                              <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                            ) : null}
+                          </Field>
+                        );
+                      }}
+                    </form.Field>
+                  </div>
+                ) : null}
+
+                {/* Место и валюта — данные практики: в онбординге их нет */}
+                {showPractice && isSectionMounted("account") ? (
+                  <div hidden={isSectionHidden("account")} className="contents">
+                    <FieldGroup>
+                      <form.Field name="country">
+                        {(field) => {
+                          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>Country</FieldLabel>
+                              <CountrySelect
+                                id={field.name}
+                                value={field.state.value}
+                                aria-invalid={isInvalid}
+                                onChange={(country) => {
+                                  // Город выбирается внутри страны: при смене страны он сбрасывается
+                                  if (country !== field.state.value)
+                                    form.setFieldValue("cityId", null);
+                                  field.handleChange(country);
+                                  field.handleBlur();
+                                }}
+                              />
+                              {isInvalid ? (
+                                <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                              ) : null}
+                            </Field>
+                          );
+                        }}
+                      </form.Field>
+                      <form.Field name="cityId">
+                        {(field) => {
+                          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>City</FieldLabel>
+                              <form.Subscribe selector={(state) => state.values.country}>
+                                {(country) => (
+                                  <CitySelect
+                                    id={field.name}
+                                    country={country}
+                                    value={findCity(field.state.value)}
+                                    aria-invalid={isInvalid}
+                                    aria-describedby={`${field.name}-description`}
+                                    onChange={(next) => {
+                                      if (next) setPickedCity(next);
+                                      field.handleChange(next?.id ?? null);
+                                      field.handleBlur();
+                                    }}
+                                  />
+                                )}
+                              </form.Subscribe>
+                              <FieldDescription id={`${field.name}-description`}>
+                                Required for in-person sessions.
+                              </FieldDescription>
+                              {isInvalid ? (
+                                <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                              ) : null}
+                            </Field>
+                          );
+                        }}
+                      </form.Field>
+                    </FieldGroup>
+                    <form.Field name="currency">
+                      {(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Currency</FieldLabel>
+                            <CurrencySelect
+                              id={field.name}
+                              value={field.state.value}
+                              aria-invalid={isInvalid}
+                              aria-describedby={`${field.name}-description`}
+                              onChange={(currency) => {
+                                field.handleChange(currency);
+                                field.handleBlur();
+                              }}
+                            />
+                            <FieldDescription id={`${field.name}-description`}>
+                              For the price per session and service prices on your page.
+                            </FieldDescription>
+                            {isInvalid ? (
+                              <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                            ) : null}
+                          </Field>
+                        );
+                      }}
+                    </form.Field>
+                  </div>
+                ) : null}
+
+                {/* Скрыть страницу можно только в настройках: в онбординге её ещё нет */}
+                {isEditMode && isSectionMounted("account") ? (
+                  <div hidden={isSectionHidden("account")} className="contents">
+                    <form.Field name="visibility">
+                      {(field) => {
+                        const isHidden = field.state.value !== "public";
+                        return (
+                          <div className="flex flex-col gap-3">
+                            <Field orientation="horizontal">
+                              <Checkbox
+                                id="hide-page"
+                                aria-describedby="hide-page-description"
+                                checked={isHidden}
+                                onCheckedChange={(checked) => {
+                                  field.handleChange(checked === true ? "private" : "public");
+                                  field.handleBlur();
+                                }}
+                              />
+                              <FieldLabel htmlFor="hide-page" className="font-normal">
+                                Hide my page
+                              </FieldLabel>
+                            </Field>
+                            <FieldDescription id="hide-page-description">
+                              This setting takes effect after Save. Hiding your page doesn’t revoke
+                              access to photos or documents through previously saved direct image
+                              links.
+                            </FieldDescription>
+                            {isHidden ? (
+                              <RadioGroup
+                                value={field.state.value}
+                                onValueChange={(next) => {
+                                  field.handleChange(next as ProfileVisibility);
+                                  field.handleBlur();
+                                }}
+                                aria-label="Who can see your page"
+                                className="pl-6">
+                                {(["private", "password"] as const).map((value) => (
+                                  <Field key={value} orientation="horizontal">
+                                    <RadioGroupItem id={`visibility-${value}`} value={value} />
+                                    <FieldLabel
+                                      htmlFor={`visibility-${value}`}
+                                      className="font-normal">
+                                      {hiddenVisibilityLabels[value]}
+                                    </FieldLabel>
+                                  </Field>
+                                ))}
+                              </RadioGroup>
+                            ) : null}
+                          </div>
+                        );
+                      }}
+                    </form.Field>
+                    {/* Поле смонтировано всегда: ошибку схемы «нужен пароль» форма кладёт в него
+                      сразу при выборе режима */}
+                    <form.Subscribe selector={(state) => state.values.visibility}>
+                      {(visibility) => (
+                        <div hidden={visibility !== "password"} className="contents">
+                          <form.Field name="pagePassword">
+                            {(field) => {
+                              const isInvalid =
+                                field.state.meta.isTouched && !field.state.meta.isValid;
+                              return (
+                                <Field data-invalid={isInvalid}>
+                                  <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+                                  <InputGroup>
+                                    {/* Не type="password": с ним браузер при каждом Save предлагает
+                                      сохранить пароль страницы как пароль от аккаунта. Символы
+                                      скрывает стиль */}
+                                    <InputGroupInput
+                                      id={field.name}
+                                      name={field.name}
+                                      type="text"
+                                      className={
+                                        isPagePasswordShown
+                                          ? undefined
+                                          : "[-webkit-text-security:disc]"
+                                      }
+                                      value={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onChange={(event) => field.handleChange(event.target.value)}
+                                      aria-invalid={isInvalid}
+                                      aria-describedby={`${field.name}-description`}
+                                      autoComplete="off"
+                                      autoCapitalize="none"
+                                      autoCorrect="off"
+                                      spellCheck={false}
+                                      maxLength={PAGE_PASSWORD_MAX_LENGTH}
+                                    />
+                                    <InputGroupAddon align="inline-end">
+                                      <InputGroupButton
+                                        size="icon-xs"
+                                        aria-label="Show password"
+                                        aria-pressed={isPagePasswordShown}
+                                        onClick={() =>
+                                          setIsPagePasswordShown(!isPagePasswordShown)
+                                        }>
+                                        {isPagePasswordShown ? (
+                                          <EyeOffIcon aria-hidden="true" />
+                                        ) : (
+                                          <EyeIcon aria-hidden="true" />
+                                        )}
+                                      </InputGroupButton>
+                                    </InputGroupAddon>
+                                  </InputGroup>
+                                  <FieldDescription id={`${field.name}-description`}>
+                                    4 to 8 characters. Share it with people who should see your
+                                    page. It isn’t used to sign in, so don’t reuse a password from
+                                    other accounts. A new password or another mode closes access for
+                                    everyone who entered the old one. If you switch modes, the
+                                    password is kept for later.
+                                  </FieldDescription>
+                                  {isInvalid ? (
+                                    <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                                  ) : null}
+                                </Field>
+                              );
+                            }}
+                          </form.Field>
+                        </div>
+                      )}
+                    </form.Subscribe>
+                  </div>
+                ) : null}
+
+                {section === "account" ? (
+                  // Без кнопки Preview: на телефоне она спрятала бы форму вместе с собой
+                  <div className="flex flex-wrap items-center gap-3">
+                    {saveButton}
+                    {status}
+                  </div>
+                ) : null}
+              </FieldGroup>
+            </fieldset>
           </form>
-          {accountBlock ? (
+          {accountBlock && isSectionMounted("account") ? (
             <div hidden={isSectionHidden("account")}>
               {typeof accountBlock === "function" ? accountBlock(beforeLeave) : accountBlock}
             </div>
           ) : null}
         </div>
-        {renderPreview ? (
+        {renderPreview && hasPreview && (isWidePreview || isPreviewOpen) ? (
           <section
             aria-labelledby={`${formId}-preview-title`}
             hidden={!hasPreview}

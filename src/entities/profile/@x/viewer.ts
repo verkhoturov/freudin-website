@@ -5,6 +5,12 @@ export type { ProfileSuggestions } from "../lib/get-profile-suggestions";
 export type {
   ProfileInput,
   ProfileUpdateInput,
+  ProfileUpdateRequest,
   ProviderAvatarRequest,
 } from "../model/schemas";
-export type { AvatarSource, PrivateProfileDetails, PublicProfile } from "../model/types";
+export type {
+  AvatarSource,
+  PrivateProfileDetails,
+  PublicProfile,
+  SavedProfile,
+} from "../model/types";

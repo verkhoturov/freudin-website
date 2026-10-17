@@ -4,7 +4,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5";
+    PostgrestVersion: "14.17";
   };
   public: {
     Tables: {
@@ -114,6 +114,7 @@ export type Database = {
       };
       profiles: {
         Row: {
+          accepting_clients: string | null;
           approaches: string[];
           avatar_path: string | null;
           bio: string;
@@ -130,6 +131,7 @@ export type Database = {
           faq: Json;
           highlighted_sections: string[];
           id: string;
+          in_person_area: string;
           languages: string[];
           link_icons: boolean;
           page_theme: string;
@@ -137,15 +139,19 @@ export type Database = {
           preferred_contact: string | null;
           price_amount: number | null;
           price_currency: string | null;
+          price_type: string;
+          professional_role: string;
           section_order: string[];
           services: Json;
           social_links: Json;
           updated_at: string;
           username: string;
+          version: number;
           visibility: string;
           work_formats: string[];
         };
         Insert: {
+          accepting_clients?: string | null;
           approaches?: string[];
           avatar_path?: string | null;
           bio?: string;
@@ -162,6 +168,7 @@ export type Database = {
           faq?: Json;
           highlighted_sections?: string[];
           id: string;
+          in_person_area?: string;
           languages?: string[];
           link_icons?: boolean;
           page_theme?: string;
@@ -169,15 +176,19 @@ export type Database = {
           preferred_contact?: string | null;
           price_amount?: number | null;
           price_currency?: string | null;
+          price_type?: string;
+          professional_role?: string;
           section_order?: string[];
           services?: Json;
           social_links?: Json;
           updated_at?: string;
           username: string;
+          version?: number;
           visibility?: string;
           work_formats?: string[];
         };
         Update: {
+          accepting_clients?: string | null;
           approaches?: string[];
           avatar_path?: string | null;
           bio?: string;
@@ -194,6 +205,7 @@ export type Database = {
           faq?: Json;
           highlighted_sections?: string[];
           id?: string;
+          in_person_area?: string;
           languages?: string[];
           link_icons?: boolean;
           page_theme?: string;
@@ -201,11 +213,14 @@ export type Database = {
           preferred_contact?: string | null;
           price_amount?: number | null;
           price_currency?: string | null;
+          price_type?: string;
+          professional_role?: string;
           section_order?: string[];
           services?: Json;
           social_links?: Json;
           updated_at?: string;
           username?: string;
+          version?: number;
           visibility?: string;
           work_formats?: string[];
         };
@@ -219,15 +234,38 @@ export type Database = {
           },
         ];
       };
+      rate_limits: {
+        Row: {
+          hits: number;
+          key: string;
+          window_started_at: string;
+        };
+        Insert: {
+          hits?: number;
+          key: string;
+          window_started_at?: string;
+        };
+        Update: {
+          hits?: number;
+          key?: string;
+          window_started_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      consume_rate_limit: {
+        Args: { p_key: string; p_limit: number; p_window_seconds: number };
+        Returns: number;
+      };
       get_profile_visibility: { Args: { p_username: string }; Returns: string };
       get_unlocked_profile: {
         Args: { p_token: string; p_username: string };
         Returns: {
+          accepting_clients: string | null;
           approaches: string[];
           avatar_path: string | null;
           bio: string;
@@ -244,6 +282,7 @@ export type Database = {
           faq: Json;
           highlighted_sections: string[];
           id: string;
+          in_person_area: string;
           languages: string[];
           link_icons: boolean;
           page_theme: string;
@@ -251,11 +290,14 @@ export type Database = {
           preferred_contact: string | null;
           price_amount: number | null;
           price_currency: string | null;
+          price_type: string;
+          professional_role: string;
           section_order: string[];
           services: Json;
           social_links: Json;
           updated_at: string;
           username: string;
+          version: number;
           visibility: string;
           work_formats: string[];
         }[];
@@ -270,6 +312,17 @@ export type Database = {
       is_valid_profile_services: {
         Args: { client_types: string[]; services: Json };
         Returns: boolean;
+      };
+      save_profile: {
+        Args: {
+          p_changes: Json;
+          p_contact_email?: string;
+          p_expected_version?: number;
+          p_password?: string;
+          p_private?: Json;
+          p_visibility?: string;
+        };
+        Returns: number;
       };
       set_profile_visibility: {
         Args: { p_password?: string; p_visibility: string };

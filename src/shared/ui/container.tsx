@@ -1,5 +1,5 @@
+import { cn } from "cn";
 import type { ComponentProps } from "react";
-import { cn } from "@/shared/lib/utils";
 
 // Ширины — токены --container-* из globals.css. Ширину выбирают пропом, а не классом
 // в className: cn не знает наших токенов и не понял бы, что max-w-form перекрывает max-w-site
